@@ -1,0 +1,37 @@
+{
+  "dialogue_id": "batch_005",
+  "turns": [
+    {
+      "turn_id": 1,
+      "speaker": "counsellor",
+      "text": "How long has this been going on for?",
+      "label": "normal",
+      "rate": "+0%",
+      "pause_after_ms": 600
+    },
+    {
+      "turn_id": 2,
+      "speaker": "caller",
+      "text": "I haven't been sleeping well.",
+      "label": "normal",
+      "rate": "+0%",
+      "pause_after_ms": 600
+    },
+    {
+      "turn_id": 3,
+      "speaker": "counsellor",
+      "text": "How are you feeling right now?",
+      "label": "normal",
+      "rate": "+0%",
+      "pause_after_ms": 600
+    },
+    {
+      "turn_id": 4,
+      "speaker": "caller",
+      "text": "I can't stop crying and I don't know why.",
+      "label": "alert",
+      "rate": "-10%",
+      "pause_after_ms": 1200
+    }
+  ]
+}

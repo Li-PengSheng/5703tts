@@ -1,0 +1,45 @@
+{
+  "dialogue_id": "batch_013",
+  "turns": [
+    {
+      "turn_id": 1,
+      "speaker": "counsellor",
+      "text": "What's been the hardest part for you?",
+      "label": "normal",
+      "rate": "+0%",
+      "pause_after_ms": 400
+    },
+    {
+      "turn_id": 2,
+      "speaker": "caller",
+      "text": "It's been a rough week.",
+      "label": "normal",
+      "rate": "+0%",
+      "pause_after_ms": 500
+    },
+    {
+      "turn_id": 3,
+      "speaker": "counsellor",
+      "text": "Thank you for calling, I'm here to listen.",
+      "label": "normal",
+      "rate": "+0%",
+      "pause_after_ms": 600
+    },
+    {
+      "turn_id": 4,
+      "speaker": "caller",
+      "text": "I feel like I'm a burden to everyone around me.",
+      "label": "alert",
+      "rate": "-15%",
+      "pause_after_ms": 1000
+    },
+    {
+      "turn_id": 5,
+      "speaker": "counsellor",
+      "text": "Can you tell me what's been going on?",
+      "label": "normal",
+      "rate": "+0%",
+      "pause_after_ms": 400
+    }
+  ]
+}

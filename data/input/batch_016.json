@@ -1,0 +1,37 @@
+{
+  "dialogue_id": "batch_016",
+  "turns": [
+    {
+      "turn_id": 1,
+      "speaker": "counsellor",
+      "text": "I hear you. Take your time.",
+      "label": "normal",
+      "rate": "+0%",
+      "pause_after_ms": 600
+    },
+    {
+      "turn_id": 2,
+      "speaker": "caller",
+      "text": "Work has been really stressful lately.",
+      "label": "normal",
+      "rate": "+0%",
+      "pause_after_ms": 400
+    },
+    {
+      "turn_id": 3,
+      "speaker": "counsellor",
+      "text": "I hear you. Take your time.",
+      "label": "normal",
+      "rate": "+0%",
+      "pause_after_ms": 600
+    },
+    {
+      "turn_id": 4,
+      "speaker": "caller",
+      "text": "I can't stop crying and I don't know why.",
+      "label": "alert",
+      "rate": "-15%",
+      "pause_after_ms": 1000
+    }
+  ]
+}

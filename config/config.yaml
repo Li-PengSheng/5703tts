@@ -1,0 +1,51 @@
+# Set tts.engine to edge_tts, kokoro, or chatterbox_turbo.
+speaker_voice_map:
+  counsellor: en-US-AriaNeural
+  caller: en-US-GuyNeural
+
+tts:
+  engine: kokoro
+  default_rate: "+0%"
+  kokoro:
+    lang_code: a
+    sample_rate: 24000
+    # null uses Kokoro's default device; set "cpu" to force CPU inference.
+    device: null
+    voice_map:
+      counsellor: af_heart
+      caller: am_adam
+  chatterbox_turbo:
+    # "cpu", "cuda", or "mps". Use cpu when no supported GPU is available.
+    device: cuda
+    # "turbo" (350M) or "nano" (110M, CPU-friendly, ~3x realtime on 8-core CPU)
+    variant: turbo
+    # null loads ResembleAI/chatterbox-turbo from its Hugging Face cache.
+    # Set a directory here to load a previously downloaded local checkpoint instead.
+    model_dir: null
+    # null 表示用 Turbo 内置默认音色，但这样 caller/counsellor 可能被分到
+    # 相同或不稳定的音色，破坏"同一角色声音全程一致"这个硬性要求。
+    # 真正要用 chatterbox_turbo 之前，务必换成两个不同的参考音频路径，
+    # 每段要求 > 5 秒，比如:
+    #   counsellor: assets/voices/counsellor_ref.wav
+    #   caller: assets/voices/caller_ref.wav
+    reference_audio_map:
+      counsellor: null
+      caller: null
+    temperature: 0.8
+    top_p: 0.95
+    top_k: 1000
+    repetition_penalty: 1.2
+
+pause:
+  default_ms: 500
+
+# turn 音频首尾做多短的淡入淡出(毫秒)，只是去掉硬切的爆音感，
+# 不是 crossfade，不会造成 turn 之间重叠、不会污染 metadata 时间戳
+fade_ms: 5
+
+telephone:
+  sample_rate: 8000
+  channels: 1
+  high_pass_hz: 300
+  low_pass_hz: 3400
+  volume_db_reduction: 3

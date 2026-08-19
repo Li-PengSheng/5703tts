@@ -1,0 +1,29 @@
+{
+  "dialogue_id": "batch_002",
+  "turns": [
+    {
+      "turn_id": 1,
+      "speaker": "counsellor",
+      "text": "What happened earlier today?",
+      "label": "normal",
+      "rate": "+0%",
+      "pause_after_ms": 400
+    },
+    {
+      "turn_id": 2,
+      "speaker": "caller",
+      "text": "Everything just feels pointless lately.",
+      "label": "alert",
+      "rate": "-15%",
+      "pause_after_ms": 1200
+    },
+    {
+      "turn_id": 3,
+      "speaker": "counsellor",
+      "text": "How long has this been going on for?",
+      "label": "normal",
+      "rate": "+0%",
+      "pause_after_ms": 400
+    }
+  ]
+}

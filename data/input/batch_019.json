@@ -1,0 +1,29 @@
+{
+  "dialogue_id": "batch_019",
+  "turns": [
+    {
+      "turn_id": 1,
+      "speaker": "counsellor",
+      "text": "I hear you. Take your time.",
+      "label": "normal",
+      "rate": "+0%",
+      "pause_after_ms": 400
+    },
+    {
+      "turn_id": 2,
+      "speaker": "caller",
+      "text": "Everything just feels pointless lately.",
+      "label": "alert",
+      "rate": "-20%",
+      "pause_after_ms": 1000
+    },
+    {
+      "turn_id": 3,
+      "speaker": "counsellor",
+      "text": "That sounds like a lot to carry.",
+      "label": "normal",
+      "rate": "+0%",
+      "pause_after_ms": 600
+    }
+  ]
+}

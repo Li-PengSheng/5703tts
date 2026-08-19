@@ -1,0 +1,53 @@
+{
+  "dialogue_id": "batch_003",
+  "turns": [
+    {
+      "turn_id": 1,
+      "speaker": "counsellor",
+      "text": "Can you tell me a bit more about that?",
+      "label": "normal",
+      "rate": "+0%",
+      "pause_after_ms": 600
+    },
+    {
+      "turn_id": 2,
+      "speaker": "caller",
+      "text": "I guess I just needed to talk to someone.",
+      "label": "normal",
+      "rate": "+0%",
+      "pause_after_ms": 500
+    },
+    {
+      "turn_id": 3,
+      "speaker": "counsellor",
+      "text": "How are you feeling right now?",
+      "label": "normal",
+      "rate": "+0%",
+      "pause_after_ms": 600
+    },
+    {
+      "turn_id": 4,
+      "speaker": "caller",
+      "text": "I don't really know where to start.",
+      "label": "normal",
+      "rate": "+0%",
+      "pause_after_ms": 600
+    },
+    {
+      "turn_id": 5,
+      "speaker": "counsellor",
+      "text": "What's been the hardest part for you?",
+      "label": "normal",
+      "rate": "+0%",
+      "pause_after_ms": 500
+    },
+    {
+      "turn_id": 6,
+      "speaker": "caller",
+      "text": "I've been arguing with my partner a lot.",
+      "label": "normal",
+      "rate": "+0%",
+      "pause_after_ms": 400
+    }
+  ]
+}

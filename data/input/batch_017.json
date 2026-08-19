@@ -1,0 +1,53 @@
+{
+  "dialogue_id": "batch_017",
+  "turns": [
+    {
+      "turn_id": 1,
+      "speaker": "counsellor",
+      "text": "Is there anyone with you right now?",
+      "label": "normal",
+      "rate": "+0%",
+      "pause_after_ms": 500
+    },
+    {
+      "turn_id": 2,
+      "speaker": "caller",
+      "text": "I've been arguing with my partner a lot.",
+      "label": "normal",
+      "rate": "+0%",
+      "pause_after_ms": 500
+    },
+    {
+      "turn_id": 3,
+      "speaker": "counsellor",
+      "text": "How are you feeling right now?",
+      "label": "normal",
+      "rate": "+0%",
+      "pause_after_ms": 400
+    },
+    {
+      "turn_id": 4,
+      "speaker": "caller",
+      "text": "It's been a rough week.",
+      "label": "normal",
+      "rate": "+0%",
+      "pause_after_ms": 400
+    },
+    {
+      "turn_id": 5,
+      "speaker": "counsellor",
+      "text": "Is there anyone with you right now?",
+      "label": "normal",
+      "rate": "+0%",
+      "pause_after_ms": 400
+    },
+    {
+      "turn_id": 6,
+      "speaker": "caller",
+      "text": "I've been arguing with my partner a lot.",
+      "label": "normal",
+      "rate": "+0%",
+      "pause_after_ms": 600
+    }
+  ]
+}

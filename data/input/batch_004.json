@@ -1,0 +1,53 @@
+{
+  "dialogue_id": "batch_004",
+  "turns": [
+    {
+      "turn_id": 1,
+      "speaker": "counsellor",
+      "text": "How are you feeling right now?",
+      "label": "normal",
+      "rate": "+0%",
+      "pause_after_ms": 400
+    },
+    {
+      "turn_id": 2,
+      "speaker": "caller",
+      "text": "I haven't been sleeping well.",
+      "label": "normal",
+      "rate": "+0%",
+      "pause_after_ms": 400
+    },
+    {
+      "turn_id": 3,
+      "speaker": "counsellor",
+      "text": "How long has this been going on for?",
+      "label": "normal",
+      "rate": "+0%",
+      "pause_after_ms": 400
+    },
+    {
+      "turn_id": 4,
+      "speaker": "caller",
+      "text": "I've been feeling really exhausted, like I can't keep going.",
+      "label": "alert",
+      "rate": "-15%",
+      "pause_after_ms": 1000
+    },
+    {
+      "turn_id": 5,
+      "speaker": "counsellor",
+      "text": "Can you tell me a bit more about that?",
+      "label": "normal",
+      "rate": "+0%",
+      "pause_after_ms": 600
+    },
+    {
+      "turn_id": 6,
+      "speaker": "caller",
+      "text": "I've been thinking about ending it all.",
+      "label": "confirm",
+      "rate": "-15%",
+      "pause_after_ms": 1000
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+[project]
+name = "5703tts"
+version = "0.1.0"
+description = "Crisis-dialogue TTS rendering pipeline"
+readme = "README.md"
+authors = [
+    { name = "Myuli", email = "94470095+Li-PengSheng@users.noreply.github.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "edge-tts>=7.2.8",
+    "jsonschema>=4.26.0",
+    "kokoro>=0.9.4",
+    "pydub>=0.25.1",
+    "pyyaml>=6.0.3",
+    "ruff>=0.16.3",
+    "soundfile>=0.14.0",
+    # resemble-perth (Chatterbox Turbo's watermark component) imports pkg_resources.
+]
+
+[project.scripts]
+5703tts = "tts5703.cli:run"
+
+[build-system]
+requires = ["uv_build>=0.12.5,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "tts5703"

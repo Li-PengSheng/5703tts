@@ -1,0 +1,29 @@
+{
+  "dialogue_id": "batch_030",
+  "turns": [
+    {
+      "turn_id": 1,
+      "speaker": "counsellor",
+      "text": "What happened earlier today?",
+      "label": "normal",
+      "rate": "+0%",
+      "pause_after_ms": 600
+    },
+    {
+      "turn_id": 2,
+      "speaker": "caller",
+      "text": "I feel like I'm a burden to everyone around me.",
+      "label": "alert",
+      "rate": "-20%",
+      "pause_after_ms": 1200
+    },
+    {
+      "turn_id": 3,
+      "speaker": "counsellor",
+      "text": "Is there anyone with you right now?",
+      "label": "normal",
+      "rate": "+0%",
+      "pause_after_ms": 500
+    }
+  ]
+}

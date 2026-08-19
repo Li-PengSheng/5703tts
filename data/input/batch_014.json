@@ -1,0 +1,37 @@
+{
+  "dialogue_id": "batch_014",
+  "turns": [
+    {
+      "turn_id": 1,
+      "speaker": "counsellor",
+      "text": "How long has this been going on for?",
+      "label": "normal",
+      "rate": "+0%",
+      "pause_after_ms": 400
+    },
+    {
+      "turn_id": 2,
+      "speaker": "caller",
+      "text": "I guess I just needed to talk to someone.",
+      "label": "normal",
+      "rate": "+0%",
+      "pause_after_ms": 400
+    },
+    {
+      "turn_id": 3,
+      "speaker": "counsellor",
+      "text": "What's been the hardest part for you?",
+      "label": "normal",
+      "rate": "+0%",
+      "pause_after_ms": 400
+    },
+    {
+      "turn_id": 4,
+      "speaker": "caller",
+      "text": "I've been feeling really exhausted, like I can't keep going.",
+      "label": "alert",
+      "rate": "-20%",
+      "pause_after_ms": 1000
+    }
+  ]
+}

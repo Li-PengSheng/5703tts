@@ -1,0 +1,29 @@
+{
+  "dialogue_id": "batch_021",
+  "turns": [
+    {
+      "turn_id": 1,
+      "speaker": "counsellor",
+      "text": "What happened earlier today?",
+      "label": "normal",
+      "rate": "+0%",
+      "pause_after_ms": 500
+    },
+    {
+      "turn_id": 2,
+      "speaker": "caller",
+      "text": "I've been having a lot of dark thoughts.",
+      "label": "alert",
+      "rate": "-15%",
+      "pause_after_ms": 1000
+    },
+    {
+      "turn_id": 3,
+      "speaker": "counsellor",
+      "text": "Can you tell me what's been going on?",
+      "label": "normal",
+      "rate": "+0%",
+      "pause_after_ms": 600
+    }
+  ]
+}

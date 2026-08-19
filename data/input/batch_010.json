@@ -1,0 +1,45 @@
+{
+  "dialogue_id": "batch_010",
+  "turns": [
+    {
+      "turn_id": 1,
+      "speaker": "counsellor",
+      "text": "How are you feeling right now?",
+      "label": "normal",
+      "rate": "+0%",
+      "pause_after_ms": 400
+    },
+    {
+      "turn_id": 2,
+      "speaker": "caller",
+      "text": "I guess I just needed to talk to someone.",
+      "label": "normal",
+      "rate": "+0%",
+      "pause_after_ms": 400
+    },
+    {
+      "turn_id": 3,
+      "speaker": "counsellor",
+      "text": "Thank you for calling, I'm here to listen.",
+      "label": "normal",
+      "rate": "+0%",
+      "pause_after_ms": 600
+    },
+    {
+      "turn_id": 4,
+      "speaker": "caller",
+      "text": "I've been having a lot of dark thoughts.",
+      "label": "alert",
+      "rate": "-20%",
+      "pause_after_ms": 800
+    },
+    {
+      "turn_id": 5,
+      "speaker": "counsellor",
+      "text": "What happened earlier today?",
+      "label": "normal",
+      "rate": "+0%",
+      "pause_after_ms": 500
+    }
+  ]
+}

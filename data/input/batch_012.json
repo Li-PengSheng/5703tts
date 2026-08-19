@@ -1,0 +1,53 @@
+{
+  "dialogue_id": "batch_012",
+  "turns": [
+    {
+      "turn_id": 1,
+      "speaker": "counsellor",
+      "text": "Is there anyone with you right now?",
+      "label": "normal",
+      "rate": "+0%",
+      "pause_after_ms": 400
+    },
+    {
+      "turn_id": 2,
+      "speaker": "caller",
+      "text": "I don't really know where to start.",
+      "label": "normal",
+      "rate": "+0%",
+      "pause_after_ms": 500
+    },
+    {
+      "turn_id": 3,
+      "speaker": "counsellor",
+      "text": "Thank you for calling, I'm here to listen.",
+      "label": "normal",
+      "rate": "+0%",
+      "pause_after_ms": 500
+    },
+    {
+      "turn_id": 4,
+      "speaker": "caller",
+      "text": "I can't stop crying and I don't know why.",
+      "label": "alert",
+      "rate": "-20%",
+      "pause_after_ms": 1000
+    },
+    {
+      "turn_id": 5,
+      "speaker": "counsellor",
+      "text": "I hear you. Take your time.",
+      "label": "normal",
+      "rate": "+0%",
+      "pause_after_ms": 400
+    },
+    {
+      "turn_id": 6,
+      "speaker": "caller",
+      "text": "I can't stop crying and I don't know why.",
+      "label": "alert",
+      "rate": "-15%",
+      "pause_after_ms": 1200
+    }
+  ]
+}

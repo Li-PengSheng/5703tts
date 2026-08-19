@@ -1,0 +1,33 @@
+# Generated output: not version-controlled and recreated on every run
+data/output/*
+!data/output/.gitkeep
+logs/*.log
+
+# Windows download metadata (can appear as real sidecar files outside NTFS)
+*:Zone.Identifier
+
+# Python cache
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Local virtual environments
+.venv/
+venv/
+
+# Build and packaging artifacts
+build/
+dist/
+*.egg-info/
+
+# Local model cache (if a Hugging Face cache is created in the project directory)
+*.pt
+*.safetensors
+
+# OS and editor files
+.DS_Store
+Thumbs.db
