@@ -18,8 +18,8 @@ def build_metadata(
         "dialogue_id": dialogue_id,
         "clean_audio": clean_path.name,
         "telephone_audio": telephone_path.name,
-        # 记录这次生成用的是哪个引擎/哪套配置，方便以后做
-        # EdgeTTS vs Kokoro vs Chatterbox 的对比实验时能追溯每条数据的来源
+        # Record the engine and configuration used for this render so datasets
+        # remain traceable during future engine-comparison experiments.
         "tts": engine_info,
         "turns": [
             {

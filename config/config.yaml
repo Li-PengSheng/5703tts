@@ -1,10 +1,12 @@
-# Set tts.engine to edge_tts, kokoro, or chatterbox_turbo.
+# Default: online Edge TTS. Set this to kokoro to use the installed local-model alternative.
+# Chatterbox code remains in the package for future experimentation, but its dependencies
+# are intentionally not installed or configured by default.
 speaker_voice_map:
   counsellor: en-US-AriaNeural
   caller: en-US-GuyNeural
 
 tts:
-  engine: kokoro
+  engine: edge_tts
   default_rate: "+0%"
   kokoro:
     lang_code: a
@@ -22,10 +24,11 @@ tts:
     # null loads ResembleAI/chatterbox-turbo from its Hugging Face cache.
     # Set a directory here to load a previously downloaded local checkpoint instead.
     model_dir: null
-    # null 表示用 Turbo 内置默认音色，但这样 caller/counsellor 可能被分到
-    # 相同或不稳定的音色，破坏"同一角色声音全程一致"这个硬性要求。
-    # 真正要用 chatterbox_turbo 之前，务必换成两个不同的参考音频路径，
-    # 每段要求 > 5 秒，比如:
+    # null uses Turbo's built-in voice. This can assign caller and counsellor
+    # the same or inconsistent voices, violating the requirement for a
+    # consistent voice per role.
+    # Before using chatterbox_turbo, replace these with two distinct reference
+    # audio paths. Each clip must be longer than five seconds, for example:
     #   counsellor: assets/voices/counsellor_ref.wav
     #   caller: assets/voices/caller_ref.wav
     reference_audio_map:
@@ -39,8 +42,8 @@ tts:
 pause:
   default_ms: 500
 
-# turn 音频首尾做多短的淡入淡出(毫秒)，只是去掉硬切的爆音感，
-# 不是 crossfade，不会造成 turn 之间重叠、不会污染 metadata 时间戳
+# Short fade applied to the beginning and end of each turn (milliseconds).
+# It removes hard-cut clicks without crossfading turns or affecting metadata timestamps.
 fade_ms: 5
 
 telephone:

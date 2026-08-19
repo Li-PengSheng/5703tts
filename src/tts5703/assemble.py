@@ -29,11 +29,10 @@ def assemble_dialogue(
     turn_audio_paths: dict[int, Path],
     config: dict[str, Any],
 ) -> tuple[AudioSegment, list[TurnTiming]]:
-    # 注意: pydub 的 append(..., crossfade=N) 是"重叠式拼接"，
-    # 会让新 segment 提前 N ms 开始与前一段混合，导致 len(audio) 记录的位置
-    # 和真实波形里的分界点不一致，而且这个偏差会随 turn 数量累积增大。
-    # 危机对话里 caller/counsellor 的话本身也不该被强行叠在一起，
-    # 所以这里改成不叠(crossfade=0)，只用轻微的 fade in/out 去掉硬切的爆音感。
+    # pydub's append(..., crossfade=N) overlaps segments. The next segment starts
+    # N ms early, so len(audio) no longer matches the real waveform boundary and
+    # the discrepancy accumulates with every turn. Dialogue turns should not
+    # overlap, so use direct joins and short fades to avoid hard-cut clicks.
     fade_ms = config.get("fade_ms", 5)
     audio = AudioSegment.empty()
     timings: list[TurnTiming] = []
@@ -45,7 +44,7 @@ def assemble_dialogue(
             .fade_out(fade_ms)
         )
         start_ms = len(audio)
-        audio = segment if not audio else audio + segment  # 直接首尾相接，不重叠
+        audio = segment if not audio else audio + segment  # Direct join; no overlap.
         end_ms = len(audio)
         timings.append(
             TurnTiming(

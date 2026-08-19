@@ -17,7 +17,7 @@ def get_engine(config: dict[str, Any]) -> str:
     engine = config["tts"].get("engine", "edge_tts")
     if engine not in {"edge_tts", "kokoro", "chatterbox_turbo"}:
         raise ValueError(
-            f"不支持的 tts.engine: {engine}（可用: edge_tts, kokoro, chatterbox_turbo）"
+            f"Unsupported tts.engine: {engine} (available: edge_tts, kokoro, chatterbox_turbo)"
         )
     return engine
 
@@ -55,7 +55,7 @@ async def synthesize_turn(
     """Synthesize one turn with the engine selected in ``tts.engine``."""
     engine = get_engine(config)
     if engine == "edge_tts":
-        import edge_tts  # lazy: 只有真的选了 edge_tts 才需要装这个包
+        import edge_tts  # Lazy import: only needed when Edge TTS is selected.
 
         voice = config["speaker_voice_map"][turn.speaker]
         output_path = out_dir / f"turn_{turn.turn_id:03d}.mp3"
@@ -98,7 +98,7 @@ async def synthesize_turn(
             )
         ]
         if not chunks:
-            raise RuntimeError(f"Kokoro 没有为 turn {turn.turn_id} 生成音频")
+            raise RuntimeError(f"Kokoro did not generate audio for turn {turn.turn_id}")
         sf.write(output_path, np.concatenate(chunks), kokoro["sample_rate"])
         logger.debug(
             "event=turn_tts_complete engine=kokoro turn=%d output=%s chunks=%d bytes=%d",
@@ -148,7 +148,7 @@ async def synthesize_all_turns(
 
 
 def describe_engine(config: dict[str, Any]) -> dict[str, Any]:
-    """给 metadata 用的引擎/声音配置快照，方便以后做跨引擎 benchmark 时追溯来源"""
+    """Return an engine and voice configuration snapshot for metadata traceability."""
     engine = get_engine(config)
     if engine == "edge_tts":
         return {"engine": "edge_tts", "voices": config["speaker_voice_map"]}

@@ -33,28 +33,28 @@ def run_qc(
         metadata_turn = metadata_by_turn_id.get(turn.turn_id)
         if metadata_turn is None:
             turn_audio_ok = False
-            issues.append(f"turn {turn.turn_id} 不在 metadata 中")
+            issues.append(f"turn {turn.turn_id} is missing from metadata")
             continue
         path = out_dir / metadata_turn["turn_audio"]
         if not path.exists():
             turn_audio_ok = False
-            issues.append(f"turn {turn.turn_id} 的音频文件缺失: {path.name}")
+            issues.append(f"turn {turn.turn_id} audio file is missing: {path.name}")
             continue
         try:
             if len(AudioSegment.from_file(path)) / 1000 < 0.1:
                 turn_audio_ok = False
-                issues.append(f"turn {turn.turn_id} 音频时长异常（应大于 0.1 秒）")
+                issues.append(f"turn {turn.turn_id} audio duration is invalid (must exceed 0.1 seconds)")
         except Exception as error:
             turn_audio_ok = False
-            issues.append(f"turn {turn.turn_id} 音频无法读取: {error}")
+            issues.append(f"turn {turn.turn_id} audio cannot be read: {error}")
     checks["turn_audio_files_exist"] = turn_audio_ok
 
     checks["clean_audio_exists"] = clean_path.exists()
     checks["telephone_audio_exists"] = telephone_path.exists()
     if not clean_path.exists():
-        issues.append("clean 版音频未生成")
+        issues.append("Clean audio was not generated")
     if not telephone_path.exists():
-        issues.append("telephone 版音频未生成")
+        issues.append("Telephone audio was not generated")
 
     duration_ok = clean_path.exists()
     if duration_ok:
@@ -62,25 +62,25 @@ def run_qc(
         turns = metadata.get("turns", [])
         if duration <= 0 or (turns and turns[-1]["end_time"] > duration + 0.05):
             duration_ok = False
-            issues.append("clean 音频时长或最后一个 turn 的时间戳异常")
+            issues.append("Clean audio duration or final-turn timestamp is invalid")
     checks["duration_positive"] = duration_ok
 
     turns = metadata.get("turns", [])
     checks["turn_count_matches"] = len(turns) == len(dialogue.turns)
     if not checks["turn_count_matches"]:
-        issues.append("输入与 metadata 的 turn 数量不一致")
+        issues.append("Input and metadata turn counts do not match")
 
     previous_end = -1.0
     timestamps_ok = True
     for turn in turns:
         if turn["start_time"] < previous_end or turn["end_time"] <= turn["start_time"]:
             timestamps_ok = False
-            issues.append(f"turn {turn['turn_id']} 时间戳异常")
+            issues.append(f"turn {turn['turn_id']} timestamps are invalid")
         previous_end = turn["end_time"]
     checks["timestamps_increasing"] = timestamps_ok
 
     fields_ok = all(not (REQUIRED_TURN_FIELDS - set(turn)) for turn in turns)
     checks["metadata_fields_complete"] = fields_ok
     if not fields_ok:
-        issues.append("metadata 缺少硬性契约字段")
+        issues.append("Metadata is missing required contract fields")
     return QCResult(dialogue.dialogue_id, all(checks.values()), checks, issues)

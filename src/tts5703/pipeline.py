@@ -102,7 +102,7 @@ async def run_dialogue(
         return PipelineResult(
             dialogue_id,
             "success" if qc.passed else "failed",
-            None if qc.passed else f"QC 未通过: {qc.issues}",
+            None if qc.passed else f"QC failed: {qc.issues}",
             qc,
             out_dir,
         )
@@ -112,11 +112,11 @@ async def run_dialogue(
             dialogue_id,
             error,
         )
-        return PipelineResult(dialogue_id, "failed", f"输入校验失败: {error}")
+        return PipelineResult(dialogue_id, "failed", f"Input validation failed: {error}")
     except Exception as error:
         logger.exception(
             "event=dialogue_pipeline_failed dialogue=%s elapsed_sec=%.2f",
             dialogue_id,
             time.perf_counter() - started,
         )
-        return PipelineResult(dialogue_id, "failed", f"未预期错误: {error}")
+        return PipelineResult(dialogue_id, "failed", f"Unexpected error: {error}")

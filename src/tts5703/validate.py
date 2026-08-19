@@ -46,7 +46,7 @@ def validate_and_normalize(
         jsonschema.validate(instance=raw, schema=_load_schema())
     except jsonschema.exceptions.ValidationError as error:
         raise ValidationError(
-            f"不符合 schema ({error.json_path}): {error.message}"
+            f"Does not conform to schema ({error.json_path}): {error.message}"
         ) from error
 
     try:
@@ -61,24 +61,24 @@ def validate_and_normalize(
             voice_map = config["speaker_voice_map"]
         else:
             raise ValidationError(
-                f"不支持的 tts.engine: {engine}（可用: edge_tts, kokoro, chatterbox_turbo）"
+                f"Unsupported tts.engine: {engine} (available: edge_tts, kokoro, chatterbox_turbo)"
             )
         default_rate = config["tts"]["default_rate"]
         default_pause = config["pause"]["default_ms"]
     except KeyError as error:
-        raise ValidationError(f"配置缺少必要字段: {error}") from error
+        raise ValidationError(f"Configuration is missing required field: {error}") from error
 
     seen_ids: set[int] = set()
     turns: list[NormalizedTurn] = []
     for turn in raw["turns"]:
         turn_id = turn["turn_id"]
         if turn_id in seen_ids:
-            raise ValidationError(f"turn_id 重复: {turn_id}")
+            raise ValidationError(f"Duplicate turn_id: {turn_id}")
         seen_ids.add(turn_id)
         speaker = turn["speaker"]
         if speaker not in voice_map:
             raise ValidationError(
-                f"turn {turn_id}: speaker '{speaker}' 未配置声音，当前支持: {list(voice_map)}"
+                f"turn {turn_id}: speaker '{speaker}' has no configured voice; supported: {list(voice_map)}"
             )
         turns.append(
             NormalizedTurn(
@@ -96,7 +96,7 @@ def validate_and_normalize(
 
     ids = [turn.turn_id for turn in turns]
     if ids != sorted(ids):
-        raise ValidationError(f"turn_id 未按顺序递增: {ids}")
+        raise ValidationError(f"turn_id values are not in increasing order: {ids}")
     return NormalizedDialogue(dialogue_id=raw["dialogue_id"], turns=turns)
 
 
@@ -104,5 +104,5 @@ def load_and_validate(json_path: Path, config: dict[str, Any]) -> NormalizedDial
     try:
         raw = json.loads(json_path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as error:
-        raise ValidationError(f"JSON 无法解析: {error}") from error
+        raise ValidationError(f"Unable to parse JSON: {error}") from error
     return validate_and_normalize(raw, config)

@@ -15,7 +15,6 @@ dependencies = [
     "pyyaml>=6.0.3",
     "ruff>=0.16.3",
     "soundfile>=0.14.0",
-    # resemble-perth (Chatterbox Turbo's watermark component) imports pkg_resources.
 ]
 
 [project.scripts]

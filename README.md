@@ -17,12 +17,12 @@ uv sync
 uv run 5703tts
 ```
 
-The first use of a model-backed engine may download model files. `edge_tts` requires network access for synthesis.
+The default engine is `edge_tts`, which requires network access for synthesis. Kokoro downloads its model on first use and can run from its local cache afterwards.
 
 ## Quick start
 
 1. Put one or more dialogue JSON files in `data/input/`.
-2. Choose and configure an engine in `config/config.yaml`.
+2. Use the default Edge TTS configuration, or switch to Kokoro in `config/config.yaml`.
 3. Run the batch:
 
 ```bash
@@ -66,31 +66,28 @@ Input files must conform to [`schemas/dialogue_schema.json`](schemas/dialogue_sc
 
 ## TTS engines
 
-Set `tts.engine` in `config/config.yaml` to one of the following:
+The checked-in configuration uses online Edge TTS:
+
+```yaml
+tts:
+  engine: edge_tts
+```
+
+Two engines are installed and supported:
 
 | Engine | Turn format | Notes |
 | --- | --- | --- |
-| `edge_tts` | MP3 | Online Microsoft Edge TTS. Set voices in `speaker_voice_map`. |
+| `edge_tts` | MP3 | **Default.** Online Microsoft Edge TTS. Set voices in `speaker_voice_map`. |
 | `kokoro` | WAV | Local/cached Kokoro model. Set voices in `tts.kokoro.voice_map`. |
-| `chatterbox_turbo` | WAV | Chatterbox Turbo or Nano. Supports optional role-specific voice-reference clips. |
 
-For example, to use Kokoro:
+To use Kokoro instead, set:
 
 ```yaml
 tts:
   engine: kokoro
 ```
 
-To use Chatterbox on CPU, change the engine and device:
-
-```yaml
-tts:
-  engine: chatterbox_turbo
-  chatterbox_turbo:
-    device: cpu
-```
-
-Chatterbox uses its built-in voice unless `tts.chatterbox_turbo.reference_audio_map` supplies a reference clip for a speaker. For consistent, distinct role voices, provide a different reference clip longer than five seconds for each role. Set `model_dir` when loading a previously downloaded local checkpoint.
+The repository retains Chatterbox Turbo support code for future experimentation, but Chatterbox dependencies are deliberately not included in the project environment. It is therefore not a supported configured engine at present; selecting it requires manually restoring its dependencies and supplying its configuration.
 
 ## Output
 
@@ -105,7 +102,7 @@ The assembly uses direct joins plus short fades; turns are never crossfaded. Met
 
 ## Configuration
 
-[`config/config.yaml`](config/config.yaml) controls speaker-to-voice mappings, default rate and pauses, engine-specific settings, fades, and telephone filtering. The checked-in defaults use Kokoro at 24 kHz for synthesis and produce 8 kHz mono telephone audio.
+[`config/config.yaml`](config/config.yaml) controls speaker-to-voice mappings, default rate and pauses, engine-specific settings, fades, and telephone filtering. The checked-in defaults use Edge TTS and produce 8 kHz mono telephone audio. The Kokoro block specifies its 24 kHz synthesis settings when it is selected.
 
 ## Tests
 
