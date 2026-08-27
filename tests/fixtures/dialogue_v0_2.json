@@ -1,0 +1,36 @@
+{
+  "schema_version": "0.2",
+  "dialogue_id": "fixture_v0_2",
+  "turns": [
+    {
+      "turn_id": 1,
+      "speaker": "caller",
+      "text": "I don't know what to do anymore.",
+      "label": "alert",
+      "acoustic_spec": {
+        "rate": "slow",
+        "pause_before_ms": 0,
+        "pause_after_ms": 700,
+        "arousal": "low",
+        "coarse_affect": "distressed",
+        "emotion": null,
+        "paralinguistic_events": []
+      }
+    },
+    {
+      "turn_id": 2,
+      "speaker": "counsellor",
+      "text": "I'm here with you.",
+      "label": "confirm",
+      "acoustic_spec": {
+        "rate": "normal",
+        "pause_before_ms": 0,
+        "pause_after_ms": 500,
+        "arousal": "medium",
+        "coarse_affect": null,
+        "emotion": null,
+        "paralinguistic_events": []
+      }
+    }
+  ]
+}

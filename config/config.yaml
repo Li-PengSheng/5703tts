@@ -6,7 +6,7 @@ speaker_voice_map:
   caller: en-US-GuyNeural
 
 tts:
-  engine: edge_tts
+  engine: cosyvoice
   default_rate: "+0%"
   kokoro:
     lang_code: a
@@ -38,6 +38,32 @@ tts:
     top_p: 0.95
     top_k: 1000
     repetition_penalty: 1.2
+  cosyvoice:
+    # CosyVoice3's dependencies live in their own virtual environment,
+    # separate from this project's .venv, so synthesis runs in a subprocess
+    # started with this interpreter (paths below are relative to the repo
+    # root unless given as absolute paths).
+    python_bin: third_party/CosyVoice/.venv/bin/python
+    repo_dir: third_party/CosyVoice
+    model_dir: models/Fun-CosyVoice3-0.5B
+    load_trt: false
+    load_vllm: false
+    fp16: true
+    # Zero-shot voice cloning: each speaker needs a short reference clip
+    # (prompt_wav) and the transcript of that clip (prompt_text). Both
+    # roles are pointed at CosyVoice's bundled sample clip for now, same
+    # as this repo's placeholder kokoro/chatterbox voices — replace with
+    # two distinct reference clips before real use, otherwise counsellor
+    # and caller will sound identical.
+    voice_map:
+      counsellor:
+        prompt_wav: third_party/CosyVoice/asset/zero_shot_prompt.wav
+        prompt_text: >-
+          You are a helpful assistant.<|endofprompt|>希望你以后能够做的比我还好呦。
+      caller:
+        prompt_wav: third_party/CosyVoice/asset/zero_shot_prompt.wav
+        prompt_text: >-
+          You are a helpful assistant.<|endofprompt|>希望你以后能够做的比我还好呦。
 
 pause:
   default_ms: 500
