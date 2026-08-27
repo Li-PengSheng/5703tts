@@ -1,29 +1,63 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema#",
-    "title": "Crisis Dialogue Input Schema",
+    "title": "Crisis Dialogue Input Schema v0.2",
     "type": "object",
-    "required": ["dialogue_id", "turns"],
+    "additionalProperties": false,
+    "required": ["schema_version", "dialogue_id", "turns"],
     "properties": {
-        "dialogue_id": { "type": "string" },
+        "schema_version": {
+            "type": "string",
+            "const": "0.2"
+        },
+        "dialogue_id": {
+            "type": "string",
+            "minLength": 1
+        },
         "turns": {
             "type": "array",
             "minItems": 1,
             "items": {
                 "type": "object",
-                "required": ["turn_id", "speaker", "text", "label"],
+                "additionalProperties": false,
+                "required": ["turn_id", "speaker", "text", "label", "acoustic_spec"],
                 "properties": {
                     "turn_id": { "type": "integer" },
-                    "speaker": { "type": "string" },
+                    "speaker": { "type": "string", "minLength": 1 },
                     "text": { "type": "string", "minLength": 1 },
                     "label": {
                         "type": "string",
                         "enum": ["normal", "alert", "confirm"]
                     },
-                    "rate": { "type": "string", "pattern": "^[+-][0-9]+%$" },
-                    "pause_after_ms": { "type": "integer", "minimum": 0 },
-                    "emotion": { "type": ["string", "null"] },
-                    "arousal": { "type": ["string", "null"] },
-                    "paralinguistic_events": { "type": "array" }
+                    "acoustic_spec": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                            "rate": {
+                                "type": "string",
+                                "enum": ["slow", "normal", "fast"]
+                            },
+                            "pause_before_ms": {
+                                "type": "integer",
+                                "minimum": 0
+                            },
+                            "pause_after_ms": {
+                                "type": "integer",
+                                "minimum": 0
+                            },
+                            "arousal": {
+                                "enum": ["low", "medium", "high", null]
+                            },
+                            "coarse_affect": {
+                                "type": ["string", "null"]
+                            },
+                            "emotion": {
+                                "type": ["string", "null"]
+                            },
+                            "paralinguistic_events": {
+                                "type": "array"
+                            }
+                        }
+                    }
                 }
             }
         }
