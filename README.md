@@ -176,7 +176,13 @@ tts:
   engine: kokoro
 ```
 
-CosyVoice runs in its own Python 3.10 environment configured by `tts.cosyvoice.python_bin`. `load_trt` and `load_vllm` are disabled in the sample configuration. The current zero-shot integration does not map every schema v0.2 acoustic intent field into model-specific controls; that adapter work remains intentionally separate from input validation.
+CosyVoice runs in its own Python 3.10 environment configured by `tts.cosyvoice.python_bin`. `load_trt` and `load_vllm` are disabled in the sample configuration.
+
+### Provisional CosyVoice3 acoustic-control adapter
+
+The integrated CosyVoice candidate is CosyVoice3. At its backend boundary, semantic rate maps to the official numeric `speed` argument (`slow`/`normal`/`fast` become provisional values `0.8`/`1.0`/`1.2`). Explicit arousal or supported coarse-affect requests select `inference_instruct2` with a candidate instruction mapping; otherwise the worker preserves `inference_zero_shot`. Low, medium, and high arousal currently request calm/subdued, moderate, and energetic/intense delivery respectively. Neutral and distressed coarse affect request composed and worried/sad tones respectively. Pauses remain pipeline assembly controls and are not included in model instructions.
+
+These mappings express requested controls and require empirical verification with the controlled benchmark; they do not establish acoustic fidelity. Fine-grained emotion and paralinguistic synthesis remain deferred, and Fish is not implemented in this task.
 
 ## Output
 

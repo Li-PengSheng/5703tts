@@ -43,6 +43,8 @@ tts:
     # separate from this project's .venv, so synthesis runs in a subprocess
     # started with this interpreter (paths below are relative to the repo
     # root unless given as absolute paths).
+    # Semantic rate/speed and arousal/coarse-affect instruction mappings are
+    # provisional backend adapters pending controlled benchmark evaluation.
     python_bin: third_party/CosyVoice/.venv/bin/python
     repo_dir: third_party/CosyVoice
     model_dir: models/Fun-CosyVoice3-0.5B
