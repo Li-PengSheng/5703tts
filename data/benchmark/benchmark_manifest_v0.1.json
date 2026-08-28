@@ -1,0 +1,47 @@
+{
+  "benchmark_version": "0.1",
+  "fixture": "benchmark_fixture_v0.1.json",
+  "purpose": "Controlled comparison of requested acoustic conditions across TTS candidates.",
+  "groups": [
+    {
+      "group_id": "rate",
+      "target_variable": "rate",
+      "turn_ids": [1, 2, 3],
+      "baseline_turn_id": 2,
+      "expected_conditions": ["slow", "normal", "fast"],
+      "description": "Compares semantic speaking rates while holding all other fields constant."
+    },
+    {
+      "group_id": "pause_before",
+      "target_variable": "pause_before_ms",
+      "turn_ids": [4, 5],
+      "baseline_turn_id": 4,
+      "expected_conditions": [0, 800],
+      "description": "Compares no pre-turn pause with a long pre-turn pause."
+    },
+    {
+      "group_id": "pause_after",
+      "target_variable": "pause_after_ms",
+      "turn_ids": [6, 7],
+      "baseline_turn_id": 6,
+      "expected_conditions": [200, 1000],
+      "description": "Compares short and long post-turn pauses."
+    },
+    {
+      "group_id": "arousal",
+      "target_variable": "arousal",
+      "turn_ids": [8, 9],
+      "baseline_turn_id": 8,
+      "expected_conditions": ["low", "high"],
+      "description": "Compares low and high requested arousal with affect held constant."
+    },
+    {
+      "group_id": "coarse_affect",
+      "target_variable": "coarse_affect",
+      "turn_ids": [10, 11],
+      "baseline_turn_id": 10,
+      "expected_conditions": ["neutral", "distressed"],
+      "description": "Compares provisional neutral and distressed coarse-affect conditions."
+    }
+  ]
+}
