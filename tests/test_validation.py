@@ -2,6 +2,7 @@
 
 import copy
 import importlib
+import logging
 from pathlib import Path
 
 import pytest
@@ -46,6 +47,31 @@ def test_legacy_minimal_dialogue_still_works() -> None:
     assert dialogue.dialogue_id == "ok001"
     assert dialogue.turns[0].rate == "+0%"
     assert dialogue.turns[0].pause_after_ms == 500
+
+
+def test_legacy_input_emits_temporary_support_warning(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    with caplog.at_level(logging.WARNING, logger="tts5703.validate"):
+        validate_and_normalize(LEGACY_MINIMAL, CONFIG)
+
+    assert any(
+        "Legacy dialogue schema is temporarily supported" in record.message
+        and "schema v0.2 is preferred" in record.message
+        for record in caplog.records
+    )
+
+
+def test_canonical_input_does_not_emit_legacy_warning(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    with caplog.at_level(logging.WARNING, logger="tts5703.validate"):
+        validate_and_normalize(_canonical_dialogue(), CONFIG)
+
+    assert not any(
+        "Legacy dialogue schema is temporarily supported" in record.message
+        for record in caplog.records
+    )
 
 
 def test_canonical_v0_2_fixture_works() -> None:

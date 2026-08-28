@@ -1,6 +1,7 @@
 """Model-independent input validation and normalization boundary."""
 
 import json
+import logging
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
@@ -11,6 +12,7 @@ import jsonschema
 from .config import VALID_ENGINES
 
 SCHEMA_PATH = Path(__file__).resolve().parents[2] / "schemas" / "dialogue_schema.json"
+logger = logging.getLogger(__name__)
 
 # Temporary compatibility schema for the versionless, flat input format. Keep this
 # separate from the canonical schema so legacy percentages cannot be mistaken for
@@ -179,6 +181,10 @@ def validate_and_normalize(
     ids = [turn.turn_id for turn in turns]
     if ids != sorted(ids):
         raise ValidationError(f"turn_id values are not in increasing order: {ids}")
+    if not is_v0_2:
+        logger.warning(
+            "Legacy dialogue schema is temporarily supported; schema v0.2 is preferred"
+        )
     return NormalizedDialogue(dialogue_id=raw["dialogue_id"], turns=turns)
 
 
