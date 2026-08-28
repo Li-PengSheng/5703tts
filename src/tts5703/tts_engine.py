@@ -42,9 +42,33 @@ def turn_audio_extension(config: dict[str, Any]) -> str:
     return ".mp3" if get_engine(config) == "edge_tts" else ".wav"
 
 
-def _rate_to_kokoro_speed(rate: str) -> float:
-    """Convert the existing EdgeTTS-style ``+/-N%`` setting to Kokoro speed."""
+_EDGE_TTS_SEMANTIC_RATES = {
+    "slow": "-20%",
+    "normal": "+0%",
+    "fast": "+20%",
+}
+_KOKORO_SEMANTIC_RATES = {
+    "slow": 0.8,
+    "normal": 1.0,
+    "fast": 1.2,
+}
+
+
+def rate_to_edge_tts(rate: str) -> str:
+    """Map semantic rates to EdgeTTS percentages, preserving legacy values."""
+    return _EDGE_TTS_SEMANTIC_RATES.get(rate, rate)
+
+
+def rate_to_kokoro_speed(rate: str) -> float:
+    """Map semantic or legacy percentage rates to a Kokoro speed multiplier."""
+    if rate in _KOKORO_SEMANTIC_RATES:
+        return _KOKORO_SEMANTIC_RATES[rate]
     return max(0.1, 1 + int(rate[:-1]) / 100)
+
+
+def _rate_to_kokoro_speed(rate: str) -> float:
+    """Backward-compatible alias for the pre-v0.2 internal helper."""
+    return rate_to_kokoro_speed(rate)
 
 
 @lru_cache(maxsize=4)
@@ -220,9 +244,11 @@ async def synthesize_turn(
             voice,
             turn.rate,
         )
-        await edge_tts.Communicate(text=turn.text, voice=voice, rate=turn.rate).save(
-            str(output_path)
-        )
+        await edge_tts.Communicate(
+            text=turn.text,
+            voice=voice,
+            rate=rate_to_edge_tts(turn.rate),
+        ).save(str(output_path))
         logger.debug(
             "event=turn_tts_complete engine=edge_tts turn=%d output=%s bytes=%d",
             turn.turn_id,
@@ -248,7 +274,7 @@ async def synthesize_turn(
             for result in pipeline(
                 turn.text,
                 voice=voice,
-                speed=_rate_to_kokoro_speed(turn.rate),
+                speed=rate_to_kokoro_speed(turn.rate),
             )
         ]
         if not chunks:
