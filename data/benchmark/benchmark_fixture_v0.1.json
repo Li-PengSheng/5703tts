@@ -1,0 +1,171 @@
+{
+  "schema_version": "0.2",
+  "dialogue_id": "controlled_tts_benchmark_v0_1",
+  "turns": [
+    {
+      "turn_id": 1,
+      "speaker": "caller",
+      "text": "I need help finding a safe place to stay tonight.",
+      "label": "alert",
+      "acoustic_spec": {
+        "rate": "slow",
+        "pause_before_ms": 0,
+        "pause_after_ms": 500,
+        "arousal": "medium",
+        "coarse_affect": "neutral",
+        "emotion": null,
+        "paralinguistic_events": []
+      }
+    },
+    {
+      "turn_id": 2,
+      "speaker": "caller",
+      "text": "I need help finding a safe place to stay tonight.",
+      "label": "alert",
+      "acoustic_spec": {
+        "rate": "normal",
+        "pause_before_ms": 0,
+        "pause_after_ms": 500,
+        "arousal": "medium",
+        "coarse_affect": "neutral",
+        "emotion": null,
+        "paralinguistic_events": []
+      }
+    },
+    {
+      "turn_id": 3,
+      "speaker": "caller",
+      "text": "I need help finding a safe place to stay tonight.",
+      "label": "alert",
+      "acoustic_spec": {
+        "rate": "fast",
+        "pause_before_ms": 0,
+        "pause_after_ms": 500,
+        "arousal": "medium",
+        "coarse_affect": "neutral",
+        "emotion": null,
+        "paralinguistic_events": []
+      }
+    },
+    {
+      "turn_id": 4,
+      "speaker": "counsellor",
+      "text": "Take your time and tell me what feels most important right now.",
+      "label": "normal",
+      "acoustic_spec": {
+        "rate": "normal",
+        "pause_before_ms": 0,
+        "pause_after_ms": 500,
+        "arousal": "medium",
+        "coarse_affect": "neutral",
+        "emotion": null,
+        "paralinguistic_events": []
+      }
+    },
+    {
+      "turn_id": 5,
+      "speaker": "counsellor",
+      "text": "Take your time and tell me what feels most important right now.",
+      "label": "normal",
+      "acoustic_spec": {
+        "rate": "normal",
+        "pause_before_ms": 800,
+        "pause_after_ms": 500,
+        "arousal": "medium",
+        "coarse_affect": "neutral",
+        "emotion": null,
+        "paralinguistic_events": []
+      }
+    },
+    {
+      "turn_id": 6,
+      "speaker": "caller",
+      "text": "I can stay on the line while we work through this together.",
+      "label": "confirm",
+      "acoustic_spec": {
+        "rate": "normal",
+        "pause_before_ms": 0,
+        "pause_after_ms": 200,
+        "arousal": "medium",
+        "coarse_affect": "neutral",
+        "emotion": null,
+        "paralinguistic_events": []
+      }
+    },
+    {
+      "turn_id": 7,
+      "speaker": "caller",
+      "text": "I can stay on the line while we work through this together.",
+      "label": "confirm",
+      "acoustic_spec": {
+        "rate": "normal",
+        "pause_before_ms": 0,
+        "pause_after_ms": 1000,
+        "arousal": "medium",
+        "coarse_affect": "neutral",
+        "emotion": null,
+        "paralinguistic_events": []
+      }
+    },
+    {
+      "turn_id": 8,
+      "speaker": "caller",
+      "text": "I am ready to explain what happened and what support I need.",
+      "label": "alert",
+      "acoustic_spec": {
+        "rate": "normal",
+        "pause_before_ms": 0,
+        "pause_after_ms": 500,
+        "arousal": "low",
+        "coarse_affect": "distressed",
+        "emotion": null,
+        "paralinguistic_events": []
+      }
+    },
+    {
+      "turn_id": 9,
+      "speaker": "caller",
+      "text": "I am ready to explain what happened and what support I need.",
+      "label": "alert",
+      "acoustic_spec": {
+        "rate": "normal",
+        "pause_before_ms": 0,
+        "pause_after_ms": 500,
+        "arousal": "high",
+        "coarse_affect": "distressed",
+        "emotion": null,
+        "paralinguistic_events": []
+      }
+    },
+    {
+      "turn_id": 10,
+      "speaker": "counsellor",
+      "text": "I understand your concern and will help you consider the next step.",
+      "label": "normal",
+      "acoustic_spec": {
+        "rate": "normal",
+        "pause_before_ms": 0,
+        "pause_after_ms": 500,
+        "arousal": "medium",
+        "coarse_affect": "neutral",
+        "emotion": null,
+        "paralinguistic_events": []
+      }
+    },
+    {
+      "turn_id": 11,
+      "speaker": "counsellor",
+      "text": "I understand your concern and will help you consider the next step.",
+      "label": "normal",
+      "acoustic_spec": {
+        "rate": "normal",
+        "pause_before_ms": 0,
+        "pause_after_ms": 500,
+        "arousal": "medium",
+        "coarse_affect": "distressed",
+        "emotion": null,
+        "paralinguistic_events": []
+      }
+    }
+  ]
+}
