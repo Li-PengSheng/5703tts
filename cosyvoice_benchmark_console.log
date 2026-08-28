@@ -1,0 +1,6 @@
+Run directory: /home/myu/code/5703tts/data/benchmark/runs/cosyvoice3_20260828T092834Z
+Successful turns: 11/11
+Total benchmark wall time: 62.387s
+Mean RTF: 0.618
+Median RTF: 0.607
+Results: /home/myu/code/5703tts/data/benchmark/runs/cosyvoice3_20260828T092834Z/benchmark_results.json
