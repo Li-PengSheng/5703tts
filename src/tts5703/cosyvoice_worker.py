@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any, TextIO
 
 PROTOCOL_STDOUT = sys.stdout
+END_OF_PROMPT = "<|endofprompt|>"
 
 
 def _respond(payload: dict[str, Any]) -> None:
@@ -37,6 +38,13 @@ def _required_string(message: dict[str, Any], name: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise ValueError(f"{name} must be a non-empty string")
     return value
+
+
+def _positive_number(message: dict[str, Any], name: str, default: float) -> float:
+    value = message.get(name, default)
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or value <= 0:
+        raise ValueError(f"{name} must be a positive number")
+    return float(value)
 
 
 def _initialise(init: dict[str, Any]):
@@ -71,9 +79,12 @@ def _initialise(init: dict[str, Any]):
 
 def _synthesise(model: Any, request: dict[str, Any]) -> dict[str, Any]:
     text = _required_string(request, "text")
-    prompt_text = _required_string(request, "prompt_text")
     prompt_wav = Path(_required_string(request, "prompt_wav")).resolve()
     output_path = Path(_required_string(request, "output_path")).resolve()
+    mode = request.get("mode", "zero_shot")
+    if mode not in {"zero_shot", "instruct2"}:
+        raise ValueError(f"unsupported CosyVoice mode: {mode!r}")
+    speed = _positive_number(request, "speed", 1.0)
 
     if not prompt_wav.is_file():
         raise FileNotFoundError(f"CosyVoice prompt audio not found: {prompt_wav}")
@@ -82,13 +93,33 @@ def _synthesise(model: Any, request: dict[str, Any]) -> dict[str, Any]:
     import torch
     import torchaudio
 
+    if mode == "zero_shot":
+        prompt_text = _required_string(request, "prompt_text")
+        results = model.inference_zero_shot(
+            text,
+            prompt_text,
+            str(prompt_wav),
+            stream=False,
+            speed=speed,
+        )
+    else:
+        instruction = _required_string(request, "instruction")
+        if instruction.count(END_OF_PROMPT) != 1 or not instruction.endswith(
+            END_OF_PROMPT
+        ):
+            raise ValueError(
+                "instruction must end with exactly one <|endofprompt|> marker"
+            )
+        results = model.inference_instruct2(
+            text,
+            instruction,
+            str(prompt_wav),
+            stream=False,
+            speed=speed,
+        )
+
     chunks = []
-    for result in model.inference_zero_shot(
-        text,
-        prompt_text,
-        str(prompt_wav),
-        stream=False,
-    ):
+    for result in results:
         speech = result.get("tts_speech")
         if speech is None:
             raise RuntimeError("CosyVoice result is missing tts_speech")
@@ -108,6 +139,8 @@ def _synthesise(model: Any, request: dict[str, Any]) -> dict[str, Any]:
         "output_path": str(output_path),
         "sample_rate": model.sample_rate,
         "samples": int(audio.shape[1]),
+        "mode": mode,
+        "speed": speed,
     }
 
 

@@ -52,6 +52,22 @@ _KOKORO_SEMANTIC_RATES = {
     "normal": 1.0,
     "fast": 1.2,
 }
+_COSYVOICE_SEMANTIC_RATES = {
+    "slow": 0.8,
+    "normal": 1.0,
+    "fast": 1.2,
+}
+_COSYVOICE_AROUSAL_INSTRUCTIONS = {
+    "low": "Use a calm, soft, subdued delivery.",
+    "medium": "Use a neutral, moderately expressive delivery.",
+    "high": "Use an energetic, intense delivery.",
+}
+_COSYVOICE_AFFECT_INSTRUCTIONS = {
+    "neutral": "Use a neutral, composed tone.",
+    "distressed": "Use a distressed, worried, and sad tone.",
+}
+_COSYVOICE_INSTRUCTION_PREFIX = "You are a helpful assistant."
+_COSYVOICE_END_OF_PROMPT = "<|endofprompt|>"
 
 
 def rate_to_edge_tts(rate: str) -> str:
@@ -69,6 +85,58 @@ def rate_to_kokoro_speed(rate: str) -> float:
 def _rate_to_kokoro_speed(rate: str) -> float:
     """Backward-compatible alias for the pre-v0.2 internal helper."""
     return rate_to_kokoro_speed(rate)
+
+
+def rate_to_cosyvoice_speed(rate: str) -> float:
+    """Map semantic or legacy percentage rates to CosyVoice's speed argument."""
+    if rate in _COSYVOICE_SEMANTIC_RATES:
+        return _COSYVOICE_SEMANTIC_RATES[rate]
+    return max(0.1, 1 + int(rate[:-1]) / 100)
+
+
+def build_cosyvoice_instruction(
+    arousal: str | None, coarse_affect: str | None
+) -> str | None:
+    """Build one provisional CosyVoice3 instruction from requested controls."""
+    controls: list[str] = []
+    if arousal is not None:
+        try:
+            controls.append(_COSYVOICE_AROUSAL_INSTRUCTIONS[arousal])
+        except KeyError as error:
+            raise ValueError(
+                f"Unsupported CosyVoice arousal control: {arousal!r}"
+            ) from error
+    if coarse_affect is not None:
+        try:
+            controls.append(_COSYVOICE_AFFECT_INSTRUCTIONS[coarse_affect])
+        except KeyError as error:
+            raise ValueError(
+                f"Unsupported CosyVoice coarse_affect control: {coarse_affect!r}"
+            ) from error
+    if not controls:
+        return None
+    return f"{_COSYVOICE_INSTRUCTION_PREFIX} {' '.join(controls)}{_COSYVOICE_END_OF_PROMPT}"
+
+
+def build_cosyvoice_request(
+    turn: NormalizedTurn,
+    prompt_text: str,
+    prompt_wav: Path,
+    output_path: Path,
+) -> dict[str, Any]:
+    """Translate corpus controls into the isolated CosyVoice worker protocol."""
+    instruction = build_cosyvoice_instruction(turn.arousal, turn.coarse_affect)
+    request: dict[str, Any] = {
+        "text": turn.text,
+        "prompt_text": prompt_text,
+        "prompt_wav": str(prompt_wav),
+        "output_path": str(output_path),
+        "speed": rate_to_cosyvoice_speed(turn.rate),
+        "mode": "instruct2" if instruction is not None else "zero_shot",
+    }
+    if instruction is not None:
+        request["instruction"] = instruction
+    return request
 
 
 @lru_cache(maxsize=4)
@@ -320,14 +388,22 @@ async def synthesize_turn(
                 "CosyVoice cannot start because required paths are missing: "
                 + "; ".join(missing_paths)
             )
+        request = build_cosyvoice_request(
+            turn,
+            voice["prompt_text"],
+            prompt_wav,
+            output_path,
+        )
         logger.debug(
-            "event=turn_tts_start engine=cosyvoice turn=%d speaker=%s prompt_wav=%s",
+            "event=turn_tts_start engine=cosyvoice turn=%d speaker=%s "
+            "requested_rate=%s speed=%.3f mode=%s has_instruction=%s",
             turn.turn_id,
             turn.speaker,
-            prompt_wav,
+            turn.rate,
+            request["speed"],
+            request["mode"],
+            "instruction" in request,
         )
-        # Note: unlike edge_tts/kokoro, CosyVoice's zero-shot inference has no
-        # speed/rate knob, so turn.rate is not applied for this engine.
         worker = _get_cosyvoice_worker(
             str(python_bin),
             str(repo_dir),
@@ -336,15 +412,7 @@ async def synthesize_turn(
             cosy_cfg.get("load_vllm", False),
             cosy_cfg.get("fp16", True),
         )
-        response = _cosyvoice_request(
-            worker,
-            {
-                "text": turn.text,
-                "prompt_text": voice["prompt_text"],
-                "prompt_wav": str(prompt_wav),
-                "output_path": str(output_path),
-            },
-        )
+        response = _cosyvoice_request(worker, request)
         if response.get("status") != "ok":
             raise RuntimeError(
                 f"CosyVoice failed for turn {turn.turn_id}: {response.get('message')}"
@@ -413,7 +481,9 @@ def describe_engine(config: dict[str, Any]) -> dict[str, Any]:
         return {
             "engine": "cosyvoice",
             "model": "Fun-CosyVoice3-0.5B",
-            "mode": "zero_shot",
+            "mode": "per_turn",
+            "available_modes": ["zero_shot", "instruct2"],
+            "control_mapping": "provisional",
             "model_dir": cosy_cfg.get("model_dir", "models/Fun-CosyVoice3-0.5B"),
             "voices": {
                 speaker: voice["prompt_wav"]
