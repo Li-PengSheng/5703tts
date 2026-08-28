@@ -1,6 +1,7 @@
 # Generated output: not version-controlled and recreated on every run
 data/output/*
 !data/output/.gitkeep
+/data/benchmark/runs/
 logs/*.log
 
 # Windows download metadata (can appear as real sidecar files outside NTFS)
