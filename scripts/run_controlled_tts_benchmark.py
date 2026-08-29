@@ -1,4 +1,4 @@
-"""Run the controlled CosyVoice3 benchmark through the production TTS path."""
+"""Run the controlled TTS benchmark through a supported production engine."""
 
 from __future__ import annotations
 
@@ -23,6 +23,7 @@ from tts5703.tts_engine import (
     build_cosyvoice_request,
     describe_engine,
     get_engine,
+    rate_to_kokoro_speed,
     synthesize_turn,
 )
 from tts5703.validate import NormalizedTurn, load_and_validate
@@ -33,10 +34,54 @@ DEFAULT_FIXTURE = PROJECT_ROOT / "data" / "benchmark" / "benchmark_fixture_v0.1.
 DEFAULT_MANIFEST = PROJECT_ROOT / "data" / "benchmark" / "benchmark_manifest_v0.1.json"
 DEFAULT_OUTPUT_ROOT = PROJECT_ROOT / "data" / "benchmark" / "runs"
 RESULTS_FILENAME = "benchmark_results.json"
+SUPPORTED_BENCHMARK_ENGINES = {"cosyvoice", "kokoro"}
+RUN_ID_PREFIXES = {"cosyvoice": "cosyvoice3", "kokoro": "kokoro"}
+ENGINE_CAPABILITIES = {
+    "cosyvoice": {
+        "rate": {"support": "model_control"},
+        "pause_before_ms": {"support": "pipeline_timing"},
+        "pause_after_ms": {"support": "pipeline_timing"},
+        "arousal": {"support": "provisional_model_control"},
+        "coarse_affect": {"support": "provisional_model_control"},
+        "emotion": {"support": "unsupported"},
+        "paralinguistic_events": {"support": "unsupported"},
+    },
+    "kokoro": {
+        "rate": {"support": "model_control"},
+        "pause_before_ms": {"support": "pipeline_timing"},
+        "pause_after_ms": {"support": "pipeline_timing"},
+        "arousal": {"support": "unsupported"},
+        "coarse_affect": {"support": "unsupported"},
+        "emotion": {"support": "unsupported"},
+        "paralinguistic_events": {"support": "unsupported"},
+    },
+}
 
 
 class BenchmarkDesignError(ValueError):
     """Raised before synthesis when fixture and manifest controls disagree."""
+
+
+def benchmark_engine(config: dict[str, Any]) -> str:
+    """Return an explicitly supported controlled-benchmark engine."""
+    engine = get_engine(config)
+    if engine not in SUPPORTED_BENCHMARK_ENGINES:
+        raise BenchmarkDesignError(
+            f"Unsupported controlled benchmark engine: {engine!r}; supported engines: "
+            f"{sorted(SUPPORTED_BENCHMARK_ENGINES)}"
+        )
+    return engine
+
+
+def engine_capabilities(engine: str) -> dict[str, dict[str, str]]:
+    """Return an isolated copy of the declared backend capability map."""
+    try:
+        capabilities = ENGINE_CAPABILITIES[engine]
+    except KeyError as error:
+        raise BenchmarkDesignError(
+            f"No controlled benchmark capabilities declared for engine {engine!r}"
+        ) from error
+    return {name: dict(description) for name, description in capabilities.items()}
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -213,6 +258,33 @@ def effective_cosyvoice_controls(
     }
 
 
+def effective_controls_for_turn(
+    engine: str,
+    turn: NormalizedTurn,
+    config: dict[str, Any],
+    output_path: Path,
+) -> dict[str, Any]:
+    """Trace the exact backend-boundary controls used by production synthesis."""
+    if engine == "cosyvoice":
+        return effective_cosyvoice_controls(turn, config, output_path)
+    if engine == "kokoro":
+        kokoro = config["tts"]["kokoro"]
+        ignored_requested_controls = []
+        for field in ("arousal", "coarse_affect", "emotion"):
+            if getattr(turn, field) is not None:
+                ignored_requested_controls.append(field)
+        if turn.paralinguistic_events:
+            ignored_requested_controls.append("paralinguistic_events")
+        return {
+            "speed": rate_to_kokoro_speed(turn.rate),
+            "voice": kokoro["voice_map"][turn.speaker],
+            "ignored_requested_controls": ignored_requested_controls,
+        }
+    raise BenchmarkDesignError(
+        f"No effective-control trace is available for engine {engine!r}"
+    )
+
+
 def _git_commit() -> str | None:
     try:
         result = subprocess.run(
@@ -229,17 +301,55 @@ def _git_commit() -> str | None:
 
 
 def environment_snapshot(config: dict[str, Any]) -> dict[str, Any]:
-    cosyvoice = config["tts"]["cosyvoice"]
+    engine = benchmark_engine(config)
     engine_info = describe_engine(config)
-    return {
+    snapshot = {
         "platform": platform.platform(),
         "python_version": platform.python_version(),
         "git_commit": _git_commit(),
         "model": engine_info["model"],
-        "model_dir": cosyvoice.get("model_dir", "models/Fun-CosyVoice3-0.5B"),
-        "fp16": cosyvoice.get("fp16", True),
-        "load_trt": cosyvoice.get("load_trt", False),
-        "load_vllm": cosyvoice.get("load_vllm", False),
+    }
+    if engine == "cosyvoice":
+        cosyvoice = config["tts"]["cosyvoice"]
+        snapshot.update(
+            {
+                "model_dir": cosyvoice.get("model_dir", "models/Fun-CosyVoice3-0.5B"),
+                "fp16": cosyvoice.get("fp16", True),
+                "load_trt": cosyvoice.get("load_trt", False),
+                "load_vllm": cosyvoice.get("load_vllm", False),
+            }
+        )
+    else:
+        kokoro = config["tts"]["kokoro"]
+        snapshot.update(
+            {
+                "lang_code": kokoro["lang_code"],
+                "sample_rate": kokoro["sample_rate"],
+                "device": kokoro.get("device"),
+                "voice_map": dict(kokoro["voice_map"]),
+            }
+        )
+    return snapshot
+
+
+def control_scope(capabilities: dict[str, dict[str, str]]) -> dict[str, list[str]]:
+    """Summarise declared capabilities while retaining the existing result field."""
+    return {
+        "model_controls": [
+            field
+            for field, value in capabilities.items()
+            if value["support"] in {"model_control", "provisional_model_control"}
+        ],
+        "pipeline_timing_controls": [
+            field
+            for field, value in capabilities.items()
+            if value["support"] == "pipeline_timing"
+        ],
+        "unsupported_controls": [
+            field
+            for field, value in capabilities.items()
+            if value["support"] == "unsupported"
+        ],
     }
 
 
@@ -285,7 +395,9 @@ def _failure(stage: str, error: Exception, turn_id: int | None = None) -> dict:
 
 
 def build_group_summaries(
-    manifest: dict[str, Any], turn_results: list[dict[str, Any]]
+    manifest: dict[str, Any],
+    turn_results: list[dict[str, Any]],
+    capabilities: dict[str, dict[str, str]],
 ) -> dict[str, Any]:
     """Build descriptive diagnostics without assigning acoustic fidelity scores."""
     results_by_id = {result["turn_id"]: result for result in turn_results}
@@ -301,16 +413,35 @@ def build_group_summaries(
                     "turn_id": turn_id,
                     "condition": result["target_condition"],
                     "generation_success": True,
+                    "target_control_support": result["target_control_support"],
                     "audio_duration_sec": result["audio_duration_sec"],
                     "real_time_factor": result["real_time_factor"],
                     "effective_controls": result["effective_controls"],
                 }
             )
+        target = group["target_variable"]
+        try:
+            support_type = capabilities[target]["support"]
+        except KeyError as error:
+            raise BenchmarkDesignError(
+                f"No capability is declared for target variable {target!r}"
+            ) from error
+        control_supported = support_type != "unsupported"
         summary: dict[str, Any] = {
-            "target_variable": group["target_variable"],
+            "target_variable": target,
+            "control_supported": control_supported,
+            "support_type": support_type,
             "observations": observations,
         }
-        if group["target_variable"] == "rate":
+        if not control_supported:
+            summary["requested_target_control_ignored"] = True
+            summary["controllability_conclusion"] = None
+            summary["interpretation"] = (
+                "Audio was generated, but the selected backend does not consume this "
+                "requested acoustic control; this group is not evidence of "
+                "controllability."
+            )
+        if target == "rate":
             durations = {
                 observation["condition"]: observation["audio_duration_sec"]
                 for observation in observations
@@ -365,6 +496,8 @@ def build_pause_diagnostic(
 
 async def _execute_benchmark(
     *,
+    engine: str,
+    capabilities: dict[str, dict[str, str]],
     turns: list[NormalizedTurn],
     manifest: dict[str, Any],
     lookup: dict[int, dict[str, Any]],
@@ -424,19 +557,21 @@ async def _execute_benchmark(
             results["completed_at_utc"] = utc_now().isoformat()
             results["total_benchmark_wall_sec"] = round(clock() - total_started, 6)
             results["group_summaries"] = build_group_summaries(
-                manifest, results["turn_results"]
+                manifest, results["turn_results"], capabilities
             )
             _write_results(results, results_path)
             return
 
         design = lookup[turn.turn_id]
-        controls = effective_cosyvoice_controls(turn, config, output_hint)
+        controls = effective_controls_for_turn(engine, turn, config, output_hint)
+        target_control_support = capabilities[design["target_variable"]]["support"]
         results["turn_results"].append(
             {
                 "turn_id": turn.turn_id,
                 "group_id": design["group_id"],
                 "target_variable": design["target_variable"],
                 "target_condition": design["target_condition"],
+                "target_control_support": target_control_support,
                 "speaker": turn.speaker,
                 "text": turn.text,
                 "label": turn.label,
@@ -475,13 +610,13 @@ async def _execute_benchmark(
         results["completed_at_utc"] = utc_now().isoformat()
         results["total_benchmark_wall_sec"] = round(clock() - total_started, 6)
         results["group_summaries"] = build_group_summaries(
-            manifest, results["turn_results"]
+            manifest, results["turn_results"], capabilities
         )
         _write_results(results, results_path)
         return
 
     results["group_summaries"] = build_group_summaries(
-        manifest, results["turn_results"]
+        manifest, results["turn_results"], capabilities
     )
     results["status"] = "complete"
     results["completed_at_utc"] = utc_now().isoformat()
@@ -502,14 +637,25 @@ def run_benchmark(
 ) -> tuple[dict[str, Any], Path]:
     """Validate, render sequentially, assemble, and persist one benchmark run."""
     config = load_config(config_path)
-    if get_engine(config) != "cosyvoice":
-        raise BenchmarkDesignError(
-            "Controlled benchmark currently requires tts.engine=cosyvoice"
-        )
+    engine = benchmark_engine(config)
+    capabilities = engine_capabilities(engine)
+    engine_info = describe_engine(config)
     fixture = _load_json(fixture_path)
     manifest = _load_json(manifest_path)
     dialogue = load_and_validate(fixture_path, config)
     lookup = build_manifest_lookup(fixture, manifest)
+    unknown_targets = sorted(
+        {
+            design["target_variable"]
+            for design in lookup.values()
+            if design["target_variable"] not in capabilities
+        }
+    )
+    if unknown_targets:
+        raise BenchmarkDesignError(
+            f"No {engine} capability is declared for target variables: "
+            f"{unknown_targets}"
+        )
     if warmup_enabled:
         warmup_turn_id = _warmup_turn_id(manifest)
         if warmup_turn_id not in lookup:
@@ -518,12 +664,14 @@ def run_benchmark(
             )
 
     started_at = utc_now()
-    resolved_run_id = run_id or f"cosyvoice3_{started_at:%Y%m%dT%H%M%SZ}"
+    resolved_run_id = run_id or (
+        f"{RUN_ID_PREFIXES[engine]}_{started_at:%Y%m%dT%H%M%SZ}"
+    )
     run_dir = _new_run_directory(output_root, resolved_run_id)
     results = {
         "benchmark_version": manifest.get("benchmark_version"),
-        "engine": "cosyvoice",
-        "model": describe_engine(config)["model"],
+        "engine": engine,
+        "model": engine_info["model"],
         "fixture": fixture_path.name,
         "manifest": manifest_path.name,
         "started_at_utc": started_at.isoformat(),
@@ -533,10 +681,8 @@ def run_benchmark(
             "generation_elapsed_sec is end-to-end per-turn wall-clock time around "
             "synthesize_turn and may include IPC, frontend work, inference, and file writing"
         ),
-        "control_scope": {
-            "model_controls": ["rate", "arousal", "coarse_affect"],
-            "pipeline_timing_controls": ["pause_before_ms", "pause_after_ms"],
-        },
+        "control_capabilities": capabilities,
+        "control_scope": control_scope(capabilities),
         "warmup": {
             "enabled": warmup_enabled,
             "turn_id": None,
@@ -551,6 +697,8 @@ def run_benchmark(
     _write_results(results, run_dir / RESULTS_FILENAME)
     asyncio.run(
         _execute_benchmark(
+            engine=engine,
+            capabilities=capabilities,
             turns=dialogue.turns,
             manifest=manifest,
             lookup=lookup,
@@ -567,7 +715,7 @@ def run_benchmark(
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Render the controlled TTS benchmark through CosyVoice3"
+        description="Render the controlled TTS benchmark through CosyVoice or Kokoro"
     )
     parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
     parser.add_argument("--fixture", type=Path, default=DEFAULT_FIXTURE)

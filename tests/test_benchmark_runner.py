@@ -27,6 +27,7 @@ RUNNER_SPEC.loader.exec_module(benchmark)
 FIXTURE_PATH = ROOT / "data" / "benchmark" / "benchmark_fixture_v0.1.json"
 MANIFEST_PATH = ROOT / "data" / "benchmark" / "benchmark_manifest_v0.1.json"
 CONFIG_PATH = ROOT / "config" / "config.yaml"
+KOKORO_CONFIG_PATH = ROOT / "config" / "config.kokoro.yaml"
 
 
 def _load(path: Path) -> dict[str, Any]:
@@ -102,6 +103,8 @@ def _run_fake_benchmark(
     fail_turn_id: int | None = None,
     zero_duration_turn_id: int | None = None,
     unexpected_rate_direction: bool = False,
+    config_path: Path = CONFIG_PATH,
+    run_id: str | None = "cosyvoice3_test",
 ) -> tuple[dict[str, Any], Path, list[int]]:
     calls: list[int] = []
     _install_fake_synthesizer(
@@ -112,16 +115,65 @@ def _run_fake_benchmark(
         unexpected_rate_direction=unexpected_rate_direction,
     )
     results, run_dir = benchmark.run_benchmark(
-        config_path=CONFIG_PATH,
+        config_path=config_path,
         fixture_path=FIXTURE_PATH,
         manifest_path=MANIFEST_PATH,
         output_root=tmp_path / "runs",
         warmup_enabled=warmup_enabled,
-        run_id="cosyvoice3_test",
+        run_id=run_id,
         clock=StepClock(),
         utc_now=_fixed_utc_now,
     )
     return results, run_dir, calls
+
+
+def test_cosyvoice_and_kokoro_are_supported_benchmark_engines() -> None:
+    assert benchmark.benchmark_engine(load_config(CONFIG_PATH)) == "cosyvoice"
+    assert benchmark.benchmark_engine(load_config(KOKORO_CONFIG_PATH)) == "kokoro"
+
+
+def test_other_production_engine_is_rejected_for_controlled_benchmark() -> None:
+    with pytest.raises(
+        benchmark.BenchmarkDesignError,
+        match="Unsupported controlled benchmark engine: 'edge_tts'",
+    ):
+        benchmark.benchmark_engine({"tts": {"engine": "edge_tts"}})
+
+
+def test_unsupported_engine_is_rejected_before_synthesis(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls: list[int] = []
+    _install_fake_synthesizer(monkeypatch, calls)
+    monkeypatch.setattr(
+        benchmark, "load_config", lambda _path: {"tts": {"engine": "edge_tts"}}
+    )
+
+    with pytest.raises(
+        benchmark.BenchmarkDesignError,
+        match="Unsupported controlled benchmark engine: 'edge_tts'",
+    ):
+        benchmark.run_benchmark(
+            config_path=tmp_path / "unused.yaml",
+            output_root=tmp_path / "runs",
+        )
+
+    assert calls == []
+    assert not (tmp_path / "runs").exists()
+
+
+def test_engine_capabilities_distinguish_model_pipeline_and_unsupported() -> None:
+    cosyvoice = benchmark.engine_capabilities("cosyvoice")
+    kokoro = benchmark.engine_capabilities("kokoro")
+
+    assert cosyvoice["rate"]["support"] == "model_control"
+    assert cosyvoice["arousal"]["support"] == "provisional_model_control"
+    assert cosyvoice["coarse_affect"]["support"] == ("provisional_model_control")
+    assert kokoro["rate"]["support"] == "model_control"
+    assert kokoro["pause_before_ms"]["support"] == "pipeline_timing"
+    assert kokoro["pause_after_ms"]["support"] == "pipeline_timing"
+    assert kokoro["arousal"]["support"] == "unsupported"
+    assert kokoro["coarse_affect"]["support"] == "unsupported"
 
 
 def test_manifest_lookup_maps_every_fixture_turn_exactly_once() -> None:
@@ -310,6 +362,50 @@ def test_effective_trace_uses_existing_cosyvoice_mapping() -> None:
     assert "distressed, worried, and sad" in controls["instruction"]
 
 
+@pytest.mark.parametrize(
+    ("turn_id", "expected_speed"),
+    [(1, 0.8), (2, 1.0), (3, 1.2)],
+)
+def test_kokoro_effective_trace_reuses_production_rate_mapping(
+    turn_id: int, expected_speed: float
+) -> None:
+    config = load_config(KOKORO_CONFIG_PATH)
+    dialogue = load_and_validate(FIXTURE_PATH, config)
+    turn = next(turn for turn in dialogue.turns if turn.turn_id == turn_id)
+
+    controls = benchmark.effective_controls_for_turn(
+        "kokoro", turn, config, Path(f"turn_{turn_id:03d}.wav")
+    )
+
+    assert controls["speed"] == expected_speed
+    assert controls["voice"] == "am_adam"
+
+
+def test_kokoro_trace_records_configured_voice_and_ignored_requested_controls() -> None:
+    config = load_config(KOKORO_CONFIG_PATH)
+    dialogue = load_and_validate(FIXTURE_PATH, config)
+    high_arousal_turn = next(turn for turn in dialogue.turns if turn.turn_id == 9)
+    counsellor_turn = next(turn for turn in dialogue.turns if turn.turn_id == 10)
+
+    high_controls = benchmark.effective_controls_for_turn(
+        "kokoro", high_arousal_turn, config, Path("turn_009.wav")
+    )
+    counsellor_controls = benchmark.effective_controls_for_turn(
+        "kokoro", counsellor_turn, config, Path("turn_010.wav")
+    )
+
+    assert high_controls == {
+        "speed": 1.0,
+        "voice": "am_adam",
+        "ignored_requested_controls": ["arousal", "coarse_affect"],
+    }
+    assert counsellor_controls["voice"] == "af_heart"
+    assert counsellor_controls["ignored_requested_controls"] == [
+        "arousal",
+        "coarse_affect",
+    ]
+
+
 def test_rtf_calculation() -> None:
     assert benchmark.calculate_rtf(2.0, 4.0) == pytest.approx(0.5)
     with pytest.raises(ValueError, match="greater than zero"):
@@ -335,10 +431,14 @@ def test_successful_fake_run_records_trace_timing_outputs_and_pause_diagnostic(
     assert first["output_path"] == "turns/turn_001.wav"
     assert first["requested_acoustic_spec"]["rate"] == "slow"
     assert first["requested_acoustic_spec"]["pause_after_ms"] == 500
+    assert first["target_control_support"] == "model_control"
     assert first["effective_controls"]["speed"] == 0.8
     assert first["effective_controls"]["mode"] == "instruct2"
     assert first["effective_controls"]["instruction"] is not None
     assert first["worker_elapsed_sec"] is None
+    assert results["turn_results"][8]["target_control_support"] == (
+        "provisional_model_control"
+    )
     assert (run_dir / first["output_path"]).is_file()
     assert (run_dir / "warmup" / "turn_002.wav").is_file()
     assert (run_dir / "benchmark_clean.wav").is_file()
@@ -350,7 +450,11 @@ def test_successful_fake_run_records_trace_timing_outputs_and_pause_diagnostic(
     assert results["control_scope"] == {
         "model_controls": ["rate", "arousal", "coarse_affect"],
         "pipeline_timing_controls": ["pause_before_ms", "pause_after_ms"],
+        "unsupported_controls": ["emotion", "paralinguistic_events"],
     }
+    assert results["control_capabilities"]["arousal"]["support"] == (
+        "provisional_model_control"
+    )
     assert results["group_summaries"]["rate"]["rate_direction_check"] == {
         "expected": "slow duration > normal duration > fast duration",
         "matches_expected_direction": True,
@@ -358,6 +462,100 @@ def test_successful_fake_run_records_trace_timing_outputs_and_pause_diagnostic(
     }
     assert "fidelity_score" not in results["group_summaries"]["arousal"]
     assert "fidelity_score" not in results["group_summaries"]["coarse_affect"]
+
+
+def test_successful_kokoro_fake_run_records_capabilities_and_unsupported_groups(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    results, run_dir, calls = _run_fake_benchmark(
+        tmp_path,
+        monkeypatch,
+        config_path=KOKORO_CONFIG_PATH,
+        run_id=None,
+    )
+
+    assert results["status"] == "complete"
+    assert calls == [2, *range(1, 12)]
+    assert run_dir.name == "kokoro_20260828T120000Z"
+    assert results["engine"] == "kokoro"
+    assert results["model"] == "Kokoro-82M"
+    assert results["environment"] == {
+        **{
+            key: results["environment"][key]
+            for key in ("platform", "python_version", "git_commit")
+        },
+        "model": "Kokoro-82M",
+        "lang_code": "a",
+        "sample_rate": 24_000,
+        "device": None,
+        "voice_map": {"counsellor": "af_heart", "caller": "am_adam"},
+    }
+    assert results["control_scope"] == {
+        "model_controls": ["rate"],
+        "pipeline_timing_controls": ["pause_before_ms", "pause_after_ms"],
+        "unsupported_controls": [
+            "arousal",
+            "coarse_affect",
+            "emotion",
+            "paralinguistic_events",
+        ],
+    }
+
+    turns_by_id = {turn["turn_id"]: turn for turn in results["turn_results"]}
+    assert turns_by_id[1]["target_control_support"] == "model_control"
+    assert turns_by_id[4]["target_control_support"] == "pipeline_timing"
+    assert turns_by_id[6]["target_control_support"] == "pipeline_timing"
+    assert turns_by_id[8]["target_control_support"] == "unsupported"
+    assert turns_by_id[10]["target_control_support"] == "unsupported"
+    assert turns_by_id[1]["effective_controls"] == {
+        "speed": 0.8,
+        "voice": "am_adam",
+        "ignored_requested_controls": ["arousal", "coarse_affect"],
+    }
+
+    arousal = results["group_summaries"]["arousal"]
+    affect = results["group_summaries"]["coarse_affect"]
+    assert results["group_summaries"]["pause_before"]["support_type"] == (
+        "pipeline_timing"
+    )
+    assert results["group_summaries"]["pause_after"]["control_supported"] is True
+    for summary in (arousal, affect):
+        assert summary["control_supported"] is False
+        assert summary["support_type"] == "unsupported"
+        assert summary["requested_target_control_ignored"] is True
+        assert summary["controllability_conclusion"] is None
+        assert "not evidence of controllability" in summary["interpretation"]
+        assert all(
+            observation["generation_success"] is True
+            for observation in summary["observations"]
+        )
+        assert "control_success" not in summary
+    assert (
+        results["group_summaries"]["rate"]["rate_direction_check"][
+            "matches_expected_direction"
+        ]
+        is True
+    )
+    assert results["assembly"]["pause_diagnostic"]["passed"] is True
+
+
+def test_kokoro_no_warmup_skips_baseline_synthesis(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    results, _, calls = _run_fake_benchmark(
+        tmp_path,
+        monkeypatch,
+        config_path=KOKORO_CONFIG_PATH,
+        warmup_enabled=False,
+        run_id="kokoro_no_warmup",
+    )
+
+    assert calls == list(range(1, 12))
+    assert results["warmup"] == {
+        "enabled": False,
+        "turn_id": None,
+        "elapsed_sec": None,
+    }
 
 
 def test_no_warmup_skips_extra_synthesis(tmp_path: Path, monkeypatch) -> None:
@@ -494,7 +692,10 @@ def test_default_run_directory_is_gitignored() -> None:
     assert result.returncode == 0
 
 
-def test_runner_import_does_not_load_cosyvoice_model_package() -> None:
+def test_runner_import_does_not_load_model_packages() -> None:
     assert not any(
         name == "cosyvoice" or name.startswith("cosyvoice.") for name in sys.modules
+    )
+    assert not any(
+        name == "kokoro" or name.startswith("kokoro.") for name in sys.modules
     )

@@ -1,0 +1,27 @@
+# Controlled-benchmark configuration for the existing local Kokoro baseline.
+# The default config.yaml remains configured for CosyVoice3.
+tts:
+  engine: kokoro
+  default_rate: "+0%"
+  kokoro:
+    lang_code: a
+    sample_rate: 24000
+    # null uses Kokoro's default device selection.
+    device: null
+    voice_map:
+      counsellor: af_heart
+      caller: am_adam
+
+pause:
+  default_ms: 500
+
+fade_ms: 5
+
+# Required by the shared configuration validator; telephone processing is not
+# applied by the controlled benchmark runner.
+telephone:
+  sample_rate: 8000
+  channels: 1
+  high_pass_hz: 300
+  low_pass_hz: 3400
+  volume_db_reduction: 3
