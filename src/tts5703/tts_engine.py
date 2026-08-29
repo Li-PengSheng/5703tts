@@ -94,25 +94,72 @@ def rate_to_cosyvoice_speed(rate: str) -> float:
     return max(0.1, 1 + int(rate[:-1]) / 100)
 
 
+class BackendControlError(ValueError):
+    """Raised when a schema-valid control has no mapping in the selected backend.
+
+    Canonical schema v0.2 keeps ``coarse_affect`` an open string so corpus design
+    is not constrained by one backend's vocabulary. This error is the
+    backend-specific counterpart: schema-valid intent the selected engine cannot
+    currently translate.
+    """
+
+
+def _check_cosyvoice_mapping(
+    field: str, value: str | None, mapping: dict[str, str]
+) -> None:
+    if value is None or value in mapping:
+        return
+    raise BackendControlError(
+        f"Unsupported CosyVoice {field} mapping: {value!r}. "
+        f"Currently supported mappings: {', '.join(mapping)}."
+    )
+
+
+def preflight_cosyvoice_controls(turn: NormalizedTurn) -> None:
+    """Reject requested controls CosyVoice cannot map, before synthesis starts."""
+    _check_cosyvoice_mapping("arousal", turn.arousal, _COSYVOICE_AROUSAL_INSTRUCTIONS)
+    _check_cosyvoice_mapping(
+        "coarse_affect", turn.coarse_affect, _COSYVOICE_AFFECT_INSTRUCTIONS
+    )
+
+
+def preflight_backend_controls(turn: NormalizedTurn, config: dict[str, Any]) -> None:
+    """Validate one turn against the selected backend's control mappings.
+
+    Backends that ignore a control (see ``engine_capabilities``) must not reject
+    it here; the requested value is preserved and reported as ignored instead.
+    """
+    if get_engine(config) == "cosyvoice":
+        preflight_cosyvoice_controls(turn)
+
+
+def preflight_dialogue_controls(
+    turns: list[NormalizedTurn], config: dict[str, Any]
+) -> None:
+    """Fail a whole dialogue before spending any synthesis time on it."""
+    for turn in turns:
+        try:
+            preflight_backend_controls(turn, config)
+        except BackendControlError as error:
+            raise BackendControlError(f"turn {turn.turn_id}: {error}") from error
+
+
 def build_cosyvoice_instruction(
     arousal: str | None, coarse_affect: str | None
 ) -> str | None:
     """Build one provisional CosyVoice3 instruction from requested controls."""
-    controls: list[str] = []
-    if arousal is not None:
-        try:
-            controls.append(_COSYVOICE_AROUSAL_INSTRUCTIONS[arousal])
-        except KeyError as error:
-            raise ValueError(
-                f"Unsupported CosyVoice arousal control: {arousal!r}"
-            ) from error
-    if coarse_affect is not None:
-        try:
-            controls.append(_COSYVOICE_AFFECT_INSTRUCTIONS[coarse_affect])
-        except KeyError as error:
-            raise ValueError(
-                f"Unsupported CosyVoice coarse_affect control: {coarse_affect!r}"
-            ) from error
+    _check_cosyvoice_mapping("arousal", arousal, _COSYVOICE_AROUSAL_INSTRUCTIONS)
+    _check_cosyvoice_mapping(
+        "coarse_affect", coarse_affect, _COSYVOICE_AFFECT_INSTRUCTIONS
+    )
+    controls = [
+        instruction
+        for instruction in (
+            _COSYVOICE_AROUSAL_INSTRUCTIONS.get(arousal),
+            _COSYVOICE_AFFECT_INSTRUCTIONS.get(coarse_affect),
+        )
+        if instruction is not None
+    ]
     if not controls:
         return None
     return f"{_COSYVOICE_INSTRUCTION_PREFIX} {' '.join(controls)}{_COSYVOICE_END_OF_PROMPT}"
@@ -148,6 +195,12 @@ def _get_kokoro_pipeline(lang_code: str, device: str | None):
 
 
 _COSYVOICE_WORKER_SCRIPT = Path(__file__).resolve().parent / "cosyvoice_worker.py"
+_COSYVOICE_TERMINATE_TIMEOUT_SEC = 5
+# Official output rate of Fun-CosyVoice3-0.5B. This is the expected rate, not an
+# observed one: the worker reports its own rate at startup, but that value is not
+# threaded back through synthesize_turn.
+_COSYVOICE3_EXPECTED_SAMPLE_RATE = 24_000
+_SAMPLE_RATE_NOT_RUNTIME_VERIFIED = "not_runtime_verified"
 
 
 def _drain_cosyvoice_stderr(proc: subprocess.Popen[str]) -> deque[str]:
@@ -255,6 +308,43 @@ def _shutdown_cosyvoice_worker(proc: subprocess.Popen[str]) -> None:
             pass
 
 
+def _terminate_cosyvoice_worker(proc: subprocess.Popen[str]) -> None:
+    """Terminate and reap a worker whose protocol stream is no longer usable.
+
+    Without this, a worker that stopped answering but is still alive keeps its
+    GPU memory for the rest of the batch, because the cached handle is dropped
+    and nothing else ever waits on the process.
+    """
+    if proc.poll() is not None:
+        return
+    try:
+        if proc.stdin:
+            proc.stdin.close()
+    except OSError:
+        pass
+    try:
+        proc.terminate()
+        proc.wait(timeout=_COSYVOICE_TERMINATE_TIMEOUT_SEC)
+    except subprocess.TimeoutExpired:
+        try:
+            proc.kill()
+        except OSError:
+            # The worker exited between the timeout and the kill; it still needs
+            # reaping below, so this race is not a cleanup failure.
+            logger.debug(
+                "event=cosyvoice_worker_already_gone pid=%s",
+                getattr(proc, "pid", None),
+            )
+        try:
+            proc.wait(timeout=_COSYVOICE_TERMINATE_TIMEOUT_SEC)
+        except subprocess.TimeoutExpired:
+            logger.warning(
+                "event=cosyvoice_worker_unreaped pid=%s", getattr(proc, "pid", None)
+            )
+    except OSError:
+        pass
+
+
 def _cosyvoice_request(
     proc: subprocess.Popen[str], request: dict[str, Any]
 ) -> dict[str, Any]:
@@ -274,6 +364,9 @@ def _cosyvoice_request(
         message = _cosyvoice_worker_error(
             proc, stderr_tail, f"worker exited with code {proc.poll()}"
         )
+        # Reap before dropping the cached handle so the next call starts a fresh
+        # worker instead of competing with a hung one for GPU memory.
+        _terminate_cosyvoice_worker(proc)
         _get_cosyvoice_worker.cache_clear()
         raise RuntimeError(f"CosyVoice worker closed its output: {message}")
     try:
@@ -358,6 +451,7 @@ async def synthesize_turn(
         return output_path
 
     if engine == "cosyvoice":
+        preflight_cosyvoice_controls(turn)
         cosy_cfg = config["tts"]["cosyvoice"]
         voice = cosy_cfg["voice_map"][turn.speaker]
         root = _project_root()
@@ -478,6 +572,7 @@ def describe_engine(config: dict[str, Any]) -> dict[str, Any]:
         }
     if engine == "cosyvoice":
         cosy_cfg = config["tts"]["cosyvoice"]
+        configured_sample_rate = cosy_cfg.get("sample_rate")
         return {
             "engine": "cosyvoice",
             "model": "Fun-CosyVoice3-0.5B",
@@ -485,8 +580,33 @@ def describe_engine(config: dict[str, Any]) -> dict[str, Any]:
             "available_modes": ["zero_shot", "instruct2"],
             "control_mapping": "provisional",
             "model_dir": cosy_cfg.get("model_dir", "models/Fun-CosyVoice3-0.5B"),
+            "repo_dir": cosy_cfg.get("repo_dir", "third_party/CosyVoice"),
+            "fp16": cosy_cfg.get("fp16", True),
+            "load_trt": cosy_cfg.get("load_trt", False),
+            "load_vllm": cosy_cfg.get("load_vllm", False),
+            # The worker reports its own sample rate over the protocol, but
+            # synthesize_turn returns only a path, so the runtime value cannot be
+            # recorded without changing that API. Until then the expected rate is
+            # a declaration, never an observation of the written audio.
+            "expected_sample_rate": (
+                configured_sample_rate
+                if configured_sample_rate is not None
+                else _COSYVOICE3_EXPECTED_SAMPLE_RATE
+            ),
+            "expected_sample_rate_source": (
+                "config" if configured_sample_rate is not None else "model_default"
+            ),
+            "runtime_sample_rate": None,
+            "sample_rate_verification": _SAMPLE_RATE_NOT_RUNTIME_VERIFIED,
             "voices": {
                 speaker: voice["prompt_wav"]
+                for speaker, voice in cosy_cfg["voice_map"].items()
+            },
+            "prompts": {
+                speaker: {
+                    "prompt_wav": voice["prompt_wav"],
+                    "prompt_text": voice["prompt_text"],
+                }
                 for speaker, voice in cosy_cfg["voice_map"].items()
             },
         }

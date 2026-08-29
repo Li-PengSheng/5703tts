@@ -14,6 +14,7 @@ import pytest
 import soundfile as sf
 
 from tts5703.config import load_config
+from tts5703.engine_capabilities import engine_capabilities
 from tts5703.validate import load_and_validate
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -160,6 +161,21 @@ def test_unsupported_engine_is_rejected_before_synthesis(
 
     assert calls == []
     assert not (tmp_path / "runs").exists()
+
+
+def test_benchmark_uses_the_central_capability_registry() -> None:
+    assert benchmark.declared_engine_capabilities is engine_capabilities
+    assert not hasattr(benchmark, "ENGINE_CAPABILITIES")
+    for engine in ("cosyvoice", "kokoro"):
+        assert benchmark.engine_capabilities(engine) == engine_capabilities(engine)
+
+
+def test_undeclared_engine_capability_lookup_becomes_a_design_error() -> None:
+    with pytest.raises(
+        benchmark.BenchmarkDesignError,
+        match="No controlled benchmark capabilities declared for engine 'edge_tts'",
+    ):
+        benchmark.engine_capabilities("edge_tts")
 
 
 def test_engine_capabilities_distinguish_model_pipeline_and_unsupported() -> None:

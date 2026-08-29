@@ -19,6 +19,16 @@ import soundfile as sf
 
 from tts5703.assemble import TurnTiming, assemble_dialogue
 from tts5703.config import load_config
+from tts5703.engine_capabilities import UnknownEngineCapabilityError
+from tts5703.engine_capabilities import (
+    engine_capabilities as declared_engine_capabilities,
+)
+from tts5703.engine_capabilities import (
+    ignored_requested_controls as declared_ignored_controls,
+)
+from tts5703.engine_capabilities import (
+    requested_acoustic_spec as declared_requested_acoustic_spec,
+)
 from tts5703.tts_engine import (
     build_cosyvoice_request,
     describe_engine,
@@ -36,26 +46,6 @@ DEFAULT_OUTPUT_ROOT = PROJECT_ROOT / "data" / "benchmark" / "runs"
 RESULTS_FILENAME = "benchmark_results.json"
 SUPPORTED_BENCHMARK_ENGINES = {"cosyvoice", "kokoro"}
 RUN_ID_PREFIXES = {"cosyvoice": "cosyvoice3", "kokoro": "kokoro"}
-ENGINE_CAPABILITIES = {
-    "cosyvoice": {
-        "rate": {"support": "model_control"},
-        "pause_before_ms": {"support": "pipeline_timing"},
-        "pause_after_ms": {"support": "pipeline_timing"},
-        "arousal": {"support": "provisional_model_control"},
-        "coarse_affect": {"support": "provisional_model_control"},
-        "emotion": {"support": "unsupported"},
-        "paralinguistic_events": {"support": "unsupported"},
-    },
-    "kokoro": {
-        "rate": {"support": "model_control"},
-        "pause_before_ms": {"support": "pipeline_timing"},
-        "pause_after_ms": {"support": "pipeline_timing"},
-        "arousal": {"support": "unsupported"},
-        "coarse_affect": {"support": "unsupported"},
-        "emotion": {"support": "unsupported"},
-        "paralinguistic_events": {"support": "unsupported"},
-    },
-}
 
 
 class BenchmarkDesignError(ValueError):
@@ -74,14 +64,17 @@ def benchmark_engine(config: dict[str, Any]) -> str:
 
 
 def engine_capabilities(engine: str) -> dict[str, dict[str, str]]:
-    """Return an isolated copy of the declared backend capability map."""
+    """Return the production capability declaration for one benchmark engine.
+
+    The benchmark deliberately owns no capability table of its own; production
+    metadata and benchmark reporting must not be able to drift apart.
+    """
     try:
-        capabilities = ENGINE_CAPABILITIES[engine]
-    except KeyError as error:
+        return declared_engine_capabilities(engine)
+    except UnknownEngineCapabilityError as error:
         raise BenchmarkDesignError(
             f"No controlled benchmark capabilities declared for engine {engine!r}"
         ) from error
-    return {name: dict(description) for name, description in capabilities.items()}
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -229,15 +222,7 @@ def read_wav_metrics(path: Path) -> tuple[float, int]:
 
 
 def requested_acoustic_spec(turn: NormalizedTurn) -> dict[str, Any]:
-    return {
-        "rate": turn.rate,
-        "pause_before_ms": turn.pause_before_ms,
-        "pause_after_ms": turn.pause_after_ms,
-        "arousal": turn.arousal,
-        "coarse_affect": turn.coarse_affect,
-        "emotion": turn.emotion,
-        "paralinguistic_events": turn.paralinguistic_events,
-    }
+    return declared_requested_acoustic_spec(turn)
 
 
 def effective_cosyvoice_controls(
@@ -269,16 +254,12 @@ def effective_controls_for_turn(
         return effective_cosyvoice_controls(turn, config, output_path)
     if engine == "kokoro":
         kokoro = config["tts"]["kokoro"]
-        ignored_requested_controls = []
-        for field in ("arousal", "coarse_affect", "emotion"):
-            if getattr(turn, field) is not None:
-                ignored_requested_controls.append(field)
-        if turn.paralinguistic_events:
-            ignored_requested_controls.append("paralinguistic_events")
         return {
             "speed": rate_to_kokoro_speed(turn.rate),
             "voice": kokoro["voice_map"][turn.speaker],
-            "ignored_requested_controls": ignored_requested_controls,
+            "ignored_requested_controls": declared_ignored_controls(
+                engine, requested_acoustic_spec(turn)
+            ),
         }
     raise BenchmarkDesignError(
         f"No effective-control trace is available for engine {engine!r}"

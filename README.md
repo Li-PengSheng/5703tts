@@ -184,6 +184,19 @@ The integrated CosyVoice candidate is CosyVoice3. At its backend boundary, seman
 
 These mappings express requested controls and require empirical verification with the controlled benchmark; they do not establish acoustic fidelity. Fine-grained emotion and paralinguistic synthesis remain deferred, and Fish is not implemented in this task.
 
+### Backend control capabilities and preflight
+
+[`src/tts5703/engine_capabilities.py`](src/tts5703/engine_capabilities.py) is the single declaration of what each backend does with a requested acoustic control. Production metadata and the controlled benchmark both read it, so reported support cannot drift between them.
+
+| Support | Meaning |
+| --- | --- |
+| `model_control` | Sent to the backend and expected to change acoustics |
+| `provisional_model_control` | Sent through a mapping whose acoustic fidelity is not yet validated |
+| `pipeline_timing` | Realised by this project's assembly stage, not by the backend |
+| `unsupported` | Cannot be consumed by the backend; a requested value is ignored |
+
+Canonical schema validation stays backend-independent: `coarse_affect` remains an open string, so corpus design is not limited by one backend's vocabulary. Backend-specific mappings are checked separately by a preflight step that runs before any audio is rendered. Under CosyVoice, a schema-valid `coarse_affect: "anxious"` passes validation and then fails preflight with the currently supported mappings listed. Under Kokoro the same value is accepted, ignored, and reported as ignored, because Kokoro consumes no affect control at all.
+
 ## Output
 
 Each input dialogue writes to `data/output/<dialogue_id>/` by default:
@@ -194,6 +207,8 @@ Each input dialogue writes to `data/output/<dialogue_id>/` by default:
 - `<dialogue_id>_metadata.json` (audio file names, TTS settings, labels, and timestamps)
 
 The assembly uses direct joins plus short fades; turns are never crossfaded. Metadata timestamps therefore align with the non-overlapping turn boundaries. Generated audio and logs are intentionally ignored by Git.
+
+Metadata separates requested intent from backend behaviour. Every turn keeps its flat requested fields for compatibility, repeats them under `requested_acoustic_spec`, and lists `ignored_requested_controls` for requested controls the selected backend cannot consume. `tts.control_support` records the whole capability map for the engine used; both fields are `null` for engines with no capability declaration (EdgeTTS, Chatterbox Turbo) so that "nothing declared" cannot be read as "nothing ignored". Under CosyVoice, `tts` also records the reproducibility-relevant configuration: `model_dir`, `repo_dir`, `fp16`, `load_trt`, `load_vllm`, and each speaker's `prompt_wav` and `prompt_text`. Sample rate is reported as a declaration rather than an observation. `expected_sample_rate` is Fun-CosyVoice3-0.5B's official 24 kHz output rate, or the optional `tts.cosyvoice.sample_rate` override, with `expected_sample_rate_source` stating which of the two applies. The worker reports its own rate over the protocol, but `synthesize_turn` returns only a path, so `runtime_sample_rate` stays `null` and `sample_rate_verification` is `not_runtime_verified`: no field claims to describe the audio actually written. Kokoro is different, because the pipeline itself writes Kokoro audio at the configured `tts.kokoro.sample_rate`, so that value is reported directly.
 
 ## Configuration
 

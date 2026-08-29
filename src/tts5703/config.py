@@ -23,6 +23,49 @@ def load_config(config_path: Path) -> dict[str, Any]:
     return config
 
 
+def _validate_kokoro(kokoro: Any) -> None:
+    """Catch broken Kokoro settings without importing or downloading the model."""
+    if not isinstance(kokoro, dict):
+        raise ConfigError("tts.kokoro must be a mapping")
+
+    lang_code = kokoro.get("lang_code")
+    if not isinstance(lang_code, str) or not lang_code.strip():
+        raise ConfigError(
+            f"tts.kokoro.lang_code must be a non-empty string; got: {lang_code!r}"
+        )
+
+    sample_rate = kokoro.get("sample_rate")
+    if (
+        isinstance(sample_rate, bool)
+        or not isinstance(sample_rate, int)
+        or sample_rate <= 0
+    ):
+        raise ConfigError(
+            f"tts.kokoro.sample_rate must be a positive integer; got: {sample_rate!r}"
+        )
+
+    # Which speakers must exist is a property of the dialogue being rendered, not
+    # of the backend, so that stays at the dialogue validation boundary.
+    voice_map = kokoro.get("voice_map")
+    if not isinstance(voice_map, dict) or not voice_map:
+        raise ConfigError("tts.kokoro.voice_map must be a non-empty mapping")
+    for speaker, voice in voice_map.items():
+        if not isinstance(speaker, str) or not speaker.strip():
+            raise ConfigError(
+                f"tts.kokoro.voice_map keys must be non-empty strings; got: {speaker!r}"
+            )
+        if not isinstance(voice, str) or not voice.strip():
+            raise ConfigError(
+                f"tts.kokoro.voice_map.{speaker} must be a non-empty string"
+            )
+
+    device = kokoro.get("device")
+    if device is not None and (not isinstance(device, str) or not device.strip()):
+        raise ConfigError(
+            f"tts.kokoro.device must be null or a non-empty string; got: {device!r}"
+        )
+
+
 def _validate_config(config: dict[str, Any]) -> None:
     """Catch obviously-broken config early instead of failing deep inside a batch run."""
     try:
@@ -78,6 +121,8 @@ def _validate_config(config: dict[str, Any]) -> None:
         raise ConfigError(
             "tts.kokoro configuration is required when tts.engine is kokoro"
         )
+    if engine == "kokoro":
+        _validate_kokoro(config["tts"]["kokoro"])
     if engine == "chatterbox_turbo" and "chatterbox_turbo" not in config.get("tts", {}):
         raise ConfigError(
             "tts.chatterbox_turbo configuration is required when tts.engine is chatterbox_turbo"
@@ -113,3 +158,15 @@ def _validate_config(config: dict[str, Any]) -> None:
             value = cosyvoice.get(field)
             if value is not None and not isinstance(value, bool):
                 raise ConfigError(f"tts.cosyvoice.{field} must be true or false")
+        # Optional: pins the sample rate recorded in metadata when the worker's
+        # runtime value cannot be observed.
+        sample_rate = cosyvoice.get("sample_rate")
+        if sample_rate is not None and (
+            isinstance(sample_rate, bool)
+            or not isinstance(sample_rate, int)
+            or sample_rate <= 0
+        ):
+            raise ConfigError(
+                "tts.cosyvoice.sample_rate must be a positive integer; "
+                f"got: {sample_rate!r}"
+            )

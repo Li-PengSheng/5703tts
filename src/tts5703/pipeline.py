@@ -1,16 +1,21 @@
 """Orchestrate stages 1–6 for one dialogue without breaking batch runs."""
 
-from dataclasses import dataclass
 import logging
-from pathlib import Path
 import time
+from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 from .assemble import assemble_dialogue
 from .metadata import build_metadata, write_metadata
 from .postprocess import apply_telephone_effect
 from .qc import QCResult, run_qc
-from .tts_engine import describe_engine, synthesize_all_turns
+from .tts_engine import (
+    BackendControlError,
+    describe_engine,
+    preflight_dialogue_controls,
+    synthesize_all_turns,
+)
 from .validate import ValidationError, load_and_validate
 
 logger = logging.getLogger(__name__)
@@ -39,6 +44,9 @@ async def run_dialogue(
             dialogue_id,
             len(dialogue.turns),
         )
+        # Backend mappings are checked before any audio is rendered; canonical
+        # schema validation stays backend-independent.
+        preflight_dialogue_controls(dialogue.turns, config)
         out_dir = output_root / dialogue_id
         out_dir.mkdir(parents=True, exist_ok=True)
         logger.info(
@@ -113,6 +121,19 @@ async def run_dialogue(
             error,
         )
         return PipelineResult(dialogue_id, "failed", f"Input validation failed: {error}")
+    except BackendControlError as error:
+        # Expected compatibility failure, not a defect: the requested control is
+        # schema-valid but the selected backend has no mapping for it, so the
+        # actionable message matters more than a traceback.
+        logger.warning(
+            "event=dialogue_pipeline_failed dialogue=%s stage=backend_preflight "
+            "error=%s",
+            dialogue_id,
+            error,
+        )
+        return PipelineResult(
+            dialogue_id, "failed", f"Backend control preflight failed: {error}"
+        )
     except Exception as error:
         logger.exception(
             "event=dialogue_pipeline_failed dialogue=%s elapsed_sec=%.2f",
