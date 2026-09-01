@@ -20,6 +20,13 @@ def build_metadata(
     turn_audio_paths: dict[int, Path],
     engine_info: dict,
 ) -> dict:
+    """Build the per-dialogue alignment and requested-control provenance record.
+
+    Values copied from ``TurnTiming`` describe requested intent and pipeline
+    timing, not measurements made from the generated waveform. ``engine_info``
+    likewise contains configuration declarations unless its key explicitly says
+    that a value was runtime-observed.
+    """
     # Engines without a capability declaration (EdgeTTS, Chatterbox Turbo) report
     # null rather than an empty map, so consumers cannot read "nothing declared"
     # as "nothing ignored".
@@ -64,6 +71,7 @@ def build_metadata(
 
 
 def write_metadata(metadata: dict, out_dir: Path) -> Path:
+    """Write the metadata record beside the dialogue audio outputs."""
     output_path = out_dir / f"{metadata['dialogue_id']}_metadata.json"
     output_path.write_text(
         json.dumps(metadata, indent=2, ensure_ascii=False), encoding="utf-8"

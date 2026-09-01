@@ -25,6 +25,12 @@ def run_qc(
     telephone_path: Path,
     metadata: dict,
 ) -> QCResult:
+    """Check basic output completeness and turn-timestamp consistency.
+
+    This is workstream-level structural QC, not perceptual speech evaluation or
+    formal downstream crisis-detection validation. The caller logs/returns this
+    result; no separate QC report file is written by the current pipeline.
+    """
     checks: dict[str, bool] = {}
     issues: list[str] = []
     turn_audio_ok = True

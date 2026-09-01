@@ -63,6 +63,13 @@ def _load_schema() -> dict[str, Any]:
 
 @dataclass
 class NormalizedTurn:
+    """Backend-independent turn contract consumed by synthesis and assembly.
+
+    Both canonical v0.2 and temporary legacy inputs converge here. In particular,
+    ``rate`` remains semantic for v0.2 and percentage-based for legacy input until
+    an engine adapter translates it.
+    """
+
     turn_id: int
     speaker: str
     text: str
@@ -78,6 +85,8 @@ class NormalizedTurn:
 
 @dataclass
 class NormalizedDialogue:
+    """Validated dialogue whose turn order is safe to render sequentially."""
+
     dialogue_id: str
     turns: list[NormalizedTurn]
 
@@ -133,6 +142,12 @@ def _normalize_legacy_turn(
 def validate_and_normalize(
     raw: dict[str, Any], config: dict[str, Any]
 ) -> NormalizedDialogue:
+    """Validate one input object and normalize canonical or legacy turns.
+
+    Speaker availability is checked here because it depends on both the selected
+    engine's voice map and the speakers actually present in this dialogue. Acoustic
+    fidelity and backend vocabulary are deliberately checked later.
+    """
     is_v0_2 = isinstance(raw, dict) and "schema_version" in raw
     _validate_schema(raw, _load_schema() if is_v0_2 else _LEGACY_DIALOGUE_SCHEMA)
 
@@ -189,6 +204,7 @@ def validate_and_normalize(
 
 
 def load_and_validate(json_path: Path, config: dict[str, Any]) -> NormalizedDialogue:
+    """Parse one JSON file, then apply the shared validation boundary."""
     try:
         raw = json.loads(json_path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as error:

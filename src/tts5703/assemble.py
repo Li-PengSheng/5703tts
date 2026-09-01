@@ -11,6 +11,12 @@ from .validate import NormalizedTurn
 
 @dataclass
 class TurnTiming:
+    """Requested turn metadata plus speech-only boundaries in assembled audio.
+
+    The boundaries exclude the turn's pauses: ``pause_before_ms`` advances
+    ``start_sec``, while ``pause_after_ms`` is appended after ``end_sec``.
+    """
+
     turn_id: int
     speaker: str
     text: str
@@ -31,6 +37,12 @@ def assemble_dialogue(
     turn_audio_paths: dict[int, Path],
     config: dict[str, Any],
 ) -> tuple[AudioSegment, list[TurnTiming]]:
+    """Concatenate turn files and realise pauses as deterministic timeline gaps.
+
+    Returns the clean dialogue waveform in memory and one alignment record per
+    input turn. Per-turn files are read in the validated turn order; dictionary
+    ordering of ``turn_audio_paths`` is irrelevant.
+    """
     # pydub's append(..., crossfade=N) overlaps segments. The next segment starts
     # N ms early, so len(audio) no longer matches the real waveform boundary and
     # the discrepancy accumulates with every turn. Dialogue turns should not

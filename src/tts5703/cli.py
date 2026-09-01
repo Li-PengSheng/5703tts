@@ -30,6 +30,12 @@ def configure_logging(log_path: Path, verbose: bool) -> None:
 
 
 async def main() -> None:
+    """Discover input JSON files and render them sequentially as one batch.
+
+    ``run_dialogue`` converts per-dialogue failures into ``PipelineResult`` values,
+    which lets this loop continue with later files. Configuration failures happen
+    outside that boundary and intentionally abort the whole invocation.
+    """
     parser = argparse.ArgumentParser(
         description="Render crisis dialogue JSON files with a configured TTS engine."
     )
@@ -115,6 +121,7 @@ async def main() -> None:
 
 
 def run() -> None:
+    """Synchronous console-script wrapper for the asynchronous batch entry point."""
     asyncio.run(main())
 
 

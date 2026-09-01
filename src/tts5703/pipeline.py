@@ -33,6 +33,13 @@ class PipelineResult:
 async def run_dialogue(
     json_path: Path, config: dict[str, Any], output_root: Path
 ) -> PipelineResult:
+    """Run one dialogue through validation, synthesis, assembly, export, and QC.
+
+    Expected input/preflight failures are returned without creating an output
+    directory. Failures after that point leave completed per-turn or dialogue
+    files in place for diagnosis; the current pipeline has no transactional
+    cleanup, retry, or resume protocol.
+    """
     dialogue_id = json_path.stem
     started = time.perf_counter()
     try:

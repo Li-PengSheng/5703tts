@@ -39,6 +39,7 @@ def _resolve_path(root: Path, value: str) -> Path:
 
 
 def turn_audio_extension(config: dict[str, Any]) -> str:
+    """Return the per-turn container extension emitted by the selected engine."""
     return ".mp3" if get_engine(config) == "edge_tts" else ".wav"
 
 
@@ -348,6 +349,13 @@ def _terminate_cosyvoice_worker(proc: subprocess.Popen[str]) -> None:
 def _cosyvoice_request(
     proc: subprocess.Popen[str], request: dict[str, Any]
 ) -> dict[str, Any]:
+    """Send one JSON-line request and synchronously read its matching response.
+
+    The production pipeline is sequential, so the protocol needs neither request
+    identifiers nor concurrent-response routing. EOF invalidates and reaps the
+    cached worker; a worker-reported synthesis error is returned to the caller and
+    leaves the process available for a later dialogue.
+    """
     if proc.poll() is not None:
         stderr_tail = getattr(proc, "_cosyvoice_stderr_tail", deque())
         message = _cosyvoice_worker_error(
@@ -552,6 +560,12 @@ async def synthesize_turn(
 async def synthesize_all_turns(
     turns: list[NormalizedTurn], out_dir: Path, config: dict[str, Any]
 ) -> dict[int, Path]:
+    """Render exactly one file per turn, sequentially in validated turn order.
+
+    Sequential rendering avoids concurrent use of stateful model instances and
+    the single CosyVoice stdio channel. A failure stops this dialogue immediately;
+    already-written turn files are intentionally left for diagnosis.
+    """
     return {
         turn.turn_id: await synthesize_turn(turn, out_dir, config) for turn in turns
     }

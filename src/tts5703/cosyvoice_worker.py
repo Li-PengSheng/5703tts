@@ -145,6 +145,12 @@ def _synthesise(model: Any, request: dict[str, Any]) -> dict[str, Any]:
 
 
 def main() -> int:
+    """Load one model, acknowledge readiness, then serve requests until stdin EOF.
+
+    Initialisation failure terminates the worker. Per-request failures instead
+    produce an error response and keep the loaded model alive, allowing the main
+    process to decide whether a later dialogue should reuse it.
+    """
     try:
         init = _read_message(sys.stdin)
         if init is None:
