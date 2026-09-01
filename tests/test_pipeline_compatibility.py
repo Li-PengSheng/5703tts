@@ -1,6 +1,7 @@
 """CPU-only compatibility checks for rate mapping, assembly, and metadata."""
 
 import wave
+from itertools import pairwise
 from pathlib import Path
 
 import pytest
@@ -15,9 +16,7 @@ from tts5703.validate import NormalizedTurn
     ("semantic_rate", "edge_rate"),
     [("slow", "-20%"), ("normal", "+0%"), ("fast", "+20%")],
 )
-def test_semantic_rate_maps_to_edge_tts(
-    semantic_rate: str, edge_rate: str
-) -> None:
+def test_semantic_rate_maps_to_edge_tts(semantic_rate: str, edge_rate: str) -> None:
     assert rate_to_edge_tts(semantic_rate) == edge_rate
 
 
@@ -25,9 +24,7 @@ def test_semantic_rate_maps_to_edge_tts(
     ("semantic_rate", "kokoro_speed"),
     [("slow", 0.8), ("normal", 1.0), ("fast", 1.2)],
 )
-def test_semantic_rate_maps_to_kokoro(
-    semantic_rate: str, kokoro_speed: float
-) -> None:
+def test_semantic_rate_maps_to_kokoro(semantic_rate: str, kokoro_speed: float) -> None:
     assert rate_to_kokoro_speed(semantic_rate) == kokoro_speed
 
 
@@ -105,7 +102,7 @@ def test_pauses_advance_timeline_without_overlapping_turns(tmp_path: Path) -> No
     ]
     assert all(
         earlier.start_sec <= earlier.end_sec <= later.start_sec
-        for earlier, later in zip(timings, timings[1:])
+        for earlier, later in pairwise(timings)
     )
     assert len(audio) == 650
 

@@ -49,8 +49,10 @@ def run_qc(
         try:
             if len(AudioSegment.from_file(path)) / 1000 < 0.1:
                 turn_audio_ok = False
-                issues.append(f"turn {turn.turn_id} audio duration is invalid (must exceed 0.1 seconds)")
-        except Exception as error:
+                issues.append(
+                    f"turn {turn.turn_id} audio duration is invalid (must exceed 0.1 seconds)"
+                )
+        except Exception as error:  # noqa: BLE001 - report any decoder/backend failure as QC
             turn_audio_ok = False
             issues.append(f"turn {turn.turn_id} audio cannot be read: {error}")
     checks["turn_audio_files_exist"] = turn_audio_ok

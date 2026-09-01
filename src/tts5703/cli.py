@@ -43,7 +43,10 @@ async def main() -> None:
     parser.add_argument("--output", type=Path, default=Path("data/output"))
     parser.add_argument("--config", type=Path, default=Path("config/config.yaml"))
     parser.add_argument(
-        "--log-dir", type=Path, default=Path("logs"), help="Log directory (default: logs)"
+        "--log-dir",
+        type=Path,
+        default=Path("logs"),
+        help="Log directory (default: logs)",
     )
     parser.add_argument(
         "--verbose", action="store_true", help="Show per-turn debug logs in the console"

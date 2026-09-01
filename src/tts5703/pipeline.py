@@ -127,7 +127,9 @@ async def run_dialogue(
             dialogue_id,
             error,
         )
-        return PipelineResult(dialogue_id, "failed", f"Input validation failed: {error}")
+        return PipelineResult(
+            dialogue_id, "failed", f"Input validation failed: {error}"
+        )
     except BackendControlError as error:
         # Expected compatibility failure, not a defect: the requested control is
         # schema-valid but the selected backend has no mapping for it, so the

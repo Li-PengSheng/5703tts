@@ -13,7 +13,6 @@ dependencies = [
     "kokoro>=0.9.4",
     "pydub>=0.25.1",
     "pyyaml>=6.0.3",
-    "ruff>=0.16.3",
     "soundfile>=0.14.0",
 ]
 
@@ -29,3 +28,9 @@ module-name = "tts5703"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.6.2",
+    "ruff>=0.16.3",
+]
