@@ -89,7 +89,7 @@ sequenceDiagram
     participant M as metadata.py / qc.py
 
     U->>C: console entry point
-    C->>C: load config; sort input/*.json
+    C->>C: load config, sort input/*.json
     loop each dialogue
         C->>P: run_dialogue(path, config, output_root)
         P->>V: parse, validate, normalize
@@ -101,7 +101,7 @@ sequenceDiagram
         P->>A: assemble turns + pauses
         A-->>P: AudioSegment + TurnTiming[]
         P->>P: export clean and telephone WAV
-        P->>M: write metadata; run QC
+        P->>M: write metadata, run QC
         P-->>C: PipelineResult
     end
 ```
