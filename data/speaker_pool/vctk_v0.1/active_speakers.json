@@ -1,0 +1,32 @@
+{
+  "speaker_pool_version": "vctk_v0.1",
+  "status": "active_pool_v0.1",
+  "selection_basis": "Manual VCTK reference review followed by CosyVoice3 zero-shot smoke testing and reference refinement.",
+  "notes": [
+    "Speaker IDs are never renumbered. Rejected IDs remain in selected_speakers.json, speaker_registry.json, and historical smoke results.",
+    "Demographic metadata is descriptive only and is not a validation rule.",
+    "Assignment maps dialogue roles to speaker_id values. It is independent of acoustic_spec and does not use crisis labels as an assignment signal."
+  ],
+  "active_speaker_ids": [
+    "spk_001",
+    "spk_003",
+    "spk_004",
+    "spk_006",
+    "spk_007",
+    "spk_008",
+    "spk_009",
+    "spk_010",
+    "spk_011",
+    "spk_012"
+  ],
+  "excluded_from_active_pool": [
+    {
+      "speaker_id": "spk_002",
+      "reason": "Multiple tested references retained undesirable uncontrolled pause / leading-silence behaviour."
+    },
+    {
+      "speaker_id": "spk_005",
+      "reason": "Multiple tested references retained undesirable uncontrolled pause behaviour."
+    }
+  ]
+}

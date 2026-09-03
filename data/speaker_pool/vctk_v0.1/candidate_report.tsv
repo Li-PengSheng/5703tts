@@ -1,0 +1,541 @@
+source_speaker_id	rank	age	gender	accent	region	source_utterance_id	duration_sec	transcript	audio_path
+p225	1	23	F	English	Southern  England	p225_202	5.010667	The occasion was the New Labour conference in Brighton last year.	wav48_silence_trimmed/p225/p225_202_mic1.flac
+p225	2	23	F	English	Southern  England	p225_039	4.940896	However, the decision has been welcomed by Scottish Enterprise officials.	wav48_silence_trimmed/p225/p225_039_mic1.flac
+p225	3	23	F	English	Southern  England	p225_331	5.061521	Ms Anderson yesterday put a brave face on the departure.	wav48_silence_trimmed/p225/p225_331_mic1.flac
+p225	4	23	F	English	Southern  England	p225_315	5.14875	The confidence is low, but it is a difficult thing to understand.	wav48_silence_trimmed/p225/p225_315_mic1.flac
+p225	5	23	F	English	Southern  England	p225_169	5.160958	Irvine said his company was intent on supporting the Scottish dairy industry.	wav48_silence_trimmed/p225/p225_169_mic1.flac
+p226	1	22	M	English	Surrey	p226_084	5.011542	I would think about the end of January, the beginning of February.	wav48_silence_trimmed/p226/p226_084_mic1.flac
+p226	2	22	M	English	Surrey	p226_070	5.014833	There was a tremendous amount of anger and frustration in that music.	wav48_silence_trimmed/p226/p226_070_mic1.flac
+p226	3	22	M	English	Surrey	p226_221	4.982	Friends of the Earth Scotland last night welcomed the announcement.	wav48_silence_trimmed/p226/p226_221_mic1.flac
+p226	4	22	M	English	Surrey	p226_305	4.971521	A police inquiry began about two weeks before the General Election.	wav48_silence_trimmed/p226/p226_305_mic1.flac
+p226	5	22	M	English	Surrey	p226_235	4.928187	Police later said the scheme would end in November.	wav48_silence_trimmed/p226/p226_235_mic1.flac
+p227	1	38	M	English	Cumbria	p227_010	4.909021	People look, but no one ever finds it.	wav48_silence_trimmed/p227/p227_010_mic1.flac
+p227	2	38	M	English	Cumbria	p227_244	4.886167	They included certain insurance policies, and his share of the house.	wav48_silence_trimmed/p227/p227_244_mic1.flac
+p227	3	38	M	English	Cumbria	p227_193	4.884792	It was only later that the condition was diagnosed.	wav48_silence_trimmed/p227/p227_193_mic1.flac
+p227	4	38	M	English	Cumbria	p227_177	4.845958	The expansions will be financed by the Clydesdale Bank.	wav48_silence_trimmed/p227/p227_177_mic1.flac
+p227	5	38	M	English	Cumbria	p227_020	4.833146	Many complicated ideas about the rainbow have been formed.	wav48_silence_trimmed/p227/p227_020_mic1.flac
+p228	1	22	F	English	Southern  England	p228_286	4.999604	I have tonight resigned as a member of the European Commission.	wav48_silence_trimmed/p228/p228_286_mic1.flac
+p228	2	22	F	English	Southern  England	p228_354	4.988875	He is very concerned about his fitness as a footballer.	wav48_silence_trimmed/p228/p228_354_mic1.flac
+p228	3	22	F	English	Southern  England	p228_277	5.012562	Russian officials have not determined the cause of the accident.	wav48_silence_trimmed/p228/p228_277_mic1.flac
+p228	4	22	F	English	Southern  England	p228_102	5.017479	We have always maintained that we would never abandon Scottish football.	wav48_silence_trimmed/p228/p228_102_mic1.flac
+p228	5	22	F	English	Southern  England	p228_129	5.027208	An announcement on his replacement is expected within three weeks.	wav48_silence_trimmed/p228/p228_129_mic1.flac
+p229	1	23	F	English	Southern  England	p229_329	4.985938	On Thursday, Mr Blair will address the Institute of Public Policy Research.	wav48_silence_trimmed/p229/p229_329_mic1.flac
+p229	2	23	F	English	Southern  England	p229_154	5.11675	Alice, the girl, was said by doctors to be in good condition.	wav48_silence_trimmed/p229/p229_154_mic1.flac
+p229	3	23	F	English	Southern  England	p229_178	4.782958	Customers for the panels include the National Trust for Scotland.	wav48_silence_trimmed/p229/p229_178_mic1.flac
+p229	4	23	F	English	Southern  England	p229_006	5.230792	When the sunlight strikes raindrops in the air, they act as a prism and form a rainbow.	wav48_silence_trimmed/p229/p229_006_mic1.flac
+p229	5	23	F	English	Southern  England	p229_015	5.246708	The Greeks used to imagine that it was a sign from the gods to foretell war or heavy rain.	wav48_silence_trimmed/p229/p229_015_mic1.flac
+p230	1	22	F	English	Stockton-on-tees	p230_239	5.00325	No evidence that it was Osama bin Laden.	wav48_silence_trimmed/p230/p230_239_mic1.flac
+p230	2	22	F	English	Stockton-on-tees	p230_116	4.993104	Lady Thatcher was the only woman with full membership.	wav48_silence_trimmed/p230/p230_116_mic1.flac
+p230	3	22	F	English	Stockton-on-tees	p230_190	5.033333	It was only later that the condition was diagnosed.	wav48_silence_trimmed/p230/p230_190_mic1.flac
+p230	4	22	F	English	Stockton-on-tees	p230_259	5.067479	Manager Bobby Williamson has no injury worries.	wav48_silence_trimmed/p230/p230_259_mic1.flac
+p230	5	22	F	English	Stockton-on-tees	p230_013	5.07325	Some have accepted it as a miracle without physical explanation.	wav48_silence_trimmed/p230/p230_013_mic1.flac
+p231	1	23	F	English	Southern  England	p231_005	4.809042	She can scoop these things into three red bags, and we will go meet her Wednesday at the train station.	wav48_silence_trimmed/p231/p231_005_mic1.flac
+p231	2	23	F	English	Southern  England	p231_018	4.783854	Aristotle thought that the rainbow was caused by reflection of the sun's rays by the rain.	wav48_silence_trimmed/p231/p231_018_mic1.flac
+p231	3	23	F	English	Southern  England	p231_015	4.733812	The Greeks used to imagine that it was a sign from the gods to foretell war or heavy rain.	wav48_silence_trimmed/p231/p231_015_mic1.flac
+p231	4	23	F	English	Southern  England	p231_024	5.345625	This is a very common type of bow, one showing mainly red and yellow, with little or no green or blue.	wav48_silence_trimmed/p231/p231_024_mic1.flac
+p231	5	23	F	English	Southern  England	p231_006	4.526125	When the sunlight strikes raindrops in the air, they act as a prism and form a rainbow.	wav48_silence_trimmed/p231/p231_006_mic1.flac
+p232	1	23	M	English	Southern  England	p232_014	5.009542	To the Hebrews it was a token that there would be no more universal floods.	wav48_silence_trimmed/p232/p232_014_mic1.flac
+p232	2	23	M	English	Southern  England	p232_018	4.98425	Aristotle thought that the rainbow was caused by reflection of the sun's rays by the rain.	wav48_silence_trimmed/p232/p232_018_mic1.flac
+p232	3	23	M	English	Southern  England	p232_409	4.952	Quality Meat Scotland was vigorous in its defence of the labelling.	wav48_silence_trimmed/p232/p232_409_mic1.flac
+p232	4	23	M	English	Southern  England	p232_232	4.938771	It is perfectly evident that the time for an inquiry will come.	wav48_silence_trimmed/p232/p232_232_mic1.flac
+p232	5	23	M	English	Southern  England	p232_012	4.717646	Throughout the centuries people have explained the rainbow in various ways.	wav48_silence_trimmed/p232/p232_012_mic1.flac
+p233	1	23	F	English	Staffordshire	p233_267	4.988708	George W Bush, the US president, condemned the attacks.	wav48_silence_trimmed/p233/p233_267_mic1.flac
+p233	2	23	F	English	Staffordshire	p233_044	4.979229	At the moment, we do not know the extent of their injuries.	wav48_silence_trimmed/p233/p233_044_mic1.flac
+p233	3	23	F	English	Staffordshire	p233_301	4.952562	That might be a punishment but it would also punish the patients.	wav48_silence_trimmed/p233/p233_301_mic1.flac
+p233	4	23	F	English	Staffordshire	p233_238	5.059083	Rangers can expect a physical battle in the national stadium tonight.	wav48_silence_trimmed/p233/p233_238_mic1.flac
+p233	5	23	F	English	Staffordshire	p233_259	5.063604	One MP said he feared the job losses were only the beginning.	wav48_silence_trimmed/p233/p233_259_mic1.flac
+p234	1	22	F	Scottish	West  Dumfries	p234_238	5.019354	I was not overly concerned about this.	wav48_silence_trimmed/p234/p234_238_mic1.flac
+p234	2	22	F	Scottish	West  Dumfries	p234_030	5.027563	On our numbers, the price is in line with the asset value.	wav48_silence_trimmed/p234/p234_030_mic1.flac
+p234	3	22	F	Scottish	West  Dumfries	p234_309	4.963875	That was a bonus, but it was not the main objective.	wav48_silence_trimmed/p234/p234_309_mic1.flac
+p234	4	22	F	Scottish	West  Dumfries	p234_330	5.081521	It depends on the internal discussions in the Ministry of Defence.	wav48_silence_trimmed/p234/p234_330_mic1.flac
+p234	5	22	F	Scottish	West  Dumfries	p234_265	4.904708	Investors were also concerned about margin pressure.	wav48_silence_trimmed/p234/p234_265_mic1.flac
+p236	1	23	F	English	Manchester	p236_004	4.867146	We also need a small plastic snake and a big toy frog for the kids.	wav48_silence_trimmed/p236/p236_004_mic1.flac
+p236	2	23	F	English	Manchester	p236_015	5.248271	The Greeks used to imagine that it was a sign from the gods to foretell war or heavy rain.	wav48_silence_trimmed/p236/p236_015_mic1.flac
+p236	3	23	F	English	Manchester	p236_018	5.252	Aristotle thought that the rainbow was caused by reflection of the sun's rays by the rain.	wav48_silence_trimmed/p236/p236_018_mic1.flac
+p236	4	23	F	English	Manchester	p236_009	4.608542	There is , according to legend, a boiling pot of gold at one end.	wav48_silence_trimmed/p236/p236_009_mic1.flac
+p236	5	23	F	English	Manchester	p236_014	4.569312	To the Hebrews it was a token that there would be no more universal floods.	wav48_silence_trimmed/p236/p236_014_mic1.flac
+p237	1	22	M	Scottish	Fife	p237_291	4.906271	However, he will have his work cut out defending his title.	wav48_silence_trimmed/p237/p237_291_mic1.flac
+p237	2	22	M	Scottish	Fife	p237_013	5.118	Some have accepted it as a miracle without physical explanation.	wav48_silence_trimmed/p237/p237_013_mic1.flac
+p237	3	22	M	Scottish	Fife	p237_345	4.866229	They made clear that they are not interested in Government assistance.	wav48_silence_trimmed/p237/p237_345_mic1.flac
+p237	4	22	M	Scottish	Fife	p237_014	5.164125	To the Hebrews it was a token that there would be no more universal floods.	wav48_silence_trimmed/p237/p237_014_mic1.flac
+p237	5	22	M	Scottish	Fife	p237_094	5.167104	I have every confidence in Raymond Robertson as chairman of the party.	wav48_silence_trimmed/p237/p237_094_mic1.flac
+p238	1	22	F	NorthernIrish	Belfast	p238_266	4.995312	The question is whether private investors should follow their example.	wav48_silence_trimmed/p238/p238_266_mic1.flac
+p238	2	22	F	NorthernIrish	Belfast	p238_135	4.995125	No one person or small group could be singled out.	wav48_silence_trimmed/p238/p238_135_mic1.flac
+p238	3	22	F	NorthernIrish	Belfast	p238_044	4.994958	It is about regular committed giving which is the real attraction.	wav48_silence_trimmed/p238/p238_044_mic1.flac
+p238	4	22	F	NorthernIrish	Belfast	p238_333	4.994375	Flanker Gordon Simpson may also feature in that match.	wav48_silence_trimmed/p238/p238_333_mic1.flac
+p238	5	22	F	NorthernIrish	Belfast	p238_136	5.007708	Western countries condemned the conduct of the poll.	wav48_silence_trimmed/p238/p238_136_mic1.flac
+p239	1	22	F	English	SW  England	p239_004	4.997312	We also need a small plastic snake and a big toy frog for the kids.	wav48_silence_trimmed/p239/p239_004_mic1.flac
+p239	2	22	F	English	SW  England	p239_103	4.953021	We have a major concern about enforcement action.	wav48_silence_trimmed/p239/p239_103_mic1.flac
+p239	3	22	F	English	SW  England	p239_015	5.078729	The Greeks used to imagine that it was a sign from the gods to foretell war or heavy rain.	wav48_silence_trimmed/p239/p239_015_mic1.flac
+p239	4	22	F	English	SW  England	p239_006	4.910083	When the sunlight strikes raindrops in the air, they act as a prism and form a rainbow.	wav48_silence_trimmed/p239/p239_006_mic1.flac
+p239	5	22	F	English	SW  England	p239_018	4.867042	Aristotle thought that the rainbow was caused by reflection of the sun's rays by the rain.	wav48_silence_trimmed/p239/p239_018_mic1.flac
+p240	1	21	F	English	Southern  England	p240_363	5.038062	A spokeswoman for Edinburgh City Council confirmed its support for the company.	wav48_silence_trimmed/p240/p240_363_mic1.flac
+p240	2	21	F	English	Southern  England	p240_251	4.958938	In short, the Scottish excess is not difficult to justify.	wav48_silence_trimmed/p240/p240_251_mic1.flac
+p240	3	21	F	English	Southern  England	p240_175	4.874313	Star and producer were in agreement about their opinion of the director.	wav48_silence_trimmed/p240/p240_175_mic1.flac
+p240	4	21	F	English	Southern  England	p240_190	5.144729	Treasury spokesman Malcolm Bruce is also considered a potential contender.	wav48_silence_trimmed/p240/p240_190_mic1.flac
+p240	5	21	F	English	Southern  England	p240_213	4.822417	We have the experience, the courses, and an abundance of confidence.	wav48_silence_trimmed/p240/p240_213_mic1.flac
+p241	1	21	M	Scottish	Perth	p241_303	5.0585	The report will go before the Scottish Parliament, probably in early autumn.	wav48_silence_trimmed/p241/p241_303_mic1.flac
+p241	2	21	M	Scottish	Perth	p241_308	4.875958	The Government in Westminster is simply not prepared to save him.	wav48_silence_trimmed/p241/p241_308_mic1.flac
+p241	3	21	M	Scottish	Perth	p241_004	4.774875	We also need a small plastic snake and a big toy frog for the kids.	wav48_silence_trimmed/p241/p241_004_mic1.flac
+p241	4	21	M	Scottish	Perth	p241_063	5.259062	Over time, with patience and precision, the terrorists will be pursued.	wav48_silence_trimmed/p241/p241_063_mic1.flac
+p241	5	21	M	Scottish	Perth	p241_340	4.723375	They made clear that they are not interested in Government assistance.	wav48_silence_trimmed/p241/p241_340_mic1.flac
+p243	1	22	M	English	London	p243_349	4.993563	I'm extremely confident something will happen within the next couple of days.	wav48_silence_trimmed/p243/p243_349_mic1.flac
+p243	2	22	M	English	London	p243_394	5.036208	In my opinion, any transfer to a foreign club will help him progress.	wav48_silence_trimmed/p243/p243_394_mic1.flac
+p243	3	22	M	English	London	p243_087	5.03625	I have no problems playing with such capable players in front of me.	wav48_silence_trimmed/p243/p243_087_mic1.flac
+p243	4	22	M	English	London	p243_248	5.036854	The pair will meet again in Glasgow, and then train together in Australia.	wav48_silence_trimmed/p243/p243_248_mic1.flac
+p243	5	22	M	English	London	p243_325	4.954063	His name was first linked last year to Business for Scotland.	wav48_silence_trimmed/p243/p243_325_mic1.flac
+p244	1	22	F	English	Manchester	p244_009	5.007729	There is , according to legend, a boiling pot of gold at one end.	wav48_silence_trimmed/p244/p244_009_mic1.flac
+p244	2	22	F	English	Manchester	p244_004	4.955208	We also need a small plastic snake and a big toy frog for the kids.	wav48_silence_trimmed/p244/p244_004_mic1.flac
+p244	3	22	F	English	Manchester	p244_365	4.8365	On Thursday, Mr Blair will address the Institute of Public Policy Research.	wav48_silence_trimmed/p244/p244_365_mic1.flac
+p244	4	22	F	English	Manchester	p244_014	5.166021	To the Hebrews it was a token that there would be no more universal floods.	wav48_silence_trimmed/p244/p244_014_mic1.flac
+p244	5	22	F	English	Manchester	p244_329	5.316208	Overall, we continue to look to the future with confidence.	wav48_silence_trimmed/p244/p244_329_mic1.flac
+p245	1	25	M	Irish	Dublin	p245_309	4.980292	and that another interested body should have an option to buy.	wav48_silence_trimmed/p245/p245_309_mic1.flac
+p245	2	25	M	Irish	Dublin	p245_269	5.028771	However, he will have his work cut out defending his title.	wav48_silence_trimmed/p245/p245_269_mic1.flac
+p245	3	25	M	Irish	Dublin	p245_203	4.956688	The council has proposed a temporary barrier to protect the monument.	wav48_silence_trimmed/p245/p245_203_mic1.flac
+p245	4	25	M	Irish	Dublin	p245_081	4.945979	It just shows the arrogance of Labour and the Liberal Democrats.	wav48_silence_trimmed/p245/p245_081_mic1.flac
+p245	5	25	M	Irish	Dublin	p245_337	5.056271	But the disease has not been confined to the Tory Party.	wav48_silence_trimmed/p245/p245_337_mic1.flac
+p246	1	22	M	Scottish	Selkirk	p246_137	5.008854	We will continue to talk to find a solution for Scottish football.	wav48_silence_trimmed/p246/p246_137_mic1.flac
+p246	2	22	M	Scottish	Selkirk	p246_132	4.971	We are currently consulting with a wide range of interested parties.	wav48_silence_trimmed/p246/p246_132_mic1.flac
+p246	3	22	M	Scottish	Selkirk	p246_254	4.958292	One MP said he feared the job losses were only the beginning.	wav48_silence_trimmed/p246/p246_254_mic1.flac
+p246	4	22	M	Scottish	Selkirk	p246_029	5.048312	They were described as being in a serious but stable condition yesterday.	wav48_silence_trimmed/p246/p246_029_mic1.flac
+p246	5	22	M	Scottish	Selkirk	p246_312	4.947583	and that another interested body should have an option to buy.	wav48_silence_trimmed/p246/p246_312_mic1.flac
+p247	1	22	M	Scottish	Argyll	p247_009	5.046458	There is , according to legend, a boiling pot of gold at one end.	wav48_silence_trimmed/p247/p247_009_mic1.flac
+p247	2	22	M	Scottish	Argyll	p247_176	4.941	Local managers are already involved in talks with potential investors.	wav48_silence_trimmed/p247/p247_176_mic1.flac
+p247	3	22	M	Scottish	Argyll	p247_014	4.865917	To the Hebrews it was a token that there would be no more universal floods.	wav48_silence_trimmed/p247/p247_014_mic1.flac
+p247	4	22	M	Scottish	Argyll	p247_064	4.852437	George Robertson described the plan as an outrageous and disgraceful decision.	wav48_silence_trimmed/p247/p247_064_mic1.flac
+p247	5	22	M	Scottish	Argyll	p247_012	4.827396	Throughout the centuries people have explained the rainbow in various ways.	wav48_silence_trimmed/p247/p247_012_mic1.flac
+p248	1	23	F	Indian		p248_112	4.962146	Naturally, it was not difficult to find support for these proposals.	wav48_silence_trimmed/p248/p248_112_mic1.flac
+p248	2	23	F	Indian		p248_064	5.044313	It's also important that they are not seen as a soft option.	wav48_silence_trimmed/p248/p248_064_mic1.flac
+p248	3	23	F	Indian		p248_088	4.954438	Global Scotland will be held at the Glasgow Royal Concert Hall.	wav48_silence_trimmed/p248/p248_088_mic1.flac
+p248	4	23	F	Indian		p248_217	4.922646	The workers do not want to read about their futures in newspapers.	wav48_silence_trimmed/p248/p248_217_mic1.flac
+p248	5	23	F	Indian		p248_275	5.080063	Yesterday, he had a chilling warning for the game in Scotland.	wav48_silence_trimmed/p248/p248_275_mic1.flac
+p249	1	22	F	Scottish	Aberdeen	p249_004	4.952604	We also need a small plastic snake and a big toy frog for the kids.	wav48_silence_trimmed/p249/p249_004_mic1.flac
+p249	2	22	F	Scottish	Aberdeen	p249_113	4.949958	It will also require a lengthy series of clinical trials.	wav48_silence_trimmed/p249/p249_113_mic1.flac
+p249	3	22	F	Scottish	Aberdeen	p249_278	4.943729	Several other pupils and staff were seriously injured in the accident.	wav48_silence_trimmed/p249/p249_278_mic1.flac
+p249	4	22	F	Scottish	Aberdeen	p249_225	4.93025	On a technical level, they were not afraid to play good football.	wav48_silence_trimmed/p249/p249_225_mic1.flac
+p249	5	22	F	Scottish	Aberdeen	p249_338	4.894375	The announcement was made after inquiries from a national newspaper.	wav48_silence_trimmed/p249/p249_338_mic1.flac
+p250	1	22	F	English	SE  England	p250_438	4.99475	National Farmer's Union of Scotland president, Jim Walker, welcomed the new proposals.	wav48_silence_trimmed/p250/p250_438_mic1.flac
+p250	2	22	F	English	SE  England	p250_015	5.037125	The Greeks used to imagine that it was a sign from the gods to foretell war or heavy rain.	wav48_silence_trimmed/p250/p250_015_mic1.flac
+p250	3	22	F	English	SE  England	p250_018	5.080563	Aristotle thought that the rainbow was caused by reflection of the sun's rays by the rain.	wav48_silence_trimmed/p250/p250_018_mic1.flac
+p250	4	22	F	English	SE  England	p250_173	4.782417	Yesterday Abbey National said it had injected further capital into Scottish Provident.	wav48_silence_trimmed/p250/p250_173_mic1.flac
+p250	5	22	F	English	SE  England	p250_094	4.751812	The commission initiated the necessary changes in the financial regulation.	wav48_silence_trimmed/p250/p250_094_mic1.flac
+p251	1	26	M	Indian		p251_009	4.994104	There is , according to legend, a boiling pot of gold at one end.	wav48_silence_trimmed/p251/p251_009_mic1.flac
+p251	2	26	M	Indian		p251_364	5.040146	A spokeswoman for Edinburgh City Council confirmed its support for the company.	wav48_silence_trimmed/p251/p251_364_mic1.flac
+p251	3	26	M	Indian		p251_288	5.084292	Our dispute is with the company, not the travelling public.	wav48_silence_trimmed/p251/p251_288_mic1.flac
+p251	4	26	M	Indian		p251_035	5.086458	They did not replace it with a conviction for culpable homicide.	wav48_silence_trimmed/p251/p251_035_mic1.flac
+p251	5	26	M	Indian		p251_014	5.087917	To the Hebrews it was a token that there would be no more universal floods.	wav48_silence_trimmed/p251/p251_014_mic1.flac
+p252	1	22	M	Scottish	Edinburgh	p252_007	5.001021	The rainbow is a division of white light into many beautiful colors.	wav48_silence_trimmed/p252/p252_007_mic1.flac
+p252	2	22	M	Scottish	Edinburgh	p252_385	4.970063	Tourism is a vital industry for Scotland.	wav48_silence_trimmed/p252/p252_385_mic1.flac
+p252	3	22	M	Scottish	Edinburgh	p252_089	5.037396	It was exactly four months away.	wav48_silence_trimmed/p252/p252_089_mic1.flac
+p252	4	22	M	Scottish	Edinburgh	p252_222	4.944333	Good records have also been recognised by successful farmers.	wav48_silence_trimmed/p252/p252_222_mic1.flac
+p252	5	22	M	Scottish	Edinburgh	p252_382	5.058208	He said he had now written to Scottish Industry Minister Lord Macdonald.	wav48_silence_trimmed/p252/p252_382_mic1.flac
+p253	1	22	F	Welsh	Cardiff	p253_262	4.891292	He claimed his insurance company contested the damages, not the restaurant.	wav48_silence_trimmed/p253/p253_262_mic1.flac
+p253	2	22	F	Welsh	Cardiff	p253_004	5.132313	We also need a small plastic snake and a big toy frog for the kids.	wav48_silence_trimmed/p253/p253_004_mic1.flac
+p253	3	22	F	Welsh	Cardiff	p253_147	4.820729	He sets the nature of his Parliament in a simple, realistic context.	wav48_silence_trimmed/p253/p253_147_mic1.flac
+p253	4	22	F	Welsh	Cardiff	p253_227	5.251083	Jim Wallace, the justice minister, acknowledged that prisoner numbers were a concern.	wav48_silence_trimmed/p253/p253_227_mic1.flac
+p253	5	22	F	Welsh	Cardiff	p253_014	5.280417	To the Hebrews it was a token that there would be no more universal floods.	wav48_silence_trimmed/p253/p253_014_mic1.flac
+p254	1	21	M	English	Surrey	p254_014	5.000667	To the Hebrews it was a token that there would be no more universal floods.	wav48_silence_trimmed/p254/p254_014_mic1.flac
+p254	2	21	M	English	Surrey	p254_226	5.086375	Jim Wallace, the justice minister, acknowledged that prisoner numbers were a concern.	wav48_silence_trimmed/p254/p254_226_mic1.flac
+p254	3	21	M	English	Surrey	p254_004	5.156604	We also need a small plastic snake and a big toy frog for the kids.	wav48_silence_trimmed/p254/p254_004_mic1.flac
+p254	4	21	M	English	Surrey	p254_044	4.702063	However, the decision has been welcomed by Scottish Enterprise officials.	wav48_silence_trimmed/p254/p254_044_mic1.flac
+p254	5	21	M	English	Surrey	p254_006	5.307958	When the sunlight strikes raindrops in the air, they act as a prism and form a rainbow.	wav48_silence_trimmed/p254/p254_006_mic1.flac
+p255	1	19	M	Scottish	Galloway	p255_035	4.991229	Two other men, including the taxi driver, were wounded in the attack.	wav48_silence_trimmed/p255/p255_035_mic1.flac
+p255	2	19	M	Scottish	Galloway	p255_009	5.027146	There is , according to legend, a boiling pot of gold at one end.	wav48_silence_trimmed/p255/p255_009_mic1.flac
+p255	3	19	M	Scottish	Galloway	p255_307	4.964458	The report will go before the Scottish Parliament, probably in early autumn.	wav48_silence_trimmed/p255/p255_307_mic1.flac
+p255	4	19	M	Scottish	Galloway	p255_057	5.038146	George Robertson described the plan as an outrageous and disgraceful decision.	wav48_silence_trimmed/p255/p255_057_mic1.flac
+p255	5	19	M	Scottish	Galloway	p255_298	5.071708	I have tonight resigned as member of the European Commission.	wav48_silence_trimmed/p255/p255_298_mic1.flac
+p256	1	24	M	English	Birmingham	p256_241	5.015646	Attendance at the project is a condition of a probation order.	wav48_silence_trimmed/p256/p256_241_mic1.flac
+p256	2	24	M	English	Birmingham	p256_223	4.978667	At the top of the structure will remain the post of headteacher.	wav48_silence_trimmed/p256/p256_223_mic1.flac
+p256	3	24	M	English	Birmingham	p256_229	4.974125	I am very sorry that Alastair Campbell has taken this decision.	wav48_silence_trimmed/p256/p256_229_mic1.flac
+p256	4	24	M	English	Birmingham	p256_216	5.026667	The workers do not want to read about their futures in newspapers.	wav48_silence_trimmed/p256/p256_216_mic1.flac
+p256	5	24	M	English	Birmingham	p256_261	4.943333	Until recently, she worked as a recruitment consultant in London.	wav48_silence_trimmed/p256/p256_261_mic1.flac
+p257	1	24	F	English	Southern  England	p257_024	5.076521	This is a very common type of bow, one showing mainly red and yellow, with little or no green or blue.	wav48_silence_trimmed/p257/p257_024_mic1.flac
+p257	2	24	F	English	Southern  England	p257_015	4.782792	The Greeks used to imagine that it was a sign from the gods to foretell war or heavy rain.	wav48_silence_trimmed/p257/p257_015_mic1.flac
+p257	3	24	F	English	Southern  England	p257_022	5.239021	The actual primary rainbow observed is said to be the effect of super-imposition of a number of bows.	wav48_silence_trimmed/p257/p257_022_mic1.flac
+p257	4	24	F	English	Southern  England	p257_018	4.738604	Aristotle thought that the rainbow was caused by reflection of the sun's rays by the rain.	wav48_silence_trimmed/p257/p257_018_mic1.flac
+p257	5	24	F	English	Southern  England	p257_005	4.6945	She can scoop these things into three red bags, and we will go meet her Wednesday at the train station.	wav48_silence_trimmed/p257/p257_005_mic1.flac
+p258	1	22	M	English	Southern  England	p258_356	4.950958	A spokeswoman for Edinburgh City Council confirmed its support for the company.	wav48_silence_trimmed/p258/p258_356_mic1.flac
+p258	2	22	M	English	Southern  England	p258_133	4.907646	Everyone is in favour of the need for welfare reform in general.	wav48_silence_trimmed/p258/p258_133_mic1.flac
+p258	3	22	M	English	Southern  England	p258_009	4.870292	There is , according to legend, a boiling pot of gold at one end.	wav48_silence_trimmed/p258/p258_009_mic1.flac
+p258	4	22	M	English	Southern  England	p258_240	4.835375	Attendance at the project is a condition of a probation order.	wav48_silence_trimmed/p258/p258_240_mic1.flac
+p258	5	22	M	English	Southern  England	p258_067	4.779937	Chris Smith, the culture secretary, said he was satisfied with the decision.	wav48_silence_trimmed/p258/p258_067_mic1.flac
+p259	1	23	M	English	Nottingham	p259_012	4.974771	Throughout the centuries people have explained the rainbow in various ways.	wav48_silence_trimmed/p259/p259_012_mic1.flac
+p259	2	23	M	English	Nottingham	p259_428	5.065583	In general terms, the proposals are very much in line with expectations.	wav48_silence_trimmed/p259/p259_428_mic1.flac
+p259	3	23	M	English	Nottingham	p259_317	4.892188	This would provide a significant and welcome boost for local employment.	wav48_silence_trimmed/p259/p259_317_mic1.flac
+p259	4	23	M	English	Nottingham	p259_017	4.889792	Others have tried to explain the phenomenon physically.	wav48_silence_trimmed/p259/p259_017_mic1.flac
+p259	5	23	M	English	Nottingham	p259_004	4.836458	We also need a small plastic snake and a big toy frog for the kids.	wav48_silence_trimmed/p259/p259_004_mic1.flac
+p260	1	21	M	Scottish	Orkney	p260_133	5.014167	On Friday, the headteacher and deputy headteacher appeared at the door.	wav48_silence_trimmed/p260/p260_133_mic1.flac
+p260	2	21	M	Scottish	Orkney	p260_073	5.025708	Chris Smith, the culture secretary, said he was satisfied with the decision.	wav48_silence_trimmed/p260/p260_073_mic1.flac
+p260	3	21	M	Scottish	Orkney	p260_337	5.038875	Labour's Scottish general secretary Alex Rowley was delighted yesterday.	wav48_silence_trimmed/p260/p260_337_mic1.flac
+p260	4	21	M	Scottish	Orkney	p260_099	5.049458	However, the intensive care unit at the Southern General Hospital was full.	wav48_silence_trimmed/p260/p260_099_mic1.flac
+p260	5	21	M	Scottish	Orkney	p260_006	5.056396	When the sunlight strikes raindrops in the air, they act as a prism and form a rainbow.	wav48_silence_trimmed/p260/p260_006_mic1.flac
+p261	1	26	F	NorthernIrish	Belfast	p261_199	4.824708	On Friday, the headteacher and deputy headteacher appeared at the door.	wav48_silence_trimmed/p261/p261_199_mic1.flac
+p261	2	26	F	NorthernIrish	Belfast	p261_072	4.728	The talks were announced yesterday by Brian Wilson, the foreign office minister.	wav48_silence_trimmed/p261/p261_072_mic1.flac
+p261	3	26	F	NorthernIrish	Belfast	p261_014	4.651646	To the Hebrews it was a token that there would be no more universal floods.	wav48_silence_trimmed/p261/p261_014_mic1.flac
+p261	4	26	F	NorthernIrish	Belfast	p261_018	5.421333	Aristotle thought that the rainbow was caused by reflection of the sun's rays by the rain.	wav48_silence_trimmed/p261/p261_018_mic1.flac
+p261	5	26	F	NorthernIrish	Belfast	p261_009	4.569771	There is , according to legend, a boiling pot of gold at one end.	wav48_silence_trimmed/p261/p261_009_mic1.flac
+p262	1	23	F	Scottish	Edinburgh	p262_210	4.994354	The proposals are to be debated on Monday by city councillors.	wav48_silence_trimmed/p262/p262_210_mic1.flac
+p262	2	23	F	Scottish	Edinburgh	p262_026	5.015271	They should have a major rethink about the event for next year.	wav48_silence_trimmed/p262/p262_026_mic1.flac
+p262	3	23	F	Scottish	Edinburgh	p262_054	5.017417	Already, he has been a tremendous influence in the dressing room.	wav48_silence_trimmed/p262/p262_054_mic1.flac
+p262	4	23	F	Scottish	Edinburgh	p262_098	5.020146	However, the intensive care unit at the Southern General Hospital was full.	wav48_silence_trimmed/p262/p262_098_mic1.flac
+p262	5	23	F	Scottish	Edinburgh	p262_004	5.035042	We also need a small plastic snake and a big toy frog for the kids.	wav48_silence_trimmed/p262/p262_004_mic1.flac
+p263	1	22	M	Scottish	Aberdeen	p263_381	4.99425	A spokeswoman for Edinburgh City Council confirmed its support for the company.	wav48_silence_trimmed/p263/p263_381_mic1.flac
+p263	2	22	M	Scottish	Aberdeen	p263_245	4.909292	We will continue to talk to find a solution for Scottish football.	wav48_silence_trimmed/p263/p263_245_mic1.flac
+p263	3	22	M	Scottish	Aberdeen	p263_360	4.867687	On Thursday, Mr Blair will address the Institute of Public Policy Research.	wav48_silence_trimmed/p263/p263_360_mic1.flac
+p263	4	22	M	Scottish	Aberdeen	p263_183	4.809479	Irvine said his company was intent on supporting the Scottish dairy industry.	wav48_silence_trimmed/p263/p263_183_mic1.flac
+p263	5	22	M	Scottish	Aberdeen	p263_012	4.728313	Throughout the centuries people have explained the rainbow in various ways.	wav48_silence_trimmed/p263/p263_012_mic1.flac
+p264	1	23	F	Scottish	West  Lothian	p264_137	4.974312	This is a separate announcement which is in a different league.	wav48_silence_trimmed/p264/p264_137_mic1.flac
+p264	2	23	F	Scottish	West  Lothian	p264_275	5.035687	He was called in by the government last year to report on pension reform.	wav48_silence_trimmed/p264/p264_275_mic1.flac
+p264	3	23	F	Scottish	West  Lothian	p264_179	5.03575	You can spend money on housing.	wav48_silence_trimmed/p264/p264_179_mic1.flac
+p264	4	23	F	Scottish	West  Lothian	p264_193	5.0375	Do they think anyone else wants them?	wav48_silence_trimmed/p264/p264_193_mic1.flac
+p264	5	23	F	Scottish	West  Lothian	p264_207	4.954	Both leaders were joined by senior party figures.	wav48_silence_trimmed/p264/p264_207_mic1.flac
+p265	1	23	F	Scottish	Ross	p265_110	5.001417	That was the lesson to be learned from the European Championships.	wav48_silence_trimmed/p265/p265_110_mic1.flac
+p265	2	23	F	Scottish	Ross	p265_352	4.996937	I'm not going to get upset by two comedy promoters.	wav48_silence_trimmed/p265/p265_352_mic1.flac
+p265	3	23	F	Scottish	Ross	p265_077	5.012167	It just shows the arrogance of Labour and the Liberal Democrats.	wav48_silence_trimmed/p265/p265_077_mic1.flac
+p265	4	23	F	Scottish	Ross	p265_215	5.013771	I am very sorry that Alastair Campbell has taken this decision.	wav48_silence_trimmed/p265/p265_215_mic1.flac
+p265	5	23	F	Scottish	Ross	p265_050	5.0185	Lancashire Police said they were not treating the death as suspicious.	wav48_silence_trimmed/p265/p265_050_mic1.flac
+p266	1	22	F	Irish	Athlone	p266_189	4.992479	Treasury spokesman Malcolm Bruce is also considered a potential contender.	wav48_silence_trimmed/p266/p266_189_mic1.flac
+p266	2	22	F	Irish	Athlone	p266_120	4.979667	Mr Chisholm said the move was made on the advice of consultants.	wav48_silence_trimmed/p266/p266_120_mic1.flac
+p266	3	22	F	Irish	Athlone	p266_307	4.868688	But the military campaign is a military campaign against Osama bin Laden.	wav48_silence_trimmed/p266/p266_307_mic1.flac
+p266	4	22	F	Irish	Athlone	p266_149	4.850187	Labour's Scottish general secretary Alex Rowley was delighted yesterday.	wav48_silence_trimmed/p266/p266_149_mic1.flac
+p266	5	22	F	Irish	Athlone	p266_108	5.309188	Health Secretary Frank Dobson made the surprise announcement in the Commons yesterday.	wav48_silence_trimmed/p266/p266_108_mic1.flac
+p267	1	23	F	English	Yorkshire	p267_020	5.167562	Many complicated ideas about the rainbow have been formed.	wav48_silence_trimmed/p267/p267_020_mic1.flac
+p267	2	23	F	English	Yorkshire	p267_014	4.8265	To the Hebrews it was a token that there would be no more universal floods.	wav48_silence_trimmed/p267/p267_014_mic1.flac
+p267	3	23	F	English	Yorkshire	p267_033	5.241417	Of course, on Tuesday, United were beaten despite this.	wav48_silence_trimmed/p267/p267_033_mic1.flac
+p267	4	23	F	English	Yorkshire	p267_006	5.252771	When the sunlight strikes raindrops in the air, they act as a prism and form a rainbow.	wav48_silence_trimmed/p267/p267_006_mic1.flac
+p267	5	23	F	English	Yorkshire	p267_009	4.694125	There is , according to legend, a boiling pot of gold at one end.	wav48_silence_trimmed/p267/p267_009_mic1.flac
+p268	1	23	F	English	Southern  England	p268_057	5.002083	But it couldn't happen overnight.	wav48_silence_trimmed/p268/p268_057_mic1.flac
+p268	2	23	F	English	Southern  England	p268_342	5.016	Plans were made to expand.	wav48_silence_trimmed/p268/p268_342_mic1.flac
+p268	3	23	F	English	Southern  England	p268_338	5.020729	The business has expanded rapidly, however.	wav48_silence_trimmed/p268/p268_338_mic1.flac
+p268	4	23	F	English	Southern  England	p268_172	5.032375	Do I think about them often?	wav48_silence_trimmed/p268/p268_172_mic1.flac
+p268	5	23	F	English	Southern  England	p268_071	5.033125	A spokeswoman for the Law Society of Scotland said.	wav48_silence_trimmed/p268/p268_071_mic1.flac
+p269	1	20	F	English	Newcastle	p269_099	5.01525	However, the intensive care unit at the Southern General Hospital was full.	wav48_silence_trimmed/p269/p269_099_mic1.flac
+p269	2	20	F	English	Newcastle	p269_014	5.032604	To the Hebrews it was a token that there would be no more universal floods.	wav48_silence_trimmed/p269/p269_014_mic1.flac
+p269	3	20	F	English	Newcastle	p269_097	4.905208	Previously, they were raised in the European Court of Human Rights.	wav48_silence_trimmed/p269/p269_097_mic1.flac
+p269	4	20	F	English	Newcastle	p269_268	4.902542	Labour's Scottish general secretary Alex Rowley was delighted yesterday.	wav48_silence_trimmed/p269/p269_268_mic1.flac
+p269	5	20	F	English	Newcastle	p269_006	5.164937	When the sunlight strikes raindrops in the air, they act as a prism and form a rainbow.	wav48_silence_trimmed/p269/p269_006_mic1.flac
+p270	1	21	M	English	Yorkshire	p270_007	4.995729	The rainbow is a division of white light into many beautiful colors.	wav48_silence_trimmed/p270/p270_007_mic1.flac
+p270	2	21	M	English	Yorkshire	p270_012	5.035687	Throughout the centuries people have explained the rainbow in various ways.	wav48_silence_trimmed/p270/p270_012_mic1.flac
+p270	3	21	M	English	Yorkshire	p270_315	4.951917	A police inquiry began about two weeks before the General Election.	wav48_silence_trimmed/p270/p270_315_mic1.flac
+p270	4	21	M	English	Yorkshire	p270_091	4.926146	Previously, they were raised in the European Court of Human Rights.	wav48_silence_trimmed/p270/p270_091_mic1.flac
+p270	5	21	M	English	Yorkshire	p270_013	5.089646	Some have accepted it as a miracle without physical explanation.	wav48_silence_trimmed/p270/p270_013_mic1.flac
+p271	1	19	M	Scottish	Fife	p271_350	4.992479	He met Mr Davies to establish the scale of the scandal.	wav48_silence_trimmed/p271/p271_350_mic1.flac
+p271	2	19	M	Scottish	Fife	p271_027	4.991771	Several other countries are also reported to be interested in the format.	wav48_silence_trimmed/p271/p271_027_mic1.flac
+p271	3	19	M	Scottish	Fife	p271_127	4.986125	The proposals are to be debated on Monday by city councillors.	wav48_silence_trimmed/p271/p271_127_mic1.flac
+p271	4	19	M	Scottish	Fife	p271_122	5.01475	That was the lesson to be learned from the European Championships.	wav48_silence_trimmed/p271/p271_122_mic1.flac
+p271	5	19	M	Scottish	Fife	p271_277	4.985229	The decision was announced at its annual conference in Dunfermline.	wav48_silence_trimmed/p271/p271_277_mic1.flac
+p272	1	23	M	Scottish	Edinburgh	p272_252	5.036833	George W Bush, the US president, condemned the attacks.	wav48_silence_trimmed/p272/p272_252_mic1.flac
+p272	2	23	M	Scottish	Edinburgh	p272_012	4.953146	Throughout the centuries people have explained the rainbow in various ways.	wav48_silence_trimmed/p272/p272_012_mic1.flac
+p272	3	23	M	Scottish	Edinburgh	p272_169	4.938292	It's hard enough for a father, anyway, and I was forever grateful.	wav48_silence_trimmed/p272/p272_169_mic1.flac
+p272	4	23	M	Scottish	Edinburgh	p272_257	5.079354	He claimed his insurance company contested the damages, not the restaurant.	wav48_silence_trimmed/p272/p272_257_mic1.flac
+p272	5	23	M	Scottish	Edinburgh	p272_212	4.864521	I am very sorry that Alastair Campbell has taken this decision.	wav48_silence_trimmed/p272/p272_212_mic1.flac
+p273	1	23	M	English	Suffolk	p273_291	4.918021	Ms Anderson yesterday put a brave face on the departure.	wav48_silence_trimmed/p273/p273_291_mic1.flac
+p273	2	23	M	English	Suffolk	p273_014	5.164042	To the Hebrews it was a token that there would be no more universal floods.	wav48_silence_trimmed/p273/p273_014_mic1.flac
+p273	3	23	M	English	Suffolk	p273_007	4.694167	The rainbow is a division of white light into many beautiful colors.	wav48_silence_trimmed/p273/p273_007_mic1.flac
+p273	4	23	M	English	Suffolk	p273_004	5.315792	We also need a small plastic snake and a big toy frog for the kids.	wav48_silence_trimmed/p273/p273_004_mic1.flac
+p273	5	23	M	English	Suffolk	p273_018	5.335271	Aristotle thought that the rainbow was caused by reflection of the sun's rays by the rain.	wav48_silence_trimmed/p273/p273_018_mic1.flac
+p274	1	22	M	English	Essex	p274_012	4.985125	Throughout the centuries people have explained the rainbows in various ways.	wav48_silence_trimmed/p274/p274_012_mic1.flac
+p274	2	22	M	English	Essex	p274_431	4.976208	A police spokeswoman said last night that the case was closed.	wav48_silence_trimmed/p274/p274_431_mic1.flac
+p274	3	22	M	English	Essex	p274_145	5.026896	No-one from the Fire Brigades Union was available for comment yesterday.	wav48_silence_trimmed/p274/p274_145_mic1.flac
+p274	4	22	M	English	Essex	p274_355	4.946479	Shoppers were attracted by the heavy discounting on selected items.	wav48_silence_trimmed/p274/p274_355_mic1.flac
+p274	5	22	M	English	Essex	p274_232	4.933646	They included certain insurance policies, and his share of the house.	wav48_silence_trimmed/p274/p274_232_mic1.flac
+p275	1	23	M	Scottish	Midlothian	p275_009	5.070312	There is , according to the legend, a boiling pot of gold at one end.	wav48_silence_trimmed/p275/p275_009_mic1.flac
+p275	2	23	M	Scottish	Midlothian	p275_012	4.906271	Throughout the centuries people have explained the rainbows in various ways.	wav48_silence_trimmed/p275/p275_012_mic1.flac
+p275	3	23	M	Scottish	Midlothian	p275_125	5.134167	It is still too early for any likely contenders to have emerged.	wav48_silence_trimmed/p275/p275_125_mic1.flac
+p275	4	23	M	Scottish	Midlothian	p275_018	5.137812	Aristotle thought that the rainbow was caused by reflection of the sun's rays by the rain.	wav48_silence_trimmed/p275/p275_018_mic1.flac
+p275	5	23	M	Scottish	Midlothian	p275_096	5.153854	Meanwhile, the Scottish Consumer Council yesterday offered support for the new Bill.	wav48_silence_trimmed/p275/p275_096_mic1.flac
+p276	1	24	F	English	Oxford	p276_070	5.009521	The Labour Party's not downbeat, and neither is the Labour Government.	wav48_silence_trimmed/p276/p276_070_mic1.flac
+p276	2	24	F	English	Oxford	p276_252	4.984271	No-one from the Fire Brigades Union was available for comment yesterday.	wav48_silence_trimmed/p276/p276_252_mic1.flac
+p276	3	24	F	English	Oxford	p276_345	5.031396	This included a downward revision in the expected level of dividend.	wav48_silence_trimmed/p276/p276_345_mic1.flac
+p276	4	24	F	English	Oxford	p276_009	5.038458	There is , according to legend, a boiling pot of gold at one end.	wav48_silence_trimmed/p276/p276_009_mic1.flac
+p276	5	24	F	English	Oxford	p276_012	5.1345	Throughout the centuries people have explained the rainbow in various ways.	wav48_silence_trimmed/p276/p276_012_mic1.flac
+p277	1	23	F	English	NE  England	p277_245	5.039167	However, it is understood that offers of further payments are unlikely.	wav48_silence_trimmed/p277/p277_245_mic1.flac
+p277	2	23	F	English	NE  England	p277_140	4.951875	It is not satisfied with the standard of fire safety provisions.	wav48_silence_trimmed/p277/p277_140_mic1.flac
+p277	3	23	F	English	NE  England	p277_342	5.050083	Another case of foot-and-mouth disease was confirmed in Scotland yesterday.	wav48_silence_trimmed/p277/p277_342_mic1.flac
+p277	4	23	F	English	NE  England	p277_041	4.923813	Two other men, including the taxi driver, were wounded in the attack.	wav48_silence_trimmed/p277/p277_041_mic1.flac
+p277	5	23	F	English	NE  England	p277_221	4.912583	Dewar was certainly under attack from within his own party.	wav48_silence_trimmed/p277/p277_221_mic1.flac
+p278	1	22	M	English	Cheshire	p278_135	5.01675	But he admitted he could not speak for the new owner.	wav48_silence_trimmed/p278/p278_135_mic1.flac
+p278	2	22	M	English	Cheshire	p278_004	4.981333	We also need a small plastic snake and a big toy frog for the kids.	wav48_silence_trimmed/p278/p278_004_mic1.flac
+p278	3	22	M	English	Cheshire	p278_278	5.039292	I rejected the idea of a separate residence.	wav48_silence_trimmed/p278/p278_278_mic1.flac
+p278	4	22	M	English	Cheshire	p278_376	4.929333	The parents are not alone in their concerns about the proposals.	wav48_silence_trimmed/p278/p278_376_mic1.flac
+p278	5	22	M	English	Cheshire	p278_300	4.922229	However, he will have his work cut out defending his title.	wav48_silence_trimmed/p278/p278_300_mic1.flac
+p279	1	23	M	English	Leicester	p279_018	4.952562	Aristotle thought that the rainbow was caused by reflection of the sun's rays by the rain.	wav48_silence_trimmed/p279/p279_018_mic1.flac
+p279	2	23	M	English	Leicester	p279_366	5.074	Whether his stance is shared by the incoming manager is another matter.	wav48_silence_trimmed/p279/p279_366_mic1.flac
+p279	3	23	M	English	Leicester	p279_230	4.919292	Jim Wallace, the justice minister, acknowledged that prisoner numbers were a concern.	wav48_silence_trimmed/p279/p279_230_mic1.flac
+p279	4	23	M	English	Leicester	p279_005	4.783437	She can scoop these things into three red bags, and we will go meet her Wednesday at the train station.	wav48_silence_trimmed/p279/p279_005_mic1.flac
+p279	5	23	M	English	Leicester	p279_088	4.779479	The shareholders will vote to wind up the company on Friday morning.	wav48_silence_trimmed/p279/p279_088_mic1.flac
+p281	1	29	M	Scottish	Edinburgh	p281_236	4.963708	For the refugees, the return will not come a moment too soon.	wav48_silence_trimmed/p281/p281_236_mic1.flac
+p281	2	29	M	Scottish	Edinburgh	p281_044	4.804812	But, after a dip in sales, growth was recorded.	wav48_silence_trimmed/p281/p281_044_mic1.flac
+p281	3	29	M	Scottish	Edinburgh	p281_049	4.792875	However, he will now have to wait for his chance to impress.	wav48_silence_trimmed/p281/p281_049_mic1.flac
+p281	4	29	M	Scottish	Edinburgh	p281_418	4.747833	However, there is an issue, isn't there?	wav48_silence_trimmed/p281/p281_418_mic1.flac
+p281	5	29	M	Scottish	Edinburgh	p281_013	4.73575	Some have accepted it as a miracle without physical explanation.	wav48_silence_trimmed/p281/p281_013_mic1.flac
+p282	1	23	F	English	Newcastle	p282_027	5.008438	Several other countries are also reported to be interested in the format.	wav48_silence_trimmed/p282/p282_027_mic1.flac
+p282	2	23	F	English	Newcastle	p282_214	4.953146	The council has proposed a temporary barrier to protect the monument.	wav48_silence_trimmed/p282/p282_214_mic1.flac
+p282	3	23	F	English	Newcastle	p282_147	4.946958	He sets the nature of his Parliament in a simple, realistic context.	wav48_silence_trimmed/p282/p282_147_mic1.flac
+p282	4	23	F	English	Newcastle	p282_268	5.055813	Jim Wallace, justice minister, has refused to hold an inquiry.	wav48_silence_trimmed/p282/p282_268_mic1.flac
+p282	5	23	F	English	Newcastle	p282_304	5.063646	However, he is a coach, and he remains a coach at heart.	wav48_silence_trimmed/p282/p282_304_mic1.flac
+p283	1	24	F	Irish	Cork	p283_013	5.166375	Some have accepted it as a miracle without physical explanation.	wav48_silence_trimmed/p283/p283_013_mic1.flac
+p283	2	24	F	Irish	Cork	p283_020	5.173438	Many complicated ideas about the rainbow have been formed.	wav48_silence_trimmed/p283/p283_020_mic1.flac
+p283	3	24	F	Irish	Cork	p283_014	4.826292	To the Hebrews it was a token that there would be no more universal floods.	wav48_silence_trimmed/p283/p283_014_mic1.flac
+p283	4	24	F	Irish	Cork	p283_004	5.220917	We also need a small plastic snake and a big toy frog for the kids.	wav48_silence_trimmed/p283/p283_004_mic1.flac
+p283	5	24	F	Irish	Cork	p283_084	4.698938	Halifax has also been mentioned as a likely predator.	wav48_silence_trimmed/p283/p283_084_mic1.flac
+p284	1	20	M	Scottish	Fife	p284_351	4.99	This is a sector in overall deficit and urgent action is required.	wav48_silence_trimmed/p284/p284_351_mic1.flac
+p284	2	20	M	Scottish	Fife	p284_213	5.038646	This obsession wasn't just contained within the world of the losers.	wav48_silence_trimmed/p284/p284_213_mic1.flac
+p284	3	20	M	Scottish	Fife	p284_150	4.952271	The departure of Mr Johnston was reported by The Herald yesterday.	wav48_silence_trimmed/p284/p284_150_mic1.flac
+p284	4	20	M	Scottish	Fife	p284_250	4.911125	However, it is understood that offers of further payments are unlikely.	wav48_silence_trimmed/p284/p284_250_mic1.flac
+p284	5	20	M	Scottish	Fife	p284_005	5.100583	She can scoop these things into three red bags, and we will go meet her Wednesday at the train station.	wav48_silence_trimmed/p284/p284_005_mic1.flac
+p285	1	21	M	Scottish	Edinburgh	p285_006	5.127208	When the sunlight strikes raindrops in the air, they act as a prism and form a rainbow.	wav48_silence_trimmed/p285/p285_006_mic1.flac
+p285	2	21	M	Scottish	Edinburgh	p285_030	4.823042	They were described as being in a serious but stable condition yesterday.	wav48_silence_trimmed/p285/p285_030_mic1.flac
+p285	3	21	M	Scottish	Edinburgh	p285_018	5.203667	Aristotle thought that the rainbow was caused by reflection of the sun's rays by the rain.	wav48_silence_trimmed/p285/p285_018_mic1.flac
+p285	4	21	M	Scottish	Edinburgh	p285_014	4.789208	To the Hebrews it was a token that there would be no more universal floods.	wav48_silence_trimmed/p285/p285_014_mic1.flac
+p285	5	21	M	Scottish	Edinburgh	p285_350	4.736854	A spokeswoman for Edinburgh City Council confirmed its support for the company.	wav48_silence_trimmed/p285/p285_350_mic1.flac
+p286	1	23	M	English	Newcastle	p286_009	4.997333	There is , according to legend, a boiling pot of gold at one end.	wav48_silence_trimmed/p286/p286_009_mic1.flac
+p286	2	23	M	English	Newcastle	p286_263	4.947396	Chairman Sir Alistair Grant will remain on the board as deputy chairman.	wav48_silence_trimmed/p286/p286_263_mic1.flac
+p286	3	23	M	English	Newcastle	p286_100	5.061312	The commission initiated the necessary changes in the financial regulation.	wav48_silence_trimmed/p286/p286_100_mic1.flac
+p286	4	23	M	English	Newcastle	p286_198	5.123563	The new owners wanted the club to go in a different direction.	wav48_silence_trimmed/p286/p286_198_mic1.flac
+p286	5	23	M	English	Newcastle	p286_364	4.86825	In general terms, the proposals are very much in line with expectations.	wav48_silence_trimmed/p286/p286_364_mic1.flac
+p287	1	23	M	English	York	p287_200	4.951937	The guidelines are expected to be finalised before next spring.	wav48_silence_trimmed/p287/p287_200_mic1.flac
+p287	2	23	M	English	York	p287_014	4.822604	To the Hebrews it was a token that there would be no more universal floods.	wav48_silence_trimmed/p287/p287_014_mic1.flac
+p287	3	23	M	English	York	p287_325	4.818354	However, Walker remains determined to fight the proposals.	wav48_silence_trimmed/p287/p287_325_mic1.flac
+p287	4	23	M	English	York	p287_249	4.78325	By then, a massive legal battle is likely to have started.	wav48_silence_trimmed/p287/p287_249_mic1.flac
+p287	5	23	M	English	York	p287_004	5.249979	We also need a small plastic snake and a big toy frog for the kids.	wav48_silence_trimmed/p287/p287_004_mic1.flac
+p288	1	22	F	Irish	Dublin	p288_290	5.002375	The departure of Mr Johnston was reported by The Herald yesterday.	wav48_silence_trimmed/p288/p288_290_mic1.flac
+p288	2	22	F	Irish	Dublin	p288_345	5.004771	A formal announcement is expected this morning at a news conference.	wav48_silence_trimmed/p288/p288_345_mic1.flac
+p288	3	22	F	Irish	Dublin	p288_155	4.992354	Local managers are already involved in talks with potential investors.	wav48_silence_trimmed/p288/p288_155_mic1.flac
+p288	4	22	F	Irish	Dublin	p288_123	4.983792	The proposals are to be debated on Monday by city councillors.	wav48_silence_trimmed/p288/p288_123_mic1.flac
+p288	5	22	F	Irish	Dublin	p288_065	4.958583	The end result is precisely the same.	wav48_silence_trimmed/p288/p288_065_mic1.flac
+p292	1	23	M	NorthernIrish	Belfast	p292_037	4.95	Everything is obviously in the very early stages.	wav48_silence_trimmed/p292/p292_037_mic1.flac
+p292	2	23	M	NorthernIrish	Belfast	p292_013	4.885667	Some have accepted it as a miracle without physical explanation.	wav48_silence_trimmed/p292/p292_013_mic1.flac
+p292	3	23	M	NorthernIrish	Belfast	p292_148	4.725333	But we are not immune to the problem.	wav48_silence_trimmed/p292/p292_148_mic1.flac
+p292	4	23	M	NorthernIrish	Belfast	p292_374	5.335583	As two candidates are proposed, a vote is taken.	wav48_silence_trimmed/p292/p292_374_mic1.flac
+p292	5	23	M	NorthernIrish	Belfast	p292_014	5.453479	To the Hebrews it was a token that there would be no more universal floods.	wav48_silence_trimmed/p292/p292_014_mic1.flac
+p293	1	22	F	NorthernIrish	Belfast	p293_094	5.017437	We've been overwhelmed by the response.	wav48_silence_trimmed/p293/p293_094_mic1.flac
+p293	2	22	F	NorthernIrish	Belfast	p293_116	5.036208	PR for Westminster is their holy grail.	wav48_silence_trimmed/p293/p293_116_mic1.flac
+p293	3	22	F	NorthernIrish	Belfast	p293_156	4.954042	It's something he has worked very hard on.	wav48_silence_trimmed/p293/p293_156_mic1.flac
+p293	4	22	F	NorthernIrish	Belfast	p293_256	4.953896	The protest will go ahead as planned.	wav48_silence_trimmed/p293/p293_256_mic1.flac
+p293	5	22	F	NorthernIrish	Belfast	p293_007	5.081313	The rainbow is a division of white light into many beautiful colors.	wav48_silence_trimmed/p293/p293_007_mic1.flac
+p294	1	33	F	American	San  Francisco	p294_012	4.960021	Throughout the centuries people have explained the rainbow in various ways.	wav48_silence_trimmed/p294/p294_012_mic1.flac
+p294	2	33	F	American	San  Francisco	p294_009	5.321208	There is , according to legend, a boiling pot of gold at one end.	wav48_silence_trimmed/p294/p294_009_mic1.flac
+p294	3	33	F	American	San  Francisco	p294_017	4.637562	Others have tried to explain the phenomenon physically.	wav48_silence_trimmed/p294/p294_017_mic1.flac
+p294	4	33	F	American	San  Francisco	p294_013	5.370458	Some have accepted it as a miracle without physical explanation.	wav48_silence_trimmed/p294/p294_013_mic1.flac
+p294	5	33	F	American	San  Francisco	p294_007	5.442104	The rainbow is a division of white light into many beautiful colors.	wav48_silence_trimmed/p294/p294_007_mic1.flac
+p295	1	23	F	Irish	Dublin	p295_274	4.997979	The overall effect is impressive, but distancing.	wav48_silence_trimmed/p295/p295_274_mic1.flac
+p295	2	23	F	Irish	Dublin	p295_212	4.995792	The music is therefore profoundly subversive.	wav48_silence_trimmed/p295/p295_212_mic1.flac
+p295	3	23	F	Irish	Dublin	p295_007	5.035333	The rainbow is a division of white light into many beautiful colors.	wav48_silence_trimmed/p295/p295_007_mic1.flac
+p295	4	23	F	Irish	Dublin	p295_204	5.03625	That's why he is a national treasure.	wav48_silence_trimmed/p295/p295_204_mic1.flac
+p295	5	23	F	Irish	Dublin	p295_182	5.042167	That's when you hope to take advantage.	wav48_silence_trimmed/p295/p295_182_mic1.flac
+p297	1	20	F	American	New  York	p297_190	4.944625	There's not much money in cycling.	wav48_silence_trimmed/p297/p297_190_mic1.flac
+p297	2	20	F	American	New  York	p297_032	5.085333	Jack McConnell will be making a statement tomorrow.	wav48_silence_trimmed/p297/p297_032_mic1.flac
+p297	3	20	F	American	New  York	p297_049	4.911458	Things start to talk to each other.	wav48_silence_trimmed/p297/p297_049_mic1.flac
+p297	4	20	F	American	New  York	p297_285	4.901125	Finally, they have a journey back to their youth.	wav48_silence_trimmed/p297/p297_285_mic1.flac
+p297	5	20	F	American	New  York	p297_404	4.889125	I played really well on the back nine.	wav48_silence_trimmed/p297/p297_404_mic1.flac
+p298	1	19	M	Irish	Tipperary	p298_014	5.002438	To the Hebrews it was a token that there would be no more universal floods.	wav48_silence_trimmed/p298/p298_014_mic1.flac
+p298	2	19	M	Irish	Tipperary	p298_092	4.996688	These things are important for clubs like ourselves.	wav48_silence_trimmed/p298/p298_092_mic1.flac
+p298	3	19	M	Irish	Tipperary	p298_047	4.994	It was an easy decision to come here.	wav48_silence_trimmed/p298/p298_047_mic1.flac
+p298	4	19	M	Irish	Tipperary	p298_296	4.989937	Last night, however, other experts were cautious about the claim.	wav48_silence_trimmed/p298/p298_296_mic1.flac
+p298	5	19	M	Irish	Tipperary	p298_309	5.020396	No-one, not even the Scottish Arts Council, was interested in her.	wav48_silence_trimmed/p298/p298_309_mic1.flac
+p299	1	25	F	American	California	p299_009	5.081896	There is , according to legend, a boiling pot of gold at one end.	wav48_silence_trimmed/p299/p299_009_mic1.flac
+p299	2	25	F	American	California	p299_013	4.909458	Some have accepted it as a miracle without physical explanation.	wav48_silence_trimmed/p299/p299_013_mic1.flac
+p299	3	25	F	American	California	p299_014	5.113896	To the Hebrews it was a token that there would be no more universal floods.	wav48_silence_trimmed/p299/p299_014_mic1.flac
+p299	4	25	F	American	California	p299_079	5.124104	John Reid, the Northern Ireland secretary, yesterday appealed for restraint.	wav48_silence_trimmed/p299/p299_079_mic1.flac
+p299	5	25	F	American	California	p299_121	4.7945	Council officials are involved, along with the transport industry.	wav48_silence_trimmed/p299/p299_121_mic1.flac
+p300	1	23	F	American	California	p300_174	4.998354	It was a bit like having children.	wav48_silence_trimmed/p300/p300_174_mic1.flac
+p300	2	23	F	American	California	p300_331	4.992625	However, within five minutes they were able to celebrate.	wav48_silence_trimmed/p300/p300_331_mic1.flac
+p300	3	23	F	American	California	p300_070	4.992583	This is the way things should be handled.	wav48_silence_trimmed/p300/p300_070_mic1.flac
+p300	4	23	F	American	California	p300_387	5.016938	Mrs Thatcher was in the right place, at the right time.	wav48_silence_trimmed/p300/p300_387_mic1.flac
+p300	5	23	F	American	California	p300_354	5.032	You can leave him, knowing the job will be done.	wav48_silence_trimmed/p300/p300_354_mic1.flac
+p301	1	23	F	American	North  Carolina	p301_046	5.006	She added, It is the same story in both countries.	wav48_silence_trimmed/p301/p301_046_mic1.flac
+p301	2	23	F	American	North  Carolina	p301_288	5.006146	They had been together for about three years.	wav48_silence_trimmed/p301/p301_288_mic1.flac
+p301	3	23	F	American	North  Carolina	p301_206	4.992938	It opens the door to the Champions League.	wav48_silence_trimmed/p301/p301_206_mic1.flac
+p301	4	23	F	American	North  Carolina	p301_151	5.007729	I haven't just gone in, done a three-hour rehearsal, and gone.	wav48_silence_trimmed/p301/p301_151_mic1.flac
+p301	5	23	F	American	North  Carolina	p301_339	5.016792	He wasn't really doing anything, so he wanted out.	wav48_silence_trimmed/p301/p301_339_mic1.flac
+p302	1	20	M	Canadian	Montreal	p302_017	5.002354	Others have tried to explain the phenomenon physically.	wav48_silence_trimmed/p302/p302_017_mic1.flac
+p302	2	20	M	Canadian	Montreal	p302_103	5.028833	He is only now regaining his confidence.	wav48_silence_trimmed/p302/p302_103_mic1.flac
+p302	3	20	M	Canadian	Montreal	p302_163	4.933333	Although it was expected, everyone is very, very angry.	wav48_silence_trimmed/p302/p302_163_mic1.flac
+p302	4	20	M	Canadian	Montreal	p302_050	4.861875	I know a lot of people who don't.	wav48_silence_trimmed/p302/p302_050_mic1.flac
+p302	5	20	M	Canadian	Montreal	p302_089	4.788604	It's a flourishing and beautiful city.	wav48_silence_trimmed/p302/p302_089_mic1.flac
+p303	1	24	F	Canadian	Toronto	p303_081	4.993354	It is, in other words, Entrapment by another name.	wav48_silence_trimmed/p303/p303_081_mic1.flac
+p303	2	24	F	Canadian	Toronto	p303_107	4.991708	Urgent action is needed to tackle this crisis.	wav48_silence_trimmed/p303/p303_107_mic1.flac
+p303	3	24	F	Canadian	Toronto	p303_152	5.011312	Who would take it now, after all this?	wav48_silence_trimmed/p303/p303_152_mic1.flac
+p303	4	24	F	Canadian	Toronto	p303_082	5.015062	Disruption will be kept to a minimum.	wav48_silence_trimmed/p303/p303_082_mic1.flac
+p303	5	24	F	Canadian	Toronto	p303_048	4.97275	I didn't know the company all that well, or the dancers.	wav48_silence_trimmed/p303/p303_048_mic1.flac
+p304	1	22	M	NorthernIrish	Belfast	p304_013	4.887542	Some have accepted it as a miracle without physical explanation.	wav48_silence_trimmed/p304/p304_013_mic1.flac
+p304	2	22	M	NorthernIrish	Belfast	p304_020	5.220458	Many complicated ideas about the rainbow have been formed.	wav48_silence_trimmed/p304/p304_020_mic1.flac
+p304	3	22	M	NorthernIrish	Belfast	p304_012	5.253938	Throughout the centuries people have explained the rainbow in various ways.	wav48_silence_trimmed/p304/p304_012_mic1.flac
+p304	4	22	M	NorthernIrish	Belfast	p304_077	4.696875	We are almost at that point, but not quite.	wav48_silence_trimmed/p304/p304_077_mic1.flac
+p304	5	22	M	NorthernIrish	Belfast	p304_009	5.364521	There is , according to legend, a boiling pot of gold at one end.	wav48_silence_trimmed/p304/p304_009_mic1.flac
+p305	1	19	F	American	Philadelphia	p305_126	4.947583	I would welcome a proper, public discussion on this issue.	wav48_silence_trimmed/p305/p305_126_mic1.flac
+p305	2	19	F	American	Philadelphia	p305_077	4.942583	That would open the gates of hell.	wav48_silence_trimmed/p305/p305_077_mic1.flac
+p305	3	19	F	American	Philadelphia	p305_114	5.073458	We have the experience, the courses, and an abundance of confidence.	wav48_silence_trimmed/p305/p305_114_mic1.flac
+p305	4	19	F	American	Philadelphia	p305_035	4.915563	Everyone around the club was supportive.	wav48_silence_trimmed/p305/p305_035_mic1.flac
+p305	5	19	F	American	Philadelphia	p305_319	5.085938	The airspace above the theatre was closed off.	wav48_silence_trimmed/p305/p305_319_mic1.flac
+p306	1	21	F	American	New  York	p306_348	5.001875	It is a simple equation.	wav48_silence_trimmed/p306/p306_348_mic1.flac
+p306	2	21	F	American	New  York	p306_090	4.981979	What happens when the funding is exhausted.	wav48_silence_trimmed/p306/p306_090_mic1.flac
+p306	3	21	F	American	New  York	p306_113	5.023292	Look at them after three days of rain.	wav48_silence_trimmed/p306/p306_113_mic1.flac
+p306	4	21	F	American	New  York	p306_037	5.026979	This means that our programme is quite unusual.	wav48_silence_trimmed/p306/p306_037_mic1.flac
+p306	5	21	F	American	New  York	p306_236	5.028208	The success story shows no signs of stopping.	wav48_silence_trimmed/p306/p306_236_mic1.flac
+p307	1	23	F	Canadian	Ontario	p307_045	4.991458	It's like, If he's all right, we will go with him.	wav48_silence_trimmed/p307/p307_045_mic1.flac
+p307	2	23	F	Canadian	Ontario	p307_180	4.991313	I always loved the lightning in the movies.	wav48_silence_trimmed/p307/p307_180_mic1.flac
+p307	3	23	F	Canadian	Ontario	p307_159	5.018146	The death toll included five children.	wav48_silence_trimmed/p307/p307_159_mic1.flac
+p307	4	23	F	Canadian	Ontario	p307_046	4.978667	She added, It is the same story in both countries.	wav48_silence_trimmed/p307/p307_046_mic1.flac
+p307	5	23	F	Canadian	Ontario	p307_102	5.02825	I am sure all schools would accept that.	wav48_silence_trimmed/p307/p307_102_mic1.flac
+p308	1	18	F	American	Alabama	p308_396	4.994396	At present it is fairly uncommon, but its incidence is increasing.	wav48_silence_trimmed/p308/p308_396_mic1.flac
+p308	2	18	F	American	Alabama	p308_103	4.984	He is only now regaining his confidence.	wav48_silence_trimmed/p308/p308_103_mic1.flac
+p308	3	18	F	American	Alabama	p308_204	4.978167	Have we not had the rainy season already?	wav48_silence_trimmed/p308/p308_204_mic1.flac
+p308	4	18	F	American	Alabama	p308_004	5.039396	We also need a small plastic snake and a big toy frog for the kids.	wav48_silence_trimmed/p308/p308_004_mic1.flac
+p308	5	18	F	American	Alabama	p308_328	4.959125	Charles Gordon, leader of Glasgow City Council declined to comment.	wav48_silence_trimmed/p308/p308_328_mic1.flac
+p310	1	21	F	American	Tennessee	p310_192	5.06025	It's been very exciting, very challenging, and a privilege.	wav48_silence_trimmed/p310/p310_192_mic1.flac
+p310	2	21	F	American	Tennessee	p310_328	5.076042	The pressure was now back on Mr Arafat.	wav48_silence_trimmed/p310/p310_328_mic1.flac
+p310	3	21	F	American	Tennessee	p310_048	4.883021	We're talking about creating an attractive neighbourhood.	wav48_silence_trimmed/p310/p310_048_mic1.flac
+p310	4	21	F	American	Tennessee	p310_202	4.860771	I wanted, really, to deal with two opposite energies.	wav48_silence_trimmed/p310/p310_202_mic1.flac
+p310	5	21	F	American	Tennessee	p310_318	5.167562	Others were in hiding, in fear of their lives.	wav48_silence_trimmed/p310/p310_318_mic1.flac
+p311	1	21	M	American	Iowa	p311_014	4.995708	To the Hebrews it was a token that there would be no more universal floods.	wav48_silence_trimmed/p311/p311_014_mic1.flac
+p311	2	21	M	American	Iowa	p311_163	5.122646	In that case, the children were not missing.	wav48_silence_trimmed/p311/p311_163_mic1.flac
+p311	3	21	M	American	Iowa	p311_012	5.128438	Throughout the centuries people have explained the rainbow in various ways.	wav48_silence_trimmed/p311/p311_012_mic1.flac
+p311	4	21	M	American	Iowa	p311_199	4.783354	She was not hard done by.	wav48_silence_trimmed/p311/p311_199_mic1.flac
+p311	5	21	M	American	Iowa	p311_013	4.695479	Some have accepted it as a miracle without physical explanation.	wav48_silence_trimmed/p311/p311_013_mic1.flac
+p312	1	19	F	Canadian	Hamilton	p312_020	4.912646	Many complicated ideas about the rainbows have been formed.	wav48_silence_trimmed/p312/p312_020_mic1.flac
+p312	2	19	F	Canadian	Hamilton	p312_009	5.093375	There is , according to legend, a boiling pot of gold at one end.	wav48_silence_trimmed/p312/p312_009_mic1.flac
+p312	3	19	F	Canadian	Hamilton	p312_191	5.174104	He never asked me for money.	wav48_silence_trimmed/p312/p312_191_mic1.flac
+p312	4	19	F	Canadian	Hamilton	p312_150	4.748062	We still have a long, long way to go.	wav48_silence_trimmed/p312/p312_150_mic1.flac
+p312	5	19	F	Canadian	Hamilton	p312_012	4.663437	Throughout the centuries people have explained the rainbow in various ways.	wav48_silence_trimmed/p312/p312_012_mic1.flac
+p313	1	24	F	Irish	County  Down	p313_010	4.923188	People look, but no one ever finds it.	wav48_silence_trimmed/p313/p313_010_mic1.flac
+p313	2	24	F	Irish	County  Down	p313_119	5.081188	O Neill is reputed to have replied.	wav48_silence_trimmed/p313/p313_119_mic1.flac
+p313	3	24	F	Irish	County  Down	p313_285	4.911646	I would never even consider it.	wav48_silence_trimmed/p313/p313_285_mic1.flac
+p313	4	24	F	Irish	County  Down	p313_068	5.124771	However, there is great potential in this right.	wav48_silence_trimmed/p313/p313_068_mic1.flac
+p313	5	24	F	Irish	County  Down	p313_137	5.205979	This performance has given my confidence a boost.	wav48_silence_trimmed/p313/p313_137_mic1.flac
+p314	1	26	F	SouthAfrican	Cape  Town	p314_380	4.997875	Even though the show is seriously exacting, physically demanding.	wav48_silence_trimmed/p314/p314_380_mic1.flac
+p314	2	26	F	SouthAfrican	Cape  Town	p314_062	4.963667	Meanwhile, the search continues for Ferguson's replacement.	wav48_silence_trimmed/p314/p314_062_mic1.flac
+p314	3	26	F	SouthAfrican	Cape  Town	p314_302	4.954458	CELTIC Connections is here again - and the great debate.	wav48_silence_trimmed/p314/p314_302_mic1.flac
+p314	4	26	F	SouthAfrican	Cape  Town	p314_007	4.931188	The rainbow is a division of white light into many beautiful colors.	wav48_silence_trimmed/p314/p314_007_mic1.flac
+p314	5	26	F	SouthAfrican	Cape  Town	p314_083	4.892604	I, like many others, will consider where we go from here.	wav48_silence_trimmed/p314/p314_083_mic1.flac
+p316	1	20	M	Canadian	Alberta	p316_387	4.986646	Mr Campbell received a phone call.	wav48_silence_trimmed/p316/p316_387_mic1.flac
+p316	2	20	M	Canadian	Alberta	p316_010	5.0265	People look, but no one ever finds it.	wav48_silence_trimmed/p316/p316_010_mic1.flac
+p316	3	20	M	Canadian	Alberta	p316_302	5.033792	If we live forever, can we really be said to live?	wav48_silence_trimmed/p316/p316_302_mic1.flac
+p316	4	20	M	Canadian	Alberta	p316_122	4.868938	That would depend on the parole board.	wav48_silence_trimmed/p316/p316_122_mic1.flac
+p316	5	20	M	Canadian	Alberta	p316_095	5.149063	Hopefully, he will be back in contention next week.	wav48_silence_trimmed/p316/p316_095_mic1.flac
+p317	1	23	F	Canadian	Hamilton	p317_169	5.032	We have the experience, the courses, and an abundance of confidence.	wav48_silence_trimmed/p317/p317_169_mic1.flac
+p317	2	23	F	Canadian	Hamilton	p317_042	4.950354	Ten years on, that advice is beginning to pay dividends.	wav48_silence_trimmed/p317/p317_042_mic1.flac
+p317	3	23	F	Canadian	Hamilton	p317_351	4.909896	Mind you, he hasn't been back for ages.	wav48_silence_trimmed/p317/p317_351_mic1.flac
+p317	4	23	F	Canadian	Hamilton	p317_014	4.900875	To the Hebrews it was a token that there would be no more universal floods.	wav48_silence_trimmed/p317/p317_014_mic1.flac
+p317	5	23	F	Canadian	Hamilton	p317_330	4.869438	It wasn't a flashy performance, it was very workmanlike.	wav48_silence_trimmed/p317/p317_330_mic1.flac
+p318	1	32	F	American	Napa	p318_014	5.00375	To the Hebrews it was a token that there would be no more universal floods.	wav48_silence_trimmed/p318/p318_014_mic1.flac
+p318	2	32	F	American	Napa	p318_009	5.043292	There is , according to legend, a boiling pot of gold at one end.	wav48_silence_trimmed/p318/p318_009_mic1.flac
+p318	3	32	F	American	Napa	p318_051	4.811979	Their conditions are described as serious but stable.	wav48_silence_trimmed/p318/p318_051_mic1.flac
+p318	4	32	F	American	Napa	p318_125	4.776813	I was a spectator, that is as far as it goes.	wav48_silence_trimmed/p318/p318_125_mic1.flac
+p318	5	32	F	American	Napa	p318_041	4.723125	But he is not using them.	wav48_silence_trimmed/p318/p318_041_mic1.flac
+p323	1	19	F	SouthAfrican	Pretoria	p323_179	5.025896	In the eyes of the supporters, there has been a betrayal.	wav48_silence_trimmed/p323/p323_179_mic1.flac
+p323	2	19	F	SouthAfrican	Pretoria	p323_154	5.035146	I have come here to fight the boxer, not the fans.	wav48_silence_trimmed/p323/p323_154_mic1.flac
+p323	3	19	F	SouthAfrican	Pretoria	p323_029	5.037333	However, on the other hand, in principle it is plainly wrong.	wav48_silence_trimmed/p323/p323_029_mic1.flac
+p323	4	19	F	SouthAfrican	Pretoria	p323_153	5.037396	It is a very disturbing picture for men.	wav48_silence_trimmed/p323/p323_153_mic1.flac
+p323	5	19	F	SouthAfrican	Pretoria	p323_187	5.038542	Without approval, the sport will find it difficult to develop.	wav48_silence_trimmed/p323/p323_187_mic1.flac
+p326	1	26	M	Australian	English  Sydney	p326_140	4.981917	After day one back, he may be revising that opinion already.	wav48_silence_trimmed/p326/p326_140_mic1.flac
+p326	2	26	M	Australian	English  Sydney	p326_012	4.863729	Throughout the centuries people have explained the rainbow in various ways.	wav48_silence_trimmed/p326/p326_012_mic1.flac
+p326	3	26	M	Australian	English  Sydney	p326_014	5.142354	To the Hebrews it was a token that there would be no more universal floods.	wav48_silence_trimmed/p326/p326_014_mic1.flac
+p326	4	26	M	Australian	English  Sydney	p326_004	5.159271	We also need a small plastic snake and a big toy frog for the kids.	wav48_silence_trimmed/p326/p326_004_mic1.flac
+p326	5	26	M	Australian	English  Sydney	p326_009	4.762125	There is , according to legend, a boiling pot of gold at one end.	wav48_silence_trimmed/p326/p326_009_mic1.flac
+p329	1	23	F	American		p329_313	4.946167	We were in different places, usually in cellars.	wav48_silence_trimmed/p329/p329_313_mic1.flac
+p329	2	23	F	American		p329_140	5.072625	Last night, however, other experts were cautious about the claim.	wav48_silence_trimmed/p329/p329_140_mic1.flac
+p329	3	23	F	American		p329_028	4.925646	The investment programme will deliver these improvements.	wav48_silence_trimmed/p329/p329_028_mic1.flac
+p329	4	23	F	American		p329_068	4.90725	You are going to Glasgow Airport, and not coming back.	wav48_silence_trimmed/p329/p329_068_mic1.flac
+p329	5	23	F	American		p329_137	5.100021	I felt under no pressure today.	wav48_silence_trimmed/p329/p329_137_mic1.flac
+p330	1	26	F	American		p330_307	5.007396	The festival idea has been a great success.	wav48_silence_trimmed/p330/p330_307_mic1.flac
+p330	2	26	F	American		p330_368	4.987146	Another suggested the company should carry only pedestrians.	wav48_silence_trimmed/p330/p330_368_mic1.flac
+p330	3	26	F	American		p330_376	5.018688	They were very, very anxious and nervous about their personal safety.	wav48_silence_trimmed/p330/p330_376_mic1.flac
+p330	4	26	F	American		p330_161	5.040875	We're just a family working hard, working seven days a week.	wav48_silence_trimmed/p330/p330_161_mic1.flac
+p330	5	26	F	American		p330_123	5.048458	Manager Neil Cooper revealed yesterday.	wav48_silence_trimmed/p330/p330_123_mic1.flac
+p333	1	19	F	American	Indiana	p333_014	5.035188	To the Hebrews it was a token that there would be no more universal floods.	wav48_silence_trimmed/p333/p333_014_mic1.flac
+p333	2	19	F	American	Indiana	p333_018	5.208167	Aristotle thought that the rainbow was caused by reflection of the sun's rays by the rain.	wav48_silence_trimmed/p333/p333_018_mic1.flac
+p333	3	19	F	American	Indiana	p333_007	4.654396	The rainbow is a division of white light into many beautiful colors.	wav48_silence_trimmed/p333/p333_007_mic1.flac
+p333	4	19	F	American	Indiana	p333_015	5.505604	The Greeks used to imagine that it was a sign from the gods to foretell war or heavy rain.	wav48_silence_trimmed/p333/p333_015_mic1.flac
+p333	5	19	F	American	Indiana	p333_012	4.418021	Throughout the centuries people have explained the rainbow in various ways.	wav48_silence_trimmed/p333/p333_012_mic1.flac
+p334	1	18	M	American	Chicago	p334_018	4.952875	Aristotle thought that the rainbow was caused by reflection of the sun's rays by the rain.	wav48_silence_trimmed/p334/p334_018_mic1.flac
+p334	2	18	M	American	Chicago	p334_009	4.781646	There is , according to legend, a boiling pot of gold at one end.	wav48_silence_trimmed/p334/p334_009_mic1.flac
+p334	3	18	M	American	Chicago	p334_004	4.699854	We also need a small plastic snake and a big toy frog for the kids.	wav48_silence_trimmed/p334/p334_004_mic1.flac
+p334	4	18	M	American	Chicago	p334_355	4.653958	We have always been, and remain confident of the securing of order.	wav48_silence_trimmed/p334/p334_355_mic1.flac
+p334	5	18	M	American	Chicago	p334_006	5.371937	When the sunlight strikes raindrops in the air, they act as a prism and form a rainbow.	wav48_silence_trimmed/p334/p334_006_mic1.flac
+p335	1	25	F	NewZealand	English	p335_155	4.999208	I think, at last, the company will find itself again.	wav48_silence_trimmed/p335/p335_155_mic1.flac
+p335	2	25	F	NewZealand	English	p335_364	5.001083	It may encourage more people to prospect.	wav48_silence_trimmed/p335/p335_364_mic1.flac
+p335	3	25	F	NewZealand	English	p335_229	4.979354	But if they were there, they were keeping a low profile.	wav48_silence_trimmed/p335/p335_229_mic1.flac
+p335	4	25	F	NewZealand	English	p335_042	4.978937	It will include the Black Watch, the Royal Highland regiment.	wav48_silence_trimmed/p335/p335_042_mic1.flac
+p335	5	25	F	NewZealand	English	p335_372	4.950104	At the moment, it is being treated as a tragic accident.	wav48_silence_trimmed/p335/p335_372_mic1.flac
+p336	1	18	F	SouthAfrican	Johannesburg	p336_009	5.001479	There is , according to legend, a boiling pot of gold at one end.	wav48_silence_trimmed/p336/p336_009_mic1.flac
+p336	2	18	F	SouthAfrican	Johannesburg	p336_007	5.066521	The rainbow is a division of white light into many beautiful colors.	wav48_silence_trimmed/p336/p336_007_mic1.flac
+p336	3	18	F	SouthAfrican	Johannesburg	p336_013	5.082	Some have accepted it as a miracle without physical explanation.	wav48_silence_trimmed/p336/p336_013_mic1.flac
+p336	4	18	F	SouthAfrican	Johannesburg	p336_004	5.190708	We also need a small plastic snake and a big toy frog for the kids.	wav48_silence_trimmed/p336/p336_004_mic1.flac
+p336	5	18	F	SouthAfrican	Johannesburg	p336_014	5.3165	To the Hebrews it was a token that there would be no more universal floods.	wav48_silence_trimmed/p336/p336_014_mic1.flac
+p339	1	21	F	American	Pennsylvania	p339_013	4.98075	Some have accepted it as a miracle without physical explanation.	wav48_silence_trimmed/p339/p339_013_mic1.flac
+p339	2	21	F	American	Pennsylvania	p339_004	4.864854	We also need a small plastic snake and a big toy frog for the kids.	wav48_silence_trimmed/p339/p339_004_mic1.flac
+p339	3	21	F	American	Pennsylvania	p339_018	5.250854	Aristotle thought the rainbow was caused by reflection of the sun's rays by the rain.	wav48_silence_trimmed/p339/p339_018_mic1.flac
+p339	4	21	F	American	Pennsylvania	p339_012	5.280521	Throughout the centuries people have explained the rainbow in various ways.	wav48_silence_trimmed/p339/p339_012_mic1.flac
+p339	5	21	F	American	Pennsylvania	p339_007	5.295958	The rainbow is a division of white light into many beautiful colors.	wav48_silence_trimmed/p339/p339_007_mic1.flac
+p340	1	18	F	Irish	Dublin	p340_015	4.825021	The Greeks used to imagine that it was a sign from the gods to foretell war or heavy rain.	wav48_silence_trimmed/p340/p340_015_mic1.flac
+p340	2	18	F	Irish	Dublin	p340_009	5.210375	There is , according to legend, a boiling pot of gold at one end.	wav48_silence_trimmed/p340/p340_009_mic1.flac
+p340	3	18	F	Irish	Dublin	p340_005	5.264938	She can scoop these things into three red bags, and we will go meet her Wednesday at the train station.	wav48_silence_trimmed/p340/p340_005_mic1.flac
+p340	4	18	F	Irish	Dublin	p340_018	5.267812	Aristotle thought that the rainbow was caused by reflection of the sun's rays by the rain.	wav48_silence_trimmed/p340/p340_018_mic1.flac
+p340	5	18	F	Irish	Dublin	p340_014	4.483062	To the Hebrews it was a token that there would be no more universal floods.	wav48_silence_trimmed/p340/p340_014_mic1.flac
+p341	1	26	F	American	Ohio	p341_232	5.024312	It is anything but erotic, but that is probably the point.	wav48_silence_trimmed/p341/p341_232_mic1.flac
+p341	2	26	F	American	Ohio	p341_020	4.964792	Many complicated ideas about the rainbow have been formed.	wav48_silence_trimmed/p341/p341_020_mic1.flac
+p341	3	26	F	American	Ohio	p341_079	5.071625	We've always had three options, and none of them are perfect.	wav48_silence_trimmed/p341/p341_079_mic1.flac
+p341	4	26	F	American	Ohio	p341_010	5.085562	People look, but no one ever finds it.	wav48_silence_trimmed/p341/p341_010_mic1.flac
+p341	5	26	F	American	Ohio	p341_017	5.092417	Others have tried to explain the phenomenon physically.	wav48_silence_trimmed/p341/p341_017_mic1.flac
+p343	1	27	F	Canadian	Alberta	p343_020	4.971438	Many contemplated ideas about the rainbow have been formed.	wav48_silence_trimmed/p343/p343_020_mic1.flac
+p343	2	27	F	Canadian	Alberta	p343_012	4.908479	Throughout the centuries people have explained the rainbow in various ways.	wav48_silence_trimmed/p343/p343_012_mic1.flac
+p343	3	27	F	Canadian	Alberta	p343_252	4.783938	Of course, it is a tough assignment.	wav48_silence_trimmed/p343/p343_252_mic1.flac
+p343	4	27	F	Canadian	Alberta	p343_013	4.782042	Some have accepted it as a miracle without physical explanation.	wav48_silence_trimmed/p343/p343_013_mic1.flac
+p343	5	27	F	Canadian	Alberta	p343_244	4.78125	The weather forecast isn't good.	wav48_silence_trimmed/p343/p343_244_mic1.flac
+p345	1	22	M	American	Florida	p345_007	4.969313	The rainbow is a division of white light into many beautiful colors.	wav48_silence_trimmed/p345/p345_007_mic1.flac
+p345	2	22	M	American	Florida	p345_189	4.949729	We've seen that time and time again.	wav48_silence_trimmed/p345/p345_189_mic1.flac
+p345	3	22	M	American	Florida	p345_009	4.934625	There is , according to legend, a boiling pot of gold at one end.	wav48_silence_trimmed/p345/p345_009_mic1.flac
+p345	4	22	M	American	Florida	p345_014	4.933521	To the Hebrews it was a token that there would be no more universal floods.	wav48_silence_trimmed/p345/p345_014_mic1.flac
+p345	5	22	M	American	Florida	p345_013	5.097979	Some have accepted it as a miracle without physical explanation.	wav48_silence_trimmed/p345/p345_013_mic1.flac
+p347	1	26	M	SouthAfrican	Johannesburg	p347_012	5.080479	Throughout the centuries people have explained the rainbow in various ways.	wav48_silence_trimmed/p347/p347_012_mic1.flac
+p347	2	26	M	SouthAfrican	Johannesburg	p347_020	4.868021	Many complicated ideas about the rainbow have been formed.	wav48_silence_trimmed/p347/p347_020_mic1.flac
+p347	3	26	M	SouthAfrican	Johannesburg	p347_009	4.823542	There is , according to legend, a boiling pot of gold at one end.	wav48_silence_trimmed/p347/p347_009_mic1.flac
+p347	4	26	M	SouthAfrican	Johannesburg	p347_007	4.8225	The rainbow is a division of white light into many beautiful colors.	wav48_silence_trimmed/p347/p347_007_mic1.flac
+p347	5	26	M	SouthAfrican	Johannesburg	p347_013	4.781646	Some have accepted it as a miracle without physical explanation.	wav48_silence_trimmed/p347/p347_013_mic1.flac
+p351	1	21	F	NorthernIrish	Derry	p351_095	4.996042	Glasgow, however, did not get a mention.	wav48_silence_trimmed/p351/p351_095_mic1.flac
+p351	2	21	F	NorthernIrish	Derry	p351_014	4.86325	To the Hebrews it was a token that there would be no more universal floods.	wav48_silence_trimmed/p351/p351_014_mic1.flac
+p351	3	21	F	NorthernIrish	Derry	p351_335	4.836812	Hopefully, he will get a lucky break.	wav48_silence_trimmed/p351/p351_335_mic1.flac
+p351	4	21	F	NorthernIrish	Derry	p351_004	4.698479	We also need a small plastic snake and a big toy frog for the kids.	wav48_silence_trimmed/p351/p351_004_mic1.flac
+p351	5	21	F	NorthernIrish	Derry	p351_009	4.673938	There is , according to legend, a boiling pot of gold at one end.	wav48_silence_trimmed/p351/p351_009_mic1.flac
+p360	1	19	M	American	New  Jersey	p360_009	5.035812	There is , according to legend, a boiling pot of gold at one end.	wav48_silence_trimmed/p360/p360_009_mic1.flac
+p360	2	19	M	American	New  Jersey	p360_014	4.925625	To the Hebrews it was a token that there would be no more universal floods.	wav48_silence_trimmed/p360/p360_014_mic1.flac
+p360	3	19	M	American	New  Jersey	p360_012	4.755396	Throughout the centuries people have explained the rainbow in various ways.	wav48_silence_trimmed/p360/p360_012_mic1.flac
+p360	4	19	M	American	New  Jersey	p360_013	4.541042	Some have accepted it as a miracle without physical explanation.	wav48_silence_trimmed/p360/p360_013_mic1.flac
+p360	5	19	M	American	New  Jersey	p360_018	5.492188	Aristotle thought that the rainbow was caused by reflection of the sun's rays by the rain.	wav48_silence_trimmed/p360/p360_018_mic1.flac
+p361	1	19	F	American	New  Jersey	p361_007	4.9935	The rainbow is a division of white light into many beautiful colors.	wav48_silence_trimmed/p361/p361_007_mic1.flac
+p361	2	19	F	American	New  Jersey	p361_012	4.908708	Throughout the centuries people have explained the rainbow in various ways.	wav48_silence_trimmed/p361/p361_012_mic1.flac
+p361	3	19	F	American	New  Jersey	p361_018	5.121667	Aristotle thought that the rainbow was caused by reflection of the sun's rays by the rain.	wav48_silence_trimmed/p361/p361_018_mic1.flac
+p361	4	19	F	American	New  Jersey	p361_014	4.738188	To the Hebrews it was a token that there would be no more universal floods.	wav48_silence_trimmed/p361/p361_014_mic1.flac
+p361	5	19	F	American	New  Jersey	p361_004	4.639188	We also need a small plastic snake and a big toy frog for the kids.	wav48_silence_trimmed/p361/p361_004_mic1.flac
+p362	1	29	F	American		p362_053	4.786667	We've always had three options, and none of them are perfect.	wav48_silence_trimmed/p362/p362_053_mic1.flac
+p362	2	29	F	American		p362_012	4.763708	Throughout the centuries people have explained the rainbow in various ways.	wav48_silence_trimmed/p362/p362_012_mic1.flac
+p362	3	29	F	American		p362_009	5.309333	There is , according to legend, a boiling pot of gold at one end.	wav48_silence_trimmed/p362/p362_009_mic1.flac
+p362	4	29	F	American		p362_002	4.687917	Ask her to bring these things with her from the store.	wav48_silence_trimmed/p362/p362_002_mic1.flac
+p362	5	29	F	American		p362_282	5.4235	I want my country to be a republic, not an empire.	wav48_silence_trimmed/p362/p362_282_mic1.flac
+p363	1	22	M	Canadian	Toronto	p363_004	4.826083	We also need a small plastic snake and a big toy frog for the kids.	wav48_silence_trimmed/p363/p363_004_mic1.flac
+p363	2	22	M	Canadian	Toronto	p363_006	5.222188	When the sunlight strikes raindrops in the air, they act as a prism and form a rainbow.	wav48_silence_trimmed/p363/p363_006_mic1.flac
+p363	3	22	M	Canadian	Toronto	p363_013	4.741333	Some have accepted it as a miracle without physical explanation.	wav48_silence_trimmed/p363/p363_013_mic1.flac
+p363	4	22	M	Canadian	Toronto	p363_009	4.701292	There is , according to legend, a boiling pot of gold at one end.	wav48_silence_trimmed/p363/p363_009_mic1.flac
+p363	5	22	M	Canadian	Toronto	p363_018	5.334187	Aristotle thought that the rainbow was caused by reflection of the sun's rays by the rain.	wav48_silence_trimmed/p363/p363_018_mic1.flac
+p364	1	23	M	Irish	Donegal	p364_013	4.911229	Some have accepted it as a miracle without physical explanation.	wav48_silence_trimmed/p364/p364_013_mic1.flac
+p364	2	23	M	Irish	Donegal	p364_014	5.194292	To the Hebrews it was a token that there would be no more universal floods.	wav48_silence_trimmed/p364/p364_014_mic1.flac
+p364	3	23	M	Irish	Donegal	p364_020	4.733	Many complicated ideas about the rainbow have been formed.	wav48_silence_trimmed/p364/p364_020_mic1.flac
+p364	4	23	M	Irish	Donegal	p364_012	5.330854	Throughout the centuries people have explained the rainbow in various ways.	wav48_silence_trimmed/p364/p364_012_mic1.flac
+p364	5	23	M	Irish	Donegal	p364_002	4.472854	Ask her to bring these things with her from the store.	wav48_silence_trimmed/p364/p364_002_mic1.flac
+p374	1	28	M	Australian	English	p374_013	4.781271	Some have accepted it as a miracle without physical explanation.	wav48_silence_trimmed/p374/p374_013_mic1.flac
+p374	2	28	M	Australian	English	p374_007	5.239937	The rainbow is a division of white light into many beautiful colors.	wav48_silence_trimmed/p374/p374_007_mic1.flac
+p374	3	28	M	Australian	English	p374_012	5.293833	Throughout the centuries people have explained the rainbow in various ways.	wav48_silence_trimmed/p374/p374_012_mic1.flac
+p374	4	28	M	Australian	English	p374_113	4.694854	We are at an advanced stage, and are now instructing counsel.	wav48_silence_trimmed/p374/p374_113_mic1.flac
+p374	5	28	M	Australian	English	p374_009	5.405333	There is , according to legend, a boiling pot of gold at one end.	wav48_silence_trimmed/p374/p374_009_mic1.flac
+p376	1	22	M	Indian		p376_004	5.038125	We also need a small plastic snake and a big toy frog for the kids.	wav48_silence_trimmed/p376/p376_004_mic1.flac
+p376	2	22	M	Indian		p376_148	4.885229	This isn't a betrayal of public services, it's their renewal.	wav48_silence_trimmed/p376/p376_148_mic1.flac
+p376	3	22	M	Indian		p376_014	4.842062	To the Hebrews it was a token that there would be no more universal floods.	wav48_silence_trimmed/p376/p376_014_mic1.flac
+p376	4	22	M	Indian		p376_009	4.782875	There is , according to legend, a boiling pot of gold at one end.	wav48_silence_trimmed/p376/p376_009_mic1.flac
+p376	5	22	M	Indian		p376_012	4.778708	Throughout the centuries people have explained the rainbow in various ways.	wav48_silence_trimmed/p376/p376_012_mic1.flac
+s5	1	22	F	British		s5_343	5.007187	The Shadow Chancellor is away on holiday.	wav48_silence_trimmed/s5/s5_343_mic1.flac
+s5	2	22	F	British		s5_128	4.988	The allegations were still under investigation, he added.	wav48_silence_trimmed/s5/s5_128_mic1.flac
+s5	3	22	F	British		s5_002	4.984854	Ask her to bring these things with her from the store.	wav48_silence_trimmed/s5/s5_002_mic1.flac
+s5	4	22	F	British		s5_060	5.01925	I saw the story, but that amount wouldn't even pay my commission.	wav48_silence_trimmed/s5/s5_060_mic1.flac
+s5	5	22	F	British		s5_119	4.969313	It has too few of its own special forces inside Kosovo.	wav48_silence_trimmed/s5/s5_119_mic1.flac

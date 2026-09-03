@@ -1,0 +1,278 @@
+{
+  "speaker_pool_version": "vctk_v0.1",
+  "status": "descriptive_qa_only",
+  "assignment_seed": 5703,
+  "input_dialogue_count": 30,
+  "active_speaker_count": 10,
+  "active_speaker_ids": [
+    "spk_001",
+    "spk_003",
+    "spk_004",
+    "spk_006",
+    "spk_007",
+    "spk_008",
+    "spk_009",
+    "spk_010",
+    "spk_011",
+    "spk_012"
+  ],
+  "excluded_from_active_pool": [
+    {
+      "speaker_id": "spk_002",
+      "reason": "Multiple tested references retained undesirable uncontrolled pause / leading-silence behaviour."
+    },
+    {
+      "speaker_id": "spk_005",
+      "reason": "Multiple tested references retained undesirable uncontrolled pause behaviour."
+    }
+  ],
+  "speaker_usage": {
+    "spk_001": 6,
+    "spk_003": 6,
+    "spk_004": 6,
+    "spk_006": 6,
+    "spk_007": 6,
+    "spk_008": 6,
+    "spk_009": 6,
+    "spk_010": 6,
+    "spk_011": 6,
+    "spk_012": 6
+  },
+  "dialogues_per_speaker": {
+    "spk_001": 6,
+    "spk_003": 6,
+    "spk_004": 6,
+    "spk_006": 6,
+    "spk_007": 6,
+    "spk_008": 6,
+    "spk_009": 6,
+    "spk_010": 6,
+    "spk_011": 6,
+    "spk_012": 6
+  },
+  "role_usage": {
+    "caller": {
+      "spk_001": 3,
+      "spk_003": 3,
+      "spk_004": 3,
+      "spk_006": 3,
+      "spk_007": 3,
+      "spk_008": 3,
+      "spk_009": 3,
+      "spk_010": 3,
+      "spk_011": 3,
+      "spk_012": 3
+    },
+    "counsellor": {
+      "spk_001": 3,
+      "spk_003": 3,
+      "spk_004": 3,
+      "spk_006": 3,
+      "spk_007": 3,
+      "spk_008": 3,
+      "spk_009": 3,
+      "spk_010": 3,
+      "spk_011": 3,
+      "spk_012": 3
+    }
+  },
+  "label_exposure": {
+    "spk_001": {
+      "normal": 11,
+      "alert": 1,
+      "confirm": 1
+    },
+    "spk_003": {
+      "normal": 12,
+      "alert": 1,
+      "confirm": 0
+    },
+    "spk_004": {
+      "normal": 12,
+      "alert": 2,
+      "confirm": 0
+    },
+    "spk_006": {
+      "normal": 12,
+      "alert": 1,
+      "confirm": 1
+    },
+    "spk_007": {
+      "normal": 11,
+      "alert": 2,
+      "confirm": 0
+    },
+    "spk_008": {
+      "normal": 9,
+      "alert": 3,
+      "confirm": 1
+    },
+    "spk_009": {
+      "normal": 15,
+      "alert": 2,
+      "confirm": 0
+    },
+    "spk_010": {
+      "normal": 7,
+      "alert": 3,
+      "confirm": 0
+    },
+    "spk_011": {
+      "normal": 11,
+      "alert": 2,
+      "confirm": 0
+    },
+    "spk_012": {
+      "normal": 12,
+      "alert": 1,
+      "confirm": 0
+    }
+  },
+  "acoustic_exposure": {
+    "spk_001": {
+      "rate": {
+        "+0%": 11,
+        "-10%": 1,
+        "-15%": 1,
+        "-20%": 0
+      },
+      "arousal": {
+        "null": 13
+      },
+      "coarse_affect": {
+        "null": 13
+      }
+    },
+    "spk_003": {
+      "rate": {
+        "+0%": 12,
+        "-10%": 0,
+        "-15%": 0,
+        "-20%": 1
+      },
+      "arousal": {
+        "null": 13
+      },
+      "coarse_affect": {
+        "null": 13
+      }
+    },
+    "spk_004": {
+      "rate": {
+        "+0%": 12,
+        "-10%": 1,
+        "-15%": 0,
+        "-20%": 1
+      },
+      "arousal": {
+        "null": 14
+      },
+      "coarse_affect": {
+        "null": 14
+      }
+    },
+    "spk_006": {
+      "rate": {
+        "+0%": 12,
+        "-10%": 1,
+        "-15%": 1,
+        "-20%": 0
+      },
+      "arousal": {
+        "null": 14
+      },
+      "coarse_affect": {
+        "null": 14
+      }
+    },
+    "spk_007": {
+      "rate": {
+        "+0%": 11,
+        "-10%": 1,
+        "-15%": 1,
+        "-20%": 0
+      },
+      "arousal": {
+        "null": 13
+      },
+      "coarse_affect": {
+        "null": 13
+      }
+    },
+    "spk_008": {
+      "rate": {
+        "+0%": 9,
+        "-10%": 0,
+        "-15%": 4,
+        "-20%": 0
+      },
+      "arousal": {
+        "null": 13
+      },
+      "coarse_affect": {
+        "null": 13
+      }
+    },
+    "spk_009": {
+      "rate": {
+        "+0%": 15,
+        "-10%": 0,
+        "-15%": 1,
+        "-20%": 1
+      },
+      "arousal": {
+        "null": 17
+      },
+      "coarse_affect": {
+        "null": 17
+      }
+    },
+    "spk_010": {
+      "rate": {
+        "+0%": 7,
+        "-10%": 1,
+        "-15%": 0,
+        "-20%": 2
+      },
+      "arousal": {
+        "null": 10
+      },
+      "coarse_affect": {
+        "null": 10
+      }
+    },
+    "spk_011": {
+      "rate": {
+        "+0%": 11,
+        "-10%": 0,
+        "-15%": 1,
+        "-20%": 1
+      },
+      "arousal": {
+        "null": 13
+      },
+      "coarse_affect": {
+        "null": 13
+      }
+    },
+    "spk_012": {
+      "rate": {
+        "+0%": 12,
+        "-10%": 0,
+        "-15%": 0,
+        "-20%": 1
+      },
+      "arousal": {
+        "null": 13
+      },
+      "coarse_affect": {
+        "null": 13
+      }
+    }
+  },
+  "notes": [
+    "Descriptive QA only. Assignments were not adjusted from these counts.",
+    "Do not treat a small sample as evidence of statistical balance.",
+    "Speaker assignment does not use labels or acoustic conditions as input."
+  ]
+}

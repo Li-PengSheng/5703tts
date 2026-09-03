@@ -4,6 +4,11 @@ data/output/*
 /data/benchmark/runs/
 logs/*.log
 
+# Speaker-pool reference audio and smoke runs: reproducibly regenerated from the
+# local VCTK corpus by scripts/materialize_vctk_speaker_pool.py
+/data/speaker_pool/*/references/*.wav
+/data/speaker_pool/*/smoke_runs/
+
 # Windows download metadata (can appear as real sidecar files outside NTFS)
 *:Zone.Identifier
 
@@ -40,3 +45,6 @@ Thumbs.db
 .vscode/
 .vs/
 .vsls.json
+
+/vctk-speaker/
+/VCTK-Corpus-0.92.zip
