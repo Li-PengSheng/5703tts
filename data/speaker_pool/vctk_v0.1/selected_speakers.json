@@ -1,0 +1,91 @@
+{
+  "speaker_pool_version": "vctk_v0.1",
+  "selection_status": "provisional_smoke_test_shortlist",
+  "selection_method": "Initial references were selected from ranked VCTK candidates and then refined through manual CosyVoice3 zero-shot smoke-test review.",
+  "notes": [
+    "Internal speaker_id values are neutral and deliberately encode no gender, accent, or region.",
+    "candidate_report.json remains the source of truth for transcripts, durations, and VCTK metadata; none of it is duplicated here.",
+    "These selections are the historical 12-speaker shortlist and are not reranked, scored, or replaced automatically.",
+    "Primary and backup references may be swapped or replaced after human listening; rank 1 is not automatically primary.",
+    "Human smoke QA later froze a 10-speaker active pool in active_speakers.json. spk_002 and spk_005 remain here and in the registry; IDs are never renumbered."
+  ],
+  "speakers": [
+    {
+      "speaker_id": "spk_001",
+      "source_speaker_id": "p248",
+      "primary_utterance_id": "p248_112",
+      "backup_utterance_id": "p248_064"
+    },
+    {
+      "speaker_id": "spk_002",
+      "source_speaker_id": "p253",
+      "primary_utterance_id": "p253_262",
+      "backup_utterance_id": "p253_147",
+      "human_selection_note": "Primary and previous backup both showed undesirable pause behaviour; p253_147 is the final alternate pending human listening and must not be auto-promoted."
+    },
+    {
+      "speaker_id": "spk_003",
+      "source_speaker_id": "p261",
+      "primary_utterance_id": "p261_199",
+      "backup_utterance_id": "p261_072"
+    },
+    {
+      "speaker_id": "spk_004",
+      "source_speaker_id": "p234",
+      "primary_utterance_id": "p234_238",
+      "backup_utterance_id": "p234_030"
+    },
+    {
+      "speaker_id": "spk_005",
+      "source_speaker_id": "p239",
+      "primary_utterance_id": "p239_004",
+      "backup_utterance_id": "p239_006",
+      "human_selection_note": "Primary and previous backup both showed undesirable pause behaviour; p239_006 is the final alternate pending human listening and must not be auto-promoted."
+    },
+    {
+      "speaker_id": "spk_006",
+      "source_speaker_id": "p283",
+      "primary_utterance_id": "p283_013",
+      "backup_utterance_id": "p283_020"
+    },
+    {
+      "speaker_id": "spk_007",
+      "source_speaker_id": "p251",
+      "primary_utterance_id": "p251_009",
+      "backup_utterance_id": "p251_364"
+    },
+    {
+      "speaker_id": "spk_008",
+      "source_speaker_id": "p245",
+      "primary_utterance_id": "p245_269",
+      "backup_utterance_id": "p245_309",
+      "human_selection_note": "Former backup promoted after smoke review because leading silence was substantially better on p245_269."
+    },
+    {
+      "speaker_id": "spk_009",
+      "source_speaker_id": "p237",
+      "primary_utterance_id": "p237_013",
+      "backup_utterance_id": "p237_291",
+      "human_selection_note": "Former backup promoted after smoke review because leading silence was substantially better on p237_013."
+    },
+    {
+      "speaker_id": "spk_010",
+      "source_speaker_id": "p243",
+      "primary_utterance_id": "p243_394",
+      "backup_utterance_id": "p243_349",
+      "human_selection_note": "Former backup promoted after smoke review; p243_394 was more neutral with improved pause/emphasis behaviour."
+    },
+    {
+      "speaker_id": "spk_011",
+      "source_speaker_id": "p256",
+      "primary_utterance_id": "p256_241",
+      "backup_utterance_id": "p256_223"
+    },
+    {
+      "speaker_id": "spk_012",
+      "source_speaker_id": "p252",
+      "primary_utterance_id": "p252_007",
+      "backup_utterance_id": "p252_385"
+    }
+  ]
+}
