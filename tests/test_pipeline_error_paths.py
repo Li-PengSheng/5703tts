@@ -56,6 +56,7 @@ def test_backend_control_error_is_reported_as_an_expected_failure(
 
     assert result.status == "failed"
     assert result.dialogue_id == "dialogue001"
+    assert result.error_type == "BackendControlError"
     assert "Unexpected error" not in result.error
     assert "Backend control preflight failed" in result.error
     assert "Unsupported CosyVoice coarse_affect mapping: 'cheerful'" in result.error
@@ -100,6 +101,7 @@ def test_unexpected_error_still_uses_the_generic_unexpected_path(
 
     assert result.status == "failed"
     assert result.error == "Unexpected error: worker vanished"
+    assert result.error_type == "RuntimeError"
 
     records = [
         record
@@ -124,6 +126,8 @@ def test_validation_error_path_is_unchanged(
         result = _run(json_path, config, tmp_path)
 
     assert result.status == "failed"
+    assert result.dialogue_id is None
+    assert result.error_type == "ValidationError"
     assert result.error.startswith("Input validation failed:")
     assert all(record.exc_info is None for record in caplog.records)
 

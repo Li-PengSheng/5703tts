@@ -121,6 +121,16 @@ uv run 5703tts --verbose
 
 Detailed logs are written to `logs/run_YYYY-MM-DD.log`. Use `--config` or `--log-dir` to select alternate files or directories.
 
+Every invocation that reaches dialogue discovery atomically writes
+`<output>/batch_result.json`. This is the authoritative batch result: `success`
+means every discovered dialogue succeeded, `partial_failure` means some succeeded
+and some failed, and `failure` means none succeeded. The CLI exits `0` only for
+`success`; either failure status exits `1`. A failed dialogue does not stop later
+dialogues or remove successful outputs. Configuration and argument errors occur
+before this batch boundary, exit non-zero, and may not produce a manifest.
+
+Retry, resume, and completed-output skipping are not currently implemented.
+
 ## Input format
 
 Schema v0.2 is the preferred input format and is defined in [`schemas/dialogue_schema.json`](schemas/dialogue_schema.json). Acoustic controls describe model-independent intent under `acoustic_spec`:
@@ -203,6 +213,10 @@ Each input dialogue writes to `data/output/<dialogue_id>/` by default:
 - `<dialogue_id>_clean.wav` (assembled speech and configured pauses)
 - `<dialogue_id>_telephone.wav` (8 kHz mono, band-pass telephone treatment by default)
 - `<dialogue_id>_metadata.json` (audio file names, TTS settings, labels, and timestamps)
+
+The output root also contains `batch_result.json`, which reports the status,
+input path, output directory, and concise failure information for each discovered
+dialogue. It complements rather than replaces the detailed per-dialogue metadata.
 
 The assembly uses direct joins plus short fades; turns are never crossfaded. Metadata timestamps therefore align with the non-overlapping turn boundaries. Generated audio and logs are intentionally ignored by Git.
 

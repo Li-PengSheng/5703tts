@@ -23,11 +23,12 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class PipelineResult:
-    dialogue_id: str
+    dialogue_id: str | None
     status: str
     error: str | None = None
     qc: QCResult | None = None
     out_dir: Path | None = None
+    error_type: str | None = None
 
 
 async def run_dialogue(
@@ -40,10 +41,11 @@ async def run_dialogue(
     files in place for diagnosis; the current pipeline has no transactional
     cleanup, retry, or resume protocol.
     """
-    dialogue_id = json_path.stem
+    dialogue_id: str | None = None
+    log_id = json_path.stem
     started = time.perf_counter()
     try:
-        logger.info("event=stage_start dialogue=%s stage=validate", dialogue_id)
+        logger.info("event=stage_start dialogue=%s stage=validate", log_id)
         dialogue = load_and_validate(json_path, config)
         dialogue_id = dialogue.dialogue_id
         logger.info(
@@ -115,20 +117,24 @@ async def run_dialogue(
             time.perf_counter() - started,
         )
         return PipelineResult(
-            dialogue_id,
-            "success" if qc.passed else "failed",
-            None if qc.passed else f"QC failed: {qc.issues}",
-            qc,
-            out_dir,
+            dialogue_id=dialogue_id,
+            status="success" if qc.passed else "failed",
+            error=None if qc.passed else f"QC failed: {qc.issues}",
+            qc=qc,
+            out_dir=out_dir,
+            error_type=None if qc.passed else "QCFailure",
         )
     except ValidationError as error:
         logger.warning(
             "event=dialogue_pipeline_failed dialogue=%s stage=validate error=%s",
-            dialogue_id,
+            log_id,
             error,
         )
         return PipelineResult(
-            dialogue_id, "failed", f"Input validation failed: {error}"
+            dialogue_id=None,
+            status="failed",
+            error=f"Input validation failed: {error}",
+            error_type=type(error).__name__,
         )
     except BackendControlError as error:
         # Expected compatibility failure, not a defect: the requested control is
@@ -141,7 +147,10 @@ async def run_dialogue(
             error,
         )
         return PipelineResult(
-            dialogue_id, "failed", f"Backend control preflight failed: {error}"
+            dialogue_id=dialogue_id,
+            status="failed",
+            error=f"Backend control preflight failed: {error}",
+            error_type=type(error).__name__,
         )
     except Exception as error:
         logger.exception(
@@ -149,4 +158,9 @@ async def run_dialogue(
             dialogue_id,
             time.perf_counter() - started,
         )
-        return PipelineResult(dialogue_id, "failed", f"Unexpected error: {error}")
+        return PipelineResult(
+            dialogue_id=dialogue_id,
+            status="failed",
+            error=f"Unexpected error: {error}",
+            error_type=type(error).__name__,
+        )
