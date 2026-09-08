@@ -178,11 +178,9 @@ tts:
 
 CosyVoice runs in its own Python 3.10 environment configured by `tts.cosyvoice.python_bin`. `load_trt` and `load_vllm` are disabled in the sample configuration.
 
-### Provisional CosyVoice3 acoustic-control adapter
+### CosyVoice3 production control mapping v1
 
-The integrated CosyVoice candidate is CosyVoice3. At its backend boundary, semantic rate maps to the official numeric `speed` argument (`slow`/`normal`/`fast` become provisional values `0.8`/`1.0`/`1.2`). Explicit arousal or supported coarse-affect requests select `inference_instruct2` with a candidate instruction mapping; otherwise the worker preserves `inference_zero_shot`. Low, medium, and high arousal currently request calm/subdued, moderate, and energetic/intense delivery respectively. Neutral and distressed coarse affect request composed and worried/sad tones respectively. Pauses remain pipeline assembly controls and are not included in model instructions.
-
-These mappings express requested controls and require empirical verification with the controlled benchmark; they do not establish acoustic fidelity. Fine-grained emotion and paralinguistic synthesis remain deferred, and Fish is not implemented in this task.
+The current `cosyvoice3_control_mapping` v1 implementation is frozen for production integration while its runtime fidelity status remains `provisional`. It keeps numeric rate speeds `0.8`/`1.0`/`1.2`, maps low/high arousal and the five primary coarse-affect labels through instructions, accepts medium arousal without an additional clause, and retains `distressed` only for legacy compatibility. See the [mapping decision and evidence note](docs/cosyvoice3_control_mapping_v1.md) for the exact evidence boundary, limitations, and change policy.
 
 ### Backend control capabilities and preflight
 
@@ -195,7 +193,7 @@ These mappings express requested controls and require empirical verification wit
 | `pipeline_timing` | Realised by this project's assembly stage, not by the backend |
 | `unsupported` | Cannot be consumed by the backend; a requested value is ignored |
 
-Canonical schema validation stays backend-independent: `coarse_affect` remains an open string, so corpus design is not limited by one backend's vocabulary. Backend-specific mappings are checked separately by a preflight step that runs before any audio is rendered. Under CosyVoice, a schema-valid `coarse_affect: "anxious"` passes validation and then fails preflight with the currently supported mappings listed. Under Kokoro the same value is accepted, ignored, and reported as ignored, because Kokoro consumes no affect control at all.
+Canonical schema validation stays backend-independent: `coarse_affect` remains an open string, so corpus design is not limited by one backend's vocabulary. Backend-specific mappings are checked separately by a preflight step that runs before any audio is rendered. Under CosyVoice, a mapped value such as `coarse_affect: "anxious"` passes preflight, while an unmapped value fails with the supported mappings listed. Under Kokoro the same value is accepted, ignored, and reported as ignored, because Kokoro consumes no affect control at all.
 
 ## Output
 
