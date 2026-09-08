@@ -15,9 +15,9 @@ import soundfile as sf
 
 from .config import VALID_ENGINES
 from .cosyvoice_controls import (
+    COSYVOICE_CONTROL_MAPPING_STATUS,
     BackendControlError,
-    build_cosyvoice_instruction,
-    rate_to_cosyvoice_speed,
+    resolve_cosyvoice_controls,
     validate_cosyvoice_controls,
 )
 from .validate import NormalizedTurn
@@ -111,14 +111,15 @@ def build_cosyvoice_request(
     output_path: Path,
 ) -> dict[str, Any]:
     """Translate corpus controls into the isolated CosyVoice worker protocol."""
-    instruction = build_cosyvoice_instruction(turn.arousal, turn.coarse_affect)
+    resolution = resolve_cosyvoice_controls(turn.rate, turn.arousal, turn.coarse_affect)
+    instruction = resolution["resolved_instruction"]
     request: dict[str, Any] = {
         "text": turn.text,
         "prompt_text": prompt_text,
         "prompt_wav": str(prompt_wav),
         "output_path": str(output_path),
-        "speed": rate_to_cosyvoice_speed(turn.rate),
-        "mode": "instruct2" if instruction is not None else "zero_shot",
+        "speed": resolution["speaking_rate"]["speed"],
+        "mode": resolution["inference_mode"],
     }
     if instruction is not None:
         request["instruction"] = instruction
@@ -530,7 +531,7 @@ def describe_engine(config: dict[str, Any]) -> dict[str, Any]:
             "model": "Fun-CosyVoice3-0.5B",
             "mode": "per_turn",
             "available_modes": ["zero_shot", "instruct2"],
-            "control_mapping": "provisional",
+            "control_mapping": COSYVOICE_CONTROL_MAPPING_STATUS,
             "model_dir": cosy_cfg.get("model_dir", "models/Fun-CosyVoice3-0.5B"),
             "repo_dir": cosy_cfg.get("repo_dir", "third_party/CosyVoice"),
             "fp16": cosy_cfg.get("fp16", True),

@@ -1,5 +1,11 @@
 """Pure CosyVoice3 acoustic-control mappings."""
 
+from typing import Any
+
+COSYVOICE_CONTROL_MAPPING_NAME = "cosyvoice3_control_mapping"
+COSYVOICE_CONTROL_MAPPING_VERSION = "v1"
+COSYVOICE_CONTROL_MAPPING_STATUS = "provisional"
+
 _SEMANTIC_RATES = {
     "slow": 0.8,
     "normal": 1.0,
@@ -82,3 +88,44 @@ def build_cosyvoice_instruction(
     if arousal is None and coarse_affect is None:
         return None
     return f"{_INSTRUCTION_PREFIX} {' '.join(controls)}{_END_OF_PROMPT}"
+
+
+def resolve_cosyvoice_controls(
+    rate: str, arousal: str | None, coarse_affect: str | None
+) -> dict[str, Any]:
+    """Describe the backend controls used for synthesis, without fidelity claims."""
+    instruction = build_cosyvoice_instruction(arousal, coarse_affect)
+    affect_resolution = {
+        "requested": coarse_affect,
+        "method": "instruction" if coarse_affect is not None else "not_requested",
+        "mapping_value": coarse_affect,
+    }
+    if coarse_affect == "distressed":
+        affect_resolution["compatibility"] = "legacy"
+    return {
+        "backend": "cosyvoice",
+        "mapping": {
+            "name": COSYVOICE_CONTROL_MAPPING_NAME,
+            "version": COSYVOICE_CONTROL_MAPPING_VERSION,
+            "status": COSYVOICE_CONTROL_MAPPING_STATUS,
+        },
+        "inference_mode": "instruct2" if instruction is not None else "zero_shot",
+        "speaking_rate": {
+            "requested": rate,
+            "method": "numeric_speed",
+            "speed": rate_to_cosyvoice_speed(rate),
+        },
+        "arousal": {
+            "requested": arousal,
+            "method": (
+                "not_requested"
+                if arousal is None
+                else "no_additional_clause"
+                if _AROUSAL_INSTRUCTIONS[arousal] is None
+                else "instruction"
+            ),
+            "mapping_value": arousal,
+        },
+        "coarse_affect": affect_resolution,
+        "resolved_instruction": instruction,
+    }

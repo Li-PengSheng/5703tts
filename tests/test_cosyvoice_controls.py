@@ -7,9 +7,13 @@ import pytest
 
 from tts5703 import tts_engine
 from tts5703.cosyvoice_controls import (
+    COSYVOICE_CONTROL_MAPPING_NAME,
+    COSYVOICE_CONTROL_MAPPING_STATUS,
+    COSYVOICE_CONTROL_MAPPING_VERSION,
     BackendControlError,
     build_cosyvoice_instruction,
     rate_to_cosyvoice_speed,
+    resolve_cosyvoice_controls,
 )
 from tts5703.tts_engine import build_cosyvoice_request
 from tts5703.validate import NormalizedTurn
@@ -226,6 +230,21 @@ def test_request_routing_and_mapping(
         assert "instruction" not in request
     else:
         assert request["instruction"] == expected_instruction
+
+
+def test_request_uses_the_shared_control_resolution() -> None:
+    turn = _turn(rate="slow", arousal="high", coarse_affect="anxious")
+    request = _request(turn)
+    resolution = resolve_cosyvoice_controls(turn.rate, turn.arousal, turn.coarse_affect)
+
+    assert resolution["mapping"] == {
+        "name": COSYVOICE_CONTROL_MAPPING_NAME,
+        "version": COSYVOICE_CONTROL_MAPPING_VERSION,
+        "status": COSYVOICE_CONTROL_MAPPING_STATUS,
+    }
+    assert request["speed"] == resolution["speaking_rate"]["speed"]
+    assert request["mode"] == resolution["inference_mode"]
+    assert request["instruction"] == resolution["resolved_instruction"]
 
 
 @pytest.mark.parametrize(("rate", "speed"), [("normal", 1.0), ("slow", 0.8)])

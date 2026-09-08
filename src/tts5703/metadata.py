@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 from .assemble import TurnTiming
+from .cosyvoice_controls import resolve_cosyvoice_controls
 from .engine_capabilities import (
     control_support,
     has_declared_capabilities,
@@ -61,6 +62,15 @@ def build_metadata(
                     ignored_requested_controls(engine, requested_acoustic_spec(timing))
                     if declared
                     else None
+                ),
+                **(
+                    {
+                        "control_resolution": resolve_cosyvoice_controls(
+                            timing.rate, timing.arousal, timing.coarse_affect
+                        )
+                    }
+                    if engine == "cosyvoice"
+                    else {}
                 ),
                 "start_time": timing.start_sec,
                 "end_time": timing.end_sec,

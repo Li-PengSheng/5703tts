@@ -7,6 +7,12 @@ import pytest
 
 from tts5703.assemble import TurnTiming
 from tts5703.config import load_config
+from tts5703.cosyvoice_controls import (
+    COSYVOICE_CONTROL_MAPPING_NAME,
+    COSYVOICE_CONTROL_MAPPING_STATUS,
+    COSYVOICE_CONTROL_MAPPING_VERSION,
+    build_cosyvoice_instruction,
+)
 from tts5703.metadata import build_metadata
 from tts5703.tts_engine import describe_engine
 
@@ -16,6 +22,7 @@ KOKORO_CONFIG_PATH = Path("config/config.kokoro.yaml")
 
 def _timing(
     *,
+    rate: str = "slow",
     arousal: str | None = None,
     coarse_affect: str | None = None,
     emotion: str | None = None,
@@ -28,7 +35,7 @@ def _timing(
         speaker="caller",
         text="Please stay with me.",
         label="alert",
-        rate="slow",
+        rate=rate,
         pause_before_ms=pause_before_ms,
         pause_after_ms=pause_after_ms,
         emotion=emotion,
@@ -64,6 +71,7 @@ def test_kokoro_marks_requested_arousal_as_ignored_but_preserves_it() -> None:
     assert turn["arousal"] == "high"
     assert turn["requested_acoustic_spec"]["arousal"] == "high"
     assert turn["ignored_requested_controls"] == ["arousal"]
+    assert "control_resolution" not in turn
 
 
 def test_kokoro_marks_requested_coarse_affect_as_ignored_but_preserves_it() -> None:
@@ -122,6 +130,137 @@ def test_cosyvoice_arousal_and_coarse_affect_are_not_reported_as_ignored() -> No
     assert metadata["tts"]["control_mapping"] == "provisional"
 
 
+def test_cosyvoice_mapping_identity_is_stable_and_provisional() -> None:
+    resolution = _turn_metadata(_timing(), CONFIG_PATH)["control_resolution"]
+
+    assert resolution["mapping"] == {
+        "name": COSYVOICE_CONTROL_MAPPING_NAME,
+        "version": COSYVOICE_CONTROL_MAPPING_VERSION,
+        "status": COSYVOICE_CONTROL_MAPPING_STATUS,
+    }
+    assert resolution["mapping"] == {
+        "name": "cosyvoice3_control_mapping",
+        "version": "v1",
+        "status": "provisional",
+    }
+
+
+@pytest.mark.parametrize(
+    ("rate", "speed"), [("slow", 0.8), ("normal", 1.0), ("fast", 1.2)]
+)
+def test_cosyvoice_rate_resolution_records_requested_and_numeric_values(
+    rate: str, speed: float
+) -> None:
+    resolution = _turn_metadata(_timing(rate=rate), CONFIG_PATH)["control_resolution"]
+
+    assert resolution["speaking_rate"] == {
+        "requested": rate,
+        "method": "numeric_speed",
+        "speed": speed,
+    }
+
+
+def test_legacy_rate_resolution_preserves_request_and_records_numeric_speed() -> None:
+    resolution = _turn_metadata(_timing(rate="-20%"), CONFIG_PATH)["control_resolution"]
+
+    assert resolution["speaking_rate"]["requested"] == "-20%"
+    assert resolution["speaking_rate"]["speed"] == 0.8
+
+
+@pytest.mark.parametrize(
+    ("rate", "arousal", "coarse_affect", "mode"),
+    [
+        ("normal", None, None, "zero_shot"),
+        ("slow", None, None, "zero_shot"),
+        ("fast", None, None, "zero_shot"),
+        ("normal", "low", None, "instruct2"),
+        ("normal", "medium", None, "instruct2"),
+        ("normal", "high", None, "instruct2"),
+        ("normal", "medium", "sad", "instruct2"),
+        ("normal", "high", "anxious", "instruct2"),
+    ],
+)
+def test_cosyvoice_resolution_records_existing_route(
+    rate: str, arousal: str | None, coarse_affect: str | None, mode: str
+) -> None:
+    resolution = _turn_metadata(
+        _timing(rate=rate, arousal=arousal, coarse_affect=coarse_affect), CONFIG_PATH
+    )["control_resolution"]
+
+    assert resolution["inference_mode"] == mode
+
+
+@pytest.mark.parametrize(
+    "coarse_affect", ["neutral", "sad", "anxious", "angry", "warm", "distressed"]
+)
+def test_cosyvoice_affect_resolution_is_instruction_based(
+    coarse_affect: str,
+) -> None:
+    resolution = _turn_metadata(_timing(coarse_affect=coarse_affect), CONFIG_PATH)[
+        "control_resolution"
+    ]
+
+    assert resolution["coarse_affect"] == {
+        "requested": coarse_affect,
+        "method": "instruction",
+        "mapping_value": coarse_affect,
+        **({"compatibility": "legacy"} if coarse_affect == "distressed" else {}),
+    }
+    assert resolution["resolved_instruction"] == build_cosyvoice_instruction(
+        None, coarse_affect
+    )
+
+
+@pytest.mark.parametrize(
+    ("arousal", "method"),
+    [
+        ("low", "instruction"),
+        ("medium", "no_additional_clause"),
+        ("high", "instruction"),
+    ],
+)
+def test_cosyvoice_arousal_resolution_is_traceable(arousal: str, method: str) -> None:
+    resolution = _turn_metadata(_timing(arousal=arousal), CONFIG_PATH)[
+        "control_resolution"
+    ]
+
+    assert resolution["arousal"] == {
+        "requested": arousal,
+        "method": method,
+        "mapping_value": arousal,
+    }
+    assert resolution["resolved_instruction"] == build_cosyvoice_instruction(
+        arousal, None
+    )
+
+
+def test_requested_and_resolved_cosyvoice_controls_remain_separate() -> None:
+    turn = _turn_metadata(
+        _timing(rate="slow", arousal="high", coarse_affect="anxious"), CONFIG_PATH
+    )
+
+    assert turn["requested_acoustic_spec"]["rate"] == "slow"
+    assert turn["requested_acoustic_spec"]["arousal"] == "high"
+    assert turn["requested_acoustic_spec"]["coarse_affect"] == "anxious"
+    assert turn["control_resolution"]["speaking_rate"]["speed"] == 0.8
+    assert turn["control_resolution"]["inference_mode"] == "instruct2"
+    assert turn["control_resolution"]["arousal"]["mapping_value"] == "high"
+    assert turn["control_resolution"]["coarse_affect"]["mapping_value"] == "anxious"
+
+
+def test_control_resolution_does_not_claim_acoustic_fidelity() -> None:
+    resolution = _turn_metadata(
+        _timing(arousal="high", coarse_affect="anxious"), CONFIG_PATH
+    )["control_resolution"]
+
+    assert not {
+        "verified_affect",
+        "verified_arousal",
+        "affect_success",
+        "arousal_success",
+    }.intersection(resolution)
+
+
 def test_requested_acoustic_spec_preserves_the_full_requested_intent() -> None:
     timing = _timing(
         arousal="high",
@@ -160,6 +299,7 @@ def test_engine_without_declared_capabilities_reports_null_not_empty() -> None:
     assert metadata["tts"]["control_support"] is None
     assert metadata["turns"][0]["ignored_requested_controls"] is None
     assert metadata["turns"][0]["requested_acoustic_spec"]["arousal"] == "high"
+    assert "control_resolution" not in metadata["turns"][0]
 
 
 def test_cosyvoice_reproducibility_config_appears_in_metadata() -> None:
