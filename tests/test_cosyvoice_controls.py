@@ -6,11 +6,11 @@ from pathlib import Path
 import pytest
 
 from tts5703 import tts_engine
-from tts5703.tts_engine import (
+from tts5703.cosyvoice_controls import (
     build_cosyvoice_instruction,
-    build_cosyvoice_request,
     rate_to_cosyvoice_speed,
 )
+from tts5703.tts_engine import build_cosyvoice_request
 from tts5703.validate import NormalizedTurn
 
 END_OF_PROMPT = "<|endofprompt|>"
@@ -57,7 +57,7 @@ def _request(turn: NormalizedTurn) -> dict:
     ],
 )
 def test_rate_maps_to_cosyvoice_speed(rate: str, speed: float) -> None:
-    assert rate_to_cosyvoice_speed(rate) == pytest.approx(speed)
+    assert rate_to_cosyvoice_speed(rate) == speed
 
 
 def test_null_controls_produce_no_instruction() -> None:
@@ -126,6 +126,17 @@ def test_rate_only_request_uses_zero_shot() -> None:
     assert request["mode"] == "zero_shot"
     assert request["speed"] == pytest.approx(0.8)
     assert "instruction" not in request
+
+
+def test_normal_rate_without_expressive_controls_preserves_request() -> None:
+    assert _request(_turn()) == {
+        "text": "Please stay with me while we decide what to do next.",
+        "prompt_text": "Reference transcript.",
+        "prompt_wav": "prompt.wav",
+        "output_path": "output.wav",
+        "speed": 1.0,
+        "mode": "zero_shot",
+    }
 
 
 def test_explicit_arousal_request_uses_instruct2() -> None:

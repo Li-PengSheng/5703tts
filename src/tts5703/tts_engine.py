@@ -14,6 +14,12 @@ import numpy as np
 import soundfile as sf
 
 from .config import VALID_ENGINES
+from .cosyvoice_controls import (
+    BackendControlError,
+    build_cosyvoice_instruction,
+    rate_to_cosyvoice_speed,
+    validate_cosyvoice_controls,
+)
 from .validate import NormalizedTurn
 
 logger = logging.getLogger(__name__)
@@ -53,22 +59,6 @@ _KOKORO_SEMANTIC_RATES = {
     "normal": 1.0,
     "fast": 1.2,
 }
-_COSYVOICE_SEMANTIC_RATES = {
-    "slow": 0.8,
-    "normal": 1.0,
-    "fast": 1.2,
-}
-_COSYVOICE_AROUSAL_INSTRUCTIONS = {
-    "low": "Use a calm, soft, subdued delivery.",
-    "medium": "Use a neutral, moderately expressive delivery.",
-    "high": "Use an energetic, intense delivery.",
-}
-_COSYVOICE_AFFECT_INSTRUCTIONS = {
-    "neutral": "Use a neutral, composed tone.",
-    "distressed": "Use a distressed, worried, and sad tone.",
-}
-_COSYVOICE_INSTRUCTION_PREFIX = "You are a helpful assistant."
-_COSYVOICE_END_OF_PROMPT = "<|endofprompt|>"
 
 
 def rate_to_edge_tts(rate: str) -> str:
@@ -88,40 +78,9 @@ def _rate_to_kokoro_speed(rate: str) -> float:
     return rate_to_kokoro_speed(rate)
 
 
-def rate_to_cosyvoice_speed(rate: str) -> float:
-    """Map semantic or legacy percentage rates to CosyVoice's speed argument."""
-    if rate in _COSYVOICE_SEMANTIC_RATES:
-        return _COSYVOICE_SEMANTIC_RATES[rate]
-    return max(0.1, 1 + int(rate[:-1]) / 100)
-
-
-class BackendControlError(ValueError):
-    """Raised when a schema-valid control has no mapping in the selected backend.
-
-    Canonical schema v0.2 keeps ``coarse_affect`` an open string so corpus design
-    is not constrained by one backend's vocabulary. This error is the
-    backend-specific counterpart: schema-valid intent the selected engine cannot
-    currently translate.
-    """
-
-
-def _check_cosyvoice_mapping(
-    field: str, value: str | None, mapping: dict[str, str]
-) -> None:
-    if value is None or value in mapping:
-        return
-    raise BackendControlError(
-        f"Unsupported CosyVoice {field} mapping: {value!r}. "
-        f"Currently supported mappings: {', '.join(mapping)}."
-    )
-
-
 def preflight_cosyvoice_controls(turn: NormalizedTurn) -> None:
     """Reject requested controls CosyVoice cannot map, before synthesis starts."""
-    _check_cosyvoice_mapping("arousal", turn.arousal, _COSYVOICE_AROUSAL_INSTRUCTIONS)
-    _check_cosyvoice_mapping(
-        "coarse_affect", turn.coarse_affect, _COSYVOICE_AFFECT_INSTRUCTIONS
-    )
+    validate_cosyvoice_controls(turn.arousal, turn.coarse_affect)
 
 
 def preflight_backend_controls(turn: NormalizedTurn, config: dict[str, Any]) -> None:
@@ -143,27 +102,6 @@ def preflight_dialogue_controls(
             preflight_backend_controls(turn, config)
         except BackendControlError as error:
             raise BackendControlError(f"turn {turn.turn_id}: {error}") from error
-
-
-def build_cosyvoice_instruction(
-    arousal: str | None, coarse_affect: str | None
-) -> str | None:
-    """Build one provisional CosyVoice3 instruction from requested controls."""
-    _check_cosyvoice_mapping("arousal", arousal, _COSYVOICE_AROUSAL_INSTRUCTIONS)
-    _check_cosyvoice_mapping(
-        "coarse_affect", coarse_affect, _COSYVOICE_AFFECT_INSTRUCTIONS
-    )
-    controls = [
-        instruction
-        for instruction in (
-            _COSYVOICE_AROUSAL_INSTRUCTIONS.get(arousal),
-            _COSYVOICE_AFFECT_INSTRUCTIONS.get(coarse_affect),
-        )
-        if instruction is not None
-    ]
-    if not controls:
-        return None
-    return f"{_COSYVOICE_INSTRUCTION_PREFIX} {' '.join(controls)}{_COSYVOICE_END_OF_PROMPT}"
 
 
 def build_cosyvoice_request(
