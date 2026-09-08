@@ -80,11 +80,12 @@ def test_cosyvoice_preflight_rejects_unmapped_coarse_affect() -> None:
     with pytest.raises(
         BackendControlError,
         match=(
-            r"Unsupported CosyVoice coarse_affect mapping: 'anxious'\. "
-            r"Currently supported mappings: neutral, distressed\."
+            r"Unsupported CosyVoice coarse_affect mapping: 'cheerful'\. "
+            r"Currently supported mappings: neutral, sad, anxious, angry, warm, "
+            r"distressed\."
         ),
     ):
-        preflight_cosyvoice_controls(_turn(coarse_affect="anxious"))
+        preflight_cosyvoice_controls(_turn(coarse_affect="cheerful"))
 
 
 def test_cosyvoice_preflight_rejects_unmapped_arousal() -> None:
@@ -98,7 +99,10 @@ def test_cosyvoice_preflight_rejects_unmapped_arousal() -> None:
         preflight_cosyvoice_controls(_turn(arousal="frantic"))
 
 
-@pytest.mark.parametrize("coarse_affect", ["neutral", "distressed", None])
+@pytest.mark.parametrize(
+    "coarse_affect",
+    ["neutral", "sad", "anxious", "angry", "warm", "distressed", None],
+)
 def test_cosyvoice_preflight_accepts_mapped_coarse_affect(
     coarse_affect: str | None,
 ) -> None:
@@ -123,7 +127,7 @@ def test_kokoro_does_not_reject_schema_valid_ignored_controls(
 def test_dialogue_preflight_reports_the_offending_turn(
     cosyvoice_config: dict,
 ) -> None:
-    turns = [_turn(turn_id=1), _turn(turn_id=2, coarse_affect="anxious")]
+    turns = [_turn(turn_id=1), _turn(turn_id=2, coarse_affect="cheerful")]
 
     with pytest.raises(BackendControlError, match=r"turn 2: Unsupported CosyVoice"):
         preflight_dialogue_controls(turns, cosyvoice_config)
@@ -152,9 +156,11 @@ def test_cosyvoice_synthesis_fails_preflight_before_reaching_the_worker(
 
     monkeypatch.setattr(tts_engine, "_get_cosyvoice_worker", unreachable_worker)
 
-    with pytest.raises(BackendControlError, match="coarse_affect mapping: 'anxious'"):
+    with pytest.raises(BackendControlError, match="coarse_affect mapping: 'cheerful'"):
         asyncio.run(
-            tts_engine.synthesize_turn(_turn(coarse_affect="anxious"), tmp_path, config)
+            tts_engine.synthesize_turn(
+                _turn(coarse_affect="cheerful"), tmp_path, config
+            )
         )
 
     assert worker_calls == []

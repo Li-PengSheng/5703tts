@@ -7,6 +7,7 @@ import pytest
 
 from tts5703 import tts_engine
 from tts5703.cosyvoice_controls import (
+    BackendControlError,
     build_cosyvoice_instruction,
     rate_to_cosyvoice_speed,
 )
@@ -14,6 +15,34 @@ from tts5703.tts_engine import build_cosyvoice_request
 from tts5703.validate import NormalizedTurn
 
 END_OF_PROMPT = "<|endofprompt|>"
+PREFIX = "You are a helpful assistant."
+AFFECT_CLAUSES = {
+    "neutral": "Speak naturally in a neutral, emotionally even conversational manner.",
+    "sad": "Speak in a clearly sad and downcast manner.",
+    "anxious": (
+        "Speak in a clearly anxious, worried, and uneasy manner, with noticeable "
+        "nervous tension and uncertainty, but not panic or urgency."
+    ),
+    "angry": "Speak in a clearly angry, firm, and forceful manner, without shouting.",
+    "warm": (
+        "Speak in a clearly warm, gentle, compassionate, supportive, and reassuring "
+        "manner, with an emotionally present and caring delivery rather than a "
+        "cheerful or excited one."
+    ),
+    "distressed": "Use a distressed, worried, and sad tone.",
+}
+AROUSAL_CLAUSES = {
+    "low": (
+        "Keep vocal activation clearly low, with subdued energy and restrained "
+        "emphasis. Do not deliberately change the speaking rate."
+    ),
+    "medium": None,
+    "high": (
+        "Use clearly high vocal activation, with stronger energy, projection, and "
+        "emphasis, and a more animated delivery. Do not deliberately change the "
+        "speaking rate."
+    ),
+}
 
 
 def _turn(
@@ -46,6 +75,13 @@ def _request(turn: NormalizedTurn) -> dict:
     )
 
 
+def _expected_instruction(arousal: str | None, coarse_affect: str | None) -> str | None:
+    if arousal is None and coarse_affect is None:
+        return None
+    clauses = [AFFECT_CLAUSES.get(coarse_affect), AROUSAL_CLAUSES.get(arousal)]
+    return f"{PREFIX} {' '.join(clause for clause in clauses if clause)}{END_OF_PROMPT}"
+
+
 @pytest.mark.parametrize(
     ("rate", "speed"),
     [
@@ -67,49 +103,86 @@ def test_null_controls_produce_no_instruction() -> None:
 @pytest.mark.parametrize(
     ("arousal", "expected_control"),
     [
-        ("low", "Use a calm, soft, subdued delivery."),
-        ("medium", "Use a neutral, moderately expressive delivery."),
-        ("high", "Use an energetic, intense delivery."),
+        ("low", AROUSAL_CLAUSES["low"]),
+        ("medium", None),
+        ("high", AROUSAL_CLAUSES["high"]),
     ],
 )
 def test_arousal_instruction_is_deterministic(
-    arousal: str, expected_control: str
+    arousal: str, expected_control: str | None
 ) -> None:
+    expected_body = f" {expected_control}" if expected_control else " "
     assert build_cosyvoice_instruction(arousal, None) == (
-        f"You are a helpful assistant. {expected_control}{END_OF_PROMPT}"
+        f"{PREFIX}{expected_body}{END_OF_PROMPT}"
     )
+
+
+def test_low_and_high_arousal_explicitly_preserve_speaking_rate() -> None:
+    for arousal in ("low", "high"):
+        assert AROUSAL_CLAUSES[arousal] is not None
+        assert (
+            "Do not deliberately change the speaking rate." in AROUSAL_CLAUSES[arousal]
+        )
 
 
 @pytest.mark.parametrize(
     ("coarse_affect", "expected_control"),
-    [
-        ("neutral", "Use a neutral, composed tone."),
-        ("distressed", "Use a distressed, worried, and sad tone."),
-    ],
+    list(AFFECT_CLAUSES.items()),
 )
 def test_coarse_affect_instruction_is_deterministic(
     coarse_affect: str, expected_control: str
 ) -> None:
     assert build_cosyvoice_instruction(None, coarse_affect) == (
-        f"You are a helpful assistant. {expected_control}{END_OF_PROMPT}"
-    )
-
-
-def test_combined_instruction_is_deterministic() -> None:
-    assert build_cosyvoice_instruction("high", "distressed") == (
-        "You are a helpful assistant. Use an energetic, intense delivery. "
-        "Use a distressed, worried, and sad tone.<|endofprompt|>"
+        f"{PREFIX} {expected_control}{END_OF_PROMPT}"
     )
 
 
 @pytest.mark.parametrize(
     ("arousal", "coarse_affect"),
     [
+        ("medium", "neutral"),
+        ("medium", "sad"),
+        ("low", "anxious"),
+        ("high", "angry"),
+        ("low", "warm"),
+        ("high", "distressed"),
+    ],
+)
+def test_affect_then_arousal_composition(arousal: str, coarse_affect: str) -> None:
+    instruction = build_cosyvoice_instruction(arousal, coarse_affect)
+
+    assert instruction == _expected_instruction(arousal, coarse_affect)
+    assert instruction is not None
+    assert instruction.count(END_OF_PROMPT) == 1
+    assert instruction.endswith(END_OF_PROMPT)
+
+
+@pytest.mark.parametrize(
+    ("arousal", "coarse_affect", "field"),
+    [
+        ("frantic", None, "arousal"),
+        (None, "cheerful", "coarse_affect"),
+    ],
+)
+def test_unknown_controls_still_fail(
+    arousal: str | None, coarse_affect: str | None, field: str
+) -> None:
+    with pytest.raises(BackendControlError, match=f"CosyVoice {field} mapping"):
+        build_cosyvoice_instruction(arousal, coarse_affect)
+
+
+@pytest.mark.parametrize(
+    ("arousal", "coarse_affect"),
+    [
         ("low", None),
+        ("medium", None),
         ("high", None),
         (None, "neutral"),
-        (None, "distressed"),
-        ("medium", "distressed"),
+        ("medium", "sad"),
+        ("low", "anxious"),
+        ("high", "angry"),
+        ("low", "warm"),
+        ("high", "distressed"),
     ],
 )
 def test_generated_instruction_has_exactly_one_end_marker(
@@ -121,34 +194,46 @@ def test_generated_instruction_has_exactly_one_end_marker(
     assert instruction.endswith(END_OF_PROMPT)
 
 
-def test_rate_only_request_uses_zero_shot() -> None:
-    request = _request(_turn(rate="slow"))
-    assert request["mode"] == "zero_shot"
-    assert request["speed"] == pytest.approx(0.8)
-    assert "instruction" not in request
+@pytest.mark.parametrize(
+    ("rate", "arousal", "coarse_affect", "mode", "speed"),
+    [
+        ("normal", None, None, "zero_shot", 1.0),
+        ("slow", None, None, "zero_shot", 0.8),
+        ("fast", None, None, "zero_shot", 1.2),
+        ("normal", "low", None, "instruct2", 1.0),
+        ("normal", "medium", None, "instruct2", 1.0),
+        ("normal", "high", None, "instruct2", 1.0),
+        ("normal", "medium", "sad", "instruct2", 1.0),
+        ("normal", "low", "anxious", "instruct2", 1.0),
+        ("normal", "high", "angry", "instruct2", 1.0),
+        ("normal", "low", "warm", "instruct2", 1.0),
+        ("normal", "high", "distressed", "instruct2", 1.0),
+    ],
+)
+def test_request_routing_and_mapping(
+    rate: str,
+    arousal: str | None,
+    coarse_affect: str | None,
+    mode: str,
+    speed: float,
+) -> None:
+    request = _request(_turn(rate=rate, arousal=arousal, coarse_affect=coarse_affect))
+    expected_instruction = _expected_instruction(arousal, coarse_affect)
+
+    assert request["mode"] == mode
+    assert request["speed"] == speed
+    if expected_instruction is None:
+        assert "instruction" not in request
+    else:
+        assert request["instruction"] == expected_instruction
 
 
-def test_normal_rate_without_expressive_controls_preserves_request() -> None:
-    assert _request(_turn()) == {
-        "text": "Please stay with me while we decide what to do next.",
-        "prompt_text": "Reference transcript.",
-        "prompt_wav": "prompt.wav",
-        "output_path": "output.wav",
-        "speed": 1.0,
-        "mode": "zero_shot",
-    }
-
-
-def test_explicit_arousal_request_uses_instruct2() -> None:
-    request = _request(_turn(arousal="high"))
-    assert request["mode"] == "instruct2"
-    assert "energetic, intense" in request["instruction"]
-
-
-def test_explicit_coarse_affect_request_uses_instruct2() -> None:
-    request = _request(_turn(coarse_affect="neutral"))
-    assert request["mode"] == "instruct2"
-    assert "neutral, composed" in request["instruction"]
+@pytest.mark.parametrize(("rate", "speed"), [("normal", 1.0), ("slow", 0.8)])
+@pytest.mark.parametrize("arousal", ["low", "high"])
+def test_arousal_does_not_change_numeric_speed(
+    rate: str, speed: float, arousal: str
+) -> None:
+    assert _request(_turn(rate=rate, arousal=arousal))["speed"] == speed
 
 
 def test_request_transforms_controls_only_at_cosyvoice_boundary() -> None:
@@ -163,8 +248,10 @@ def test_request_transforms_controls_only_at_cosyvoice_boundary() -> None:
         "speed": 1.2,
         "mode": "instruct2",
         "instruction": (
-            "You are a helpful assistant. Use an energetic, intense delivery. "
-            "Use a distressed, worried, and sad tone.<|endofprompt|>"
+            "You are a helpful assistant. Use a distressed, worried, and sad tone. "
+            "Use clearly high vocal activation, with stronger energy, projection, "
+            "and emphasis, and a more animated delivery. Do not deliberately change "
+            "the speaking rate.<|endofprompt|>"
         ),
     }
     assert turn.text not in request["instruction"]
@@ -227,5 +314,5 @@ def test_cosyvoice_engine_sends_transformed_request_without_loading_model(
     assert output_path.read_bytes() == b"RIFF-fake-output"
     assert captured_request["mode"] == "instruct2"
     assert captured_request["speed"] == pytest.approx(0.8)
-    assert "energetic, intense" in captured_request["instruction"]
+    assert "high vocal activation" in captured_request["instruction"]
     assert turn.text == captured_request["text"]

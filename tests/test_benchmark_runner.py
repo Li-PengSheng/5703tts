@@ -374,7 +374,8 @@ def test_effective_trace_uses_existing_cosyvoice_mapping() -> None:
 
     assert controls["speed"] == 1.0
     assert controls["mode"] == "instruct2"
-    assert "energetic, intense" in controls["instruction"]
+    assert "high vocal activation" in controls["instruction"]
+    assert "Do not deliberately change the speaking rate." in controls["instruction"]
     assert "distressed, worried, and sad" in controls["instruction"]
 
 

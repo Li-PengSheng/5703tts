@@ -49,7 +49,7 @@ def _run(json_path: Path, config: dict, tmp_path: Path) -> pipeline.PipelineResu
 def test_backend_control_error_is_reported_as_an_expected_failure(
     tmp_path: Path, config: dict, caplog: pytest.LogCaptureFixture
 ) -> None:
-    json_path = _dialogue_file(tmp_path, coarse_affect="anxious")
+    json_path = _dialogue_file(tmp_path, coarse_affect="cheerful")
 
     with caplog.at_level(logging.DEBUG, logger="tts5703.pipeline"):
         result = _run(json_path, config, tmp_path)
@@ -58,8 +58,11 @@ def test_backend_control_error_is_reported_as_an_expected_failure(
     assert result.dialogue_id == "dialogue001"
     assert "Unexpected error" not in result.error
     assert "Backend control preflight failed" in result.error
-    assert "Unsupported CosyVoice coarse_affect mapping: 'anxious'" in result.error
-    assert "Currently supported mappings: neutral, distressed." in result.error
+    assert "Unsupported CosyVoice coarse_affect mapping: 'cheerful'" in result.error
+    assert (
+        "Currently supported mappings: neutral, sad, anxious, angry, warm, distressed."
+        in result.error
+    )
 
     records = [
         record for record in caplog.records if "backend_preflight" in record.message
@@ -70,7 +73,7 @@ def test_backend_control_error_is_reported_as_an_expected_failure(
 
 
 def test_backend_control_failure_renders_no_audio(tmp_path: Path, config: dict) -> None:
-    json_path = _dialogue_file(tmp_path, coarse_affect="anxious")
+    json_path = _dialogue_file(tmp_path, coarse_affect="cheerful")
 
     result = _run(json_path, config, tmp_path)
 

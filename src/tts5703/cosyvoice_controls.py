@@ -5,13 +5,33 @@ _SEMANTIC_RATES = {
     "normal": 1.0,
     "fast": 1.2,
 }
-_AROUSAL_INSTRUCTIONS = {
-    "low": "Use a calm, soft, subdued delivery.",
-    "medium": "Use a neutral, moderately expressive delivery.",
-    "high": "Use an energetic, intense delivery.",
+_AROUSAL_INSTRUCTIONS: dict[str, str | None] = {
+    "low": (
+        "Keep vocal activation clearly low, with subdued energy and restrained "
+        "emphasis. Do not deliberately change the speaking rate."
+    ),
+    "medium": None,
+    "high": (
+        "Use clearly high vocal activation, with stronger energy, projection, and "
+        "emphasis, and a more animated delivery. Do not deliberately change the "
+        "speaking rate."
+    ),
 }
-_AFFECT_INSTRUCTIONS = {
-    "neutral": "Use a neutral, composed tone.",
+_AFFECT_INSTRUCTIONS: dict[str, str | None] = {
+    "neutral": (
+        "Speak naturally in a neutral, emotionally even conversational manner."
+    ),
+    "sad": "Speak in a clearly sad and downcast manner.",
+    "anxious": (
+        "Speak in a clearly anxious, worried, and uneasy manner, with noticeable "
+        "nervous tension and uncertainty, but not panic or urgency."
+    ),
+    "angry": "Speak in a clearly angry, firm, and forceful manner, without shouting.",
+    "warm": (
+        "Speak in a clearly warm, gentle, compassionate, supportive, and reassuring "
+        "manner, with an emotionally present and caring delivery rather than a "
+        "cheerful or excited one."
+    ),
     "distressed": "Use a distressed, worried, and sad tone.",
 }
 _INSTRUCTION_PREFIX = "You are a helpful assistant."
@@ -29,7 +49,9 @@ def rate_to_cosyvoice_speed(rate: str) -> float:
     return max(0.1, 1 + int(rate[:-1]) / 100)
 
 
-def _check_mapping(field: str, value: str | None, mapping: dict[str, str]) -> None:
+def _check_mapping(
+    field: str, value: str | None, mapping: dict[str, str | None]
+) -> None:
     if value is None or value in mapping:
         return
     raise BackendControlError(
@@ -52,11 +74,11 @@ def build_cosyvoice_instruction(
     controls = [
         instruction
         for instruction in (
-            _AROUSAL_INSTRUCTIONS.get(arousal),
             _AFFECT_INSTRUCTIONS.get(coarse_affect),
+            _AROUSAL_INSTRUCTIONS.get(arousal),
         )
         if instruction is not None
     ]
-    if not controls:
+    if arousal is None and coarse_affect is None:
         return None
     return f"{_INSTRUCTION_PREFIX} {' '.join(controls)}{_END_OF_PROMPT}"
