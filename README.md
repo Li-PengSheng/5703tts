@@ -117,6 +117,9 @@ uv run 5703tts --input path/to/input --output path/to/output
 
 # Include per-turn TTS diagnostics in the console
 uv run 5703tts --verbose
+
+# Retry failed/incomplete dialogues and skip verified completed ones
+uv run 5703tts --resume
 ```
 
 Detailed logs are written to `logs/run_YYYY-MM-DD.log`. Use `--config` or `--log-dir` to select alternate files or directories.
@@ -129,7 +132,31 @@ and some failed, and `failure` means none succeeded. The CLI exits `0` only for
 dialogues or remove successful outputs. Configuration and argument errors occur
 before this batch boundary, exit non-zero, and may not produce a manifest.
 
-Retry, resume, and completed-output skipping are not currently implemented.
+Without `--resume`, every discovered dialogue is rendered again. Existing output
+is not skipped.
+
+`--resume` is opt-in and works at dialogue granularity on a later invocation. It
+does not retry a failed dialogue repeatedly inside one process, and it does not
+resume from a mid-dialogue turn.
+
+When `--resume` is set:
+
+- verified previous successes are skipped and still count as successful final state
+- previous failures and incomplete/stale outputs are rendered again
+- newly discovered inputs are rendered
+- changed input bytes or a changed config file cause a rerender rather than reuse
+- unresolved failure still exits `1`; all current dialogues successful exits `0`
+
+A previous success is skipped only when the prior manifest records that success,
+the current input SHA-256 and config SHA-256 match, backend/model/mapping identity
+matches when recorded, and production QC still finds complete metadata, clean WAV,
+telephone WAV, and referenced turn audio. The existence of an output directory or
+a single WAV file is not enough.
+
+If `<output>/batch_result.json` is absent, `--resume` renders every current
+dialogue and writes a new manifest. If that file exists but is unreadable or
+malformed, the command fails before synthesis, leaves the file in place, and tells
+you to repair or remove it or to run without `--resume`.
 
 ## Input format
 
@@ -217,6 +244,9 @@ Each input dialogue writes to `data/output/<dialogue_id>/` by default:
 The output root also contains `batch_result.json`, which reports the status,
 input path, output directory, and concise failure information for each discovered
 dialogue. It complements rather than replaces the detailed per-dialogue metadata.
+Resume runs add `resume_requested`, `config_sha256`, per-dialogue `input_sha256`,
+and an `action` of `rendered`, `retried`, or `skipped_completed`. Skipped
+completed dialogues remain `status: success`.
 
 The assembly uses direct joins plus short fades; turns are never crossfaded. Metadata timestamps therefore align with the non-overlapping turn boundaries. Generated audio and logs are intentionally ignored by Git.
 

@@ -72,7 +72,7 @@ flowchart LR
 | Telephone output | implemented basic transform | `postprocess.py` |
 | Metadata | implemented per dialogue | `metadata.py` |
 | QC | basic runtime result only | `qc.py`；无独立 QC JSON |
-| Retry/resume/batch manifest | not implemented | pipeline/CLI 无相应状态机 |
+| Retry/resume/batch manifest | batch manifest implemented; `--resume` is opt-in dialogue-level skip/retry | 无 turn-level resume、无进程内自动重试、无 interruption checkpoint |
 
 文档与实现有两处容易误读的差异：
 
@@ -743,7 +743,7 @@ Failure/cleanup 语义：
 - Clean export 成功而 telephone/metadata/QC 失败时，已有 clean/turn files 保留。
 - Metadata 在 QC 之前写，因此 QC failed 仍可能留 metadata；但 metadata 不含 QC status。
 - CLI 的下一 dialogue 继续；config load failure 则 abort batch。
-- 没有 retry、backoff、resume、skip-existing、atomic rename 或 checkpoint protocol。
+- 没有进程内 retry/backoff 或 turn-level resume。CLI `--resume` 可在后续调用跳过已验证完成的 dialogue，并重跑失败/不完整项。batch_result.json 使用 atomic rename。没有 interruption checkpoint。
 - 重跑同一 `dialogue_id` 会覆盖同名文件，且较旧多余 turn files 可能留在目录。
 
 日志包含 batch/stage/turn lifecycle；verbose 才在 console 显示 DEBUG，但 log file 总是 DEBUG。Unexpected exception 带 traceback；expected validation/preflight warning 不带 traceback。
@@ -820,7 +820,7 @@ Pause 已由 assembly diagnostic 精确验证，analysis 不把它当 speech pro
 12. QC 做结构检查；结果写 log/返回 CLI，不单独写文件。
 13. CLI 汇总 success/failed，并继续 `batch_002.json`。
 
-若 turn 4 synthesis 失败，turn 1–3 文件仍在目录；不会 assembly、metadata 或自动 resume。下一次从 turn 1 重跑并覆盖同名文件。
+若 turn 4 synthesis 失败，turn 1–3 文件仍在目录；不会 assembly、metadata 或 turn-level resume。同一 dialogue 的下一次渲染从 turn 1 重跑并覆盖同名文件。`--resume` 只在 dialogue 级跳过已验证完成的其它 dialogue。
 
 ## 28. 当前项目能做什么
 
@@ -846,7 +846,7 @@ Pause 已由 assembly diagnostic 精确验证，analysis 不把它当 speech pro
 - 默认 CosyVoice caller/counsellor 不能区分，因为共享 prompt。
 - 不生成自然 overlap、interruption、backchannel、句内 hesitation 或双声道 spatial dialogue。
 - 不完整模拟 telephone codec/network/noise。
-- 没有 retry/resume、atomic output、parallel batch、batch manifest 或 persisted QC report。
+- 没有进程内 retry、turn-level resume、atomic dialogue directory、parallel batch 或 persisted QC report。有 atomic `batch_result.json` 和 opt-in `--resume`。
 - 不保证 fresh clone 能跑 CosyVoice；ignored external assets 必须另装。
 - 离线 tests 不能替代真实 model、listening panel、validated acoustic analysis 或 downstream evaluation。
 
@@ -878,10 +878,10 @@ CosyVoice `expected_sample_rate` 也是 declaration，不是 provisional acousti
 | metadata/provenance | implemented but partial | metadata tests | 缺 commits/hashes/env/seed/QC/runtime audio facts | High |
 | backend capability reporting | Cosy/Kokoro implemented | central registry | Edge/Chatterbox undeclared | High |
 | backend preflight | Cosy controls implemented | preflight tests | 无完整 asset/config preflight for all turns/backends | Medium |
-| batch rendering | implemented sequentially | CLI loop | 无并行、duplicate id guard、batch manifest | Medium |
-| retry/resume | not implemented | no state/checkpoint code | transient network/worker failure需重跑 | High |
+| batch rendering | implemented sequentially | CLI loop + `batch_result.json` | 无并行、duplicate id guard | Medium |
+| retry/resume | opt-in dialogue-level `--resume` | no in-process retry/backoff or turn-level resume | 瞬时 worker 失败需另一次 `--resume` | Medium |
 | QC | basic structural | `qc.py` | 缺 audio/speaker/acoustic/telephone quality gates | Critical |
-| production manifest | not implemented | only per-dialogue metadata | 需要 batch-level run/input/output/status record | High |
+| production manifest | `batch_result.json` implemented | CLI atomic write | 缺 interruption checkpoint 与更完整 provenance | Medium |
 | reproducibility | partial | static config + some engine snapshot | 缺 exact versions/hash/seed/environment/assignment | Critical |
 | validation integration | input validation integrated；formal validation absent | pipeline calls validate/QC | 缺 project-level acceptance + downstream metrics | Critical |
 
@@ -894,7 +894,7 @@ CosyVoice `expected_sample_rate` 也是 declaration，不是 provisional acousti
 3. **Production provenance 不完整**：无法仅靠 metadata 精确重建 model/repo/environment/audio artefact。
 4. **Capability registry 不完整**：Edge/Chatterbox 为 `null`；特别是 Edge rate 实际传入却没有声明。
 5. **Worker blocking risk**：startup/request `readline()` 无 timeout；malformed response 不清 cached worker；启动 kill 路径不完整 reap。
-6. **Non-transactional output**：partial/stale files 保留，无 atomic directory、resume 或 retry。
+6. **Non-transactional dialogue output**：partial/stale files 保留；batch_result.json 是 atomic 的，`--resume` 可在 dialogue 级跳过已验证完成项。无 atomic dialogue directory、turn-level resume 或 interruption checkpoint。
 7. **Path safety**：schema 对 `dialogue_id` 只要求非空字符串；`output_root / dialogue_id` 没有防绝对路径或 `..` traversal。当前 tests 未覆盖。
 8. **Duplicate dialogue IDs**：batch 不检查不同 input files 的相同 `dialogue_id`，可能覆盖同一目录。
 9. **Config validation coverage**：未完整验证 `speaker_voice_map`、Edge、Chatterbox generation fields、`tts.default_rate`、`fade_ms`、`telephone.volume_db_reduction`；部分错误会深层失败。
@@ -958,7 +958,7 @@ Rate 有 duration direction diagnostic；pause 有 timeline diagnostic。Arousal
 
 ### Q10：可以从失败处继续吗？
 
-没有 resume。Partial files 会留下供诊断，但重跑从第一 turn 开始。
+没有 turn-level resume。Partial files 会留下供诊断；同一 dialogue 重跑从第一 turn 开始。后续可用 `--resume` 跳过已验证完成的 dialogue。
 
 ## 35. Glossary
 

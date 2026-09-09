@@ -150,7 +150,7 @@ There are no protocol request IDs or locks because production synthesis is seque
 - **Direct joins instead of crossfade:** preserves exact, non-overlapping alignment. Fades change amplitude at segment edges but not duration.
 - **Open `coarse_affect` schema:** upstream semantics are not constrained to a single backend. CosyVoice mapping failures occur in preflight before output creation.
 - **Sequential rendering:** matches the stateful model/worker design and makes partial-failure ordering deterministic, at the cost of throughput.
-- **Per-dialogue failure containment:** batch processing continues, but partial files are not rolled back and there is no resume/retry mechanism.
+- **Per-dialogue failure containment:** batch processing continues and successful outputs are kept. Opt-in `--resume` skips verified complete dialogues and rerenders failed or incomplete ones at dialogue granularity. There is no turn-level resume, automatic in-process retry, or interruption checkpoint.
 - **Basic telephone transform:** 8 kHz mono, 300–3400 Hz filtering, and attenuation by default; no codec, packet-loss, line-noise, or impulse-response simulation.
 - **Structural QC only:** checks file presence/readability (for turns), minimum duration, turn count, fields, and timestamp ordering. It does not assess intelligibility, speaker identity, labels, prosody, telephone spectrum, or downstream model utility.
 - **Partial provenance:** production metadata records engine configuration and requests, but not a config hash, dependency versions, repository commit, model artifact hash, random seed, audio hash, batch manifest, or persisted QC result.
