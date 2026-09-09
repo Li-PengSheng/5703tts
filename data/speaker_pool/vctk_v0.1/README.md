@@ -108,6 +108,12 @@ uv run python scripts/assign_dialogue_speakers.py --input data/input
 
 This stage does not synthesise audio.
 
+Resolve assignment JSONL into renderer inputs with
+`scripts/materialize_speaker_assignments.py`. That helper rewrites role names to
+`speaker_id` values and builds a CosyVoice `voice_map` keyed by those IDs, so
+cross-dialogue role reuse does not collapse onto one global caller/counsellor
+reference. It does not assign speakers and does not run TTS.
+
 ## Candidate indexing method
 
 - Speakers `p280` and `p315` are excluded from v0.1 because of the documented

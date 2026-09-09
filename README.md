@@ -163,6 +163,39 @@ dialogue and writes a new manifest. If that file exists but is unreadable or
 malformed, the command fails before synthesis, leaves the file in place, and tells
 you to repair or remove it or to run without `--resume`.
 
+## Speaker assignment and materialization
+
+Deterministic speaker assignment is preprocessing. It is not part of `5703tts`.
+
+```bash
+# 1. Canonical v0.2 dialogues (role names in speaker)
+# 2. Assign persistent speaker IDs
+uv run python scripts/assign_dialogue_speakers.py \
+  --input path/to/canonical \
+  --output path/to/speaker_assignments.jsonl \
+  --summary path/to/speaker_assignment_summary.json \
+  --seed 5703
+
+# 3. Resolve those IDs into render JSON + CosyVoice voice_map
+uv run python scripts/materialize_speaker_assignments.py \
+  --input path/to/canonical \
+  --assignments path/to/speaker_assignments.jsonl \
+  --output path/to/render_input \
+  --config-out path/to/config.yaml \
+  --base-config config/config.yaml
+
+# 4. Render. Recover later with the same command plus --resume
+uv run 5703tts \
+  --input path/to/render_input \
+  --output path/to/output \
+  --config path/to/config.yaml
+```
+
+Materialization rewrites each turn's `speaker` field from a role name to the
+assigned `speaker_id` and keys CosyVoice `voice_map` by those IDs. The same role
+name can therefore map to different speakers in different dialogues. The helper
+does not run TTS. `--output` must be a new or empty directory.
+
 ## Input format
 
 Schema v0.2 is the preferred input format and is defined in [`schemas/dialogue_schema.json`](schemas/dialogue_schema.json). Acoustic controls describe model-independent intent under `acoustic_spec`:

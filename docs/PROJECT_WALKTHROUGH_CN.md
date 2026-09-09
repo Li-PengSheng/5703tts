@@ -68,7 +68,7 @@ flowchart LR
 | CosyVoice arousal/affect | `provisional_model_control` | instruction mapping + tests；没有 perceptual fidelity score |
 | Pause | implemented as `pipeline_timing` | `assemble.py`, timing tests |
 | Emotion/events | accepted and preserved, but unsupported | capability registry + metadata tests |
-| Two roles | represented and deterministically mapped | voice maps；默认 CosyVoice 两角色却共用同一 prompt WAV |
+| Two roles | represented and deterministically mapped | voice maps；corpus 用 `assign_dialogue_speakers.py` + `materialize_speaker_assignments.py` 把 role 写成 `speaker_id` 并按 ID 填 CosyVoice `voice_map` |
 | Telephone output | implemented basic transform | `postprocess.py` |
 | Metadata | implemented per dialogue | `metadata.py` |
 | QC | basic runtime result only | `qc.py`；无独立 QC JSON |
@@ -592,7 +592,7 @@ Kokoro 接受但完全忽略任意 coarse affect，并通过 metadata 明示。C
 - CosyVoice：`tts.cosyvoice.voice_map`，每项含 `prompt_wav` + `prompt_text`。
 - Chatterbox：validation 使用 project-level map；synthesis 另查 optional `reference_audio_map`。
 
-当前两个角色是 `caller` 与 `counsellor`。同一 config 下，role→voice 映射是 deterministic，且跨 dialogues 重复使用相同配置，因此有最低程度的配置可复现性。但这不是“为每个合成 persona 分配持久 speaker identity”：没有 pool index、seed、dialogue-to-speaker assignment 或 identity metadata。
+当前两个角色是 `caller` 与 `counsellor`。默认 `config.yaml` 仍是全局 role→voice。Corpus 预处理用 `scripts/assign_dialogue_speakers.py`（seed 5703）分配持久 `speaker_id`，再用 `scripts/materialize_speaker_assignments.py` 把 turn `speaker` 改写成该 ID，并把 CosyVoice `voice_map` 按 `speaker_id` 填入，因此同一 role 名可以在不同 dialogue 上对应不同 speaker。渲染 CLI 不负责 assignment。
 
 | 项目要求 | 分类 | 当前证据与解释 |
 | --- | --- | --- |
