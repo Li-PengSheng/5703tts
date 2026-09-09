@@ -20,7 +20,7 @@ from .cosyvoice_controls import (
 from .pipeline import PipelineResult, run_dialogue
 from .qc import run_qc
 from .tts_engine import describe_engine
-from .validate import load_and_validate
+from .validate import ValidationError, load_and_validate
 
 _RENDERED = "rendered"
 _RETRIED = "retried"
@@ -193,6 +193,40 @@ def _index_previous_results(manifest: dict[str, Any] | None) -> dict[Path, dict]
     return indexed
 
 
+def _duplicate_dialogue_id_error(duplicates: dict[str, list[Path]]) -> RuntimeError:
+    lines = [
+        (
+            "Duplicate dialogue_id values were found in this batch. "
+            "Each dialogue_id must be unique because outputs are written to "
+            "<output>/<dialogue_id>/."
+        )
+    ]
+    for dialogue_id in sorted(duplicates):
+        lines.append(f"Duplicate dialogue_id {dialogue_id!r} found in:")
+        lines.extend(f"- {path}" for path in duplicates[dialogue_id])
+    return RuntimeError("\n".join(lines))
+
+
+def _require_unique_dialogue_ids(
+    json_files: list[Path], config: dict[str, Any]
+) -> None:
+    """Reject the batch if two current inputs share a canonical dialogue_id."""
+    by_id: dict[str, list[Path]] = {}
+    for path in json_files:
+        try:
+            dialogue = load_and_validate(path, config)
+        except ValidationError:
+            # Per-dialogue validation failures stay in the render loop. A file
+            # that cannot yield a canonical ID cannot occupy an output directory.
+            continue
+        by_id.setdefault(dialogue.dialogue_id, []).append(path)
+    duplicates = {
+        dialogue_id: paths for dialogue_id, paths in by_id.items() if len(paths) > 1
+    }
+    if duplicates:
+        raise _duplicate_dialogue_id_error(duplicates)
+
+
 def _verified_completed_result(
     input_path: Path,
     previous: dict[str, Any],
@@ -237,8 +271,9 @@ async def main() -> int:
     """Discover input JSON files and render them sequentially as one batch.
 
     ``run_dialogue`` converts per-dialogue failures into ``PipelineResult`` values,
-    which lets this loop continue with later files. Configuration failures happen
-    outside that boundary and intentionally abort the whole invocation.
+    which lets this loop continue with later files. Configuration failures, malformed
+    resume manifests, and duplicate current ``dialogue_id`` values abort before any
+    dialogue is rendered and do not write ``batch_result.json``.
     """
     parser = argparse.ArgumentParser(
         description="Render crisis dialogue JSON files with a configured TTS engine."
@@ -312,6 +347,11 @@ async def main() -> int:
         logger.warning("event=batch_no_input input=%s", args.input)
     else:
         logger.info("event=input_discovered dialogue_count=%d", len(json_files))
+    try:
+        _require_unique_dialogue_ids(json_files, config)
+    except RuntimeError:
+        logger.exception("event=batch_failed stage=duplicate_dialogue_id")
+        raise
 
     results: list[DialogueBatchResult] = []
     for index, path in enumerate(json_files, start=1):

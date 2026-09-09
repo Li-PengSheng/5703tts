@@ -12,7 +12,7 @@ import pytest
 from tts5703 import cli
 from tts5703.config import ConfigError
 from tts5703.pipeline import PipelineResult
-from tts5703.validate import NormalizedDialogue, NormalizedTurn
+from tts5703.validate import NormalizedDialogue, NormalizedTurn, ValidationError
 
 _INPUT_BODY = "{}\n"
 _CONFIG_TEXT = "tts:\n  engine: edge_tts\n"
@@ -94,6 +94,8 @@ def _run_batch(
     config_text: str = _CONFIG_TEXT,
     complete_outputs: bool = False,
     previous_manifest: dict | None = None,
+    attempted: list[str] | None = None,
+    validate=None,
 ) -> tuple[int, dict, list[str]]:
     input_root = tmp_path / "input"
     output_root = tmp_path / "output"
@@ -111,7 +113,8 @@ def _run_batch(
             encoding="utf-8",
         )
 
-    attempted: list[str] = []
+    if attempted is None:
+        attempted = []
 
     async def fake_run_dialogue(
         path: Path, config: dict, output: Path
@@ -128,6 +131,8 @@ def _run_batch(
         return result
 
     def fake_load_and_validate(path: Path, config: dict) -> NormalizedDialogue:
+        if validate is not None:
+            return validate(path, config)
         result = outcomes[path.name]
         return _one_turn_dialogue(result.dialogue_id or path.stem)
 
@@ -819,3 +824,155 @@ def test_verified_completed_result_requires_complete_compatible_artifacts(
         )
         is None
     )
+
+
+def test_duplicate_dialogue_ids_are_rejected_before_render(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    outcomes = {
+        "a.json": _success(tmp_path, "d001"),
+        "b.json": _success(tmp_path, "d001"),
+    }
+    attempted: list[str] = []
+
+    with pytest.raises(RuntimeError, match="Duplicate dialogue_id 'd001'") as caught:
+        _run_batch(tmp_path, monkeypatch, outcomes, attempted=attempted)
+
+    message = str(caught.value)
+    assert str(tmp_path / "input" / "a.json") in message
+    assert str(tmp_path / "input" / "b.json") in message
+    assert attempted == []
+    assert not (tmp_path / "output" / "batch_result.json").exists()
+    assert not (tmp_path / "output" / "d001").exists()
+
+
+def test_duplicate_after_unique_ids_still_renders_nothing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    outcomes = {
+        "a.json": _success(tmp_path, "d001"),
+        "b.json": _success(tmp_path, "d002"),
+        "c.json": _success(tmp_path, "d001"),
+    }
+    attempted: list[str] = []
+
+    with pytest.raises(RuntimeError, match="Duplicate dialogue_id 'd001'"):
+        _run_batch(tmp_path, monkeypatch, outcomes, attempted=attempted)
+
+    assert attempted == []
+    assert not (tmp_path / "output" / "batch_result.json").exists()
+    assert not (tmp_path / "output" / "d001").exists()
+    assert not (tmp_path / "output" / "d002").exists()
+
+
+def test_multiple_duplicate_dialogue_id_groups_are_all_reported(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    outcomes = {
+        "a.json": _success(tmp_path, "d001"),
+        "b.json": _success(tmp_path, "d001"),
+        "c.json": _success(tmp_path, "d002"),
+        "d.json": _success(tmp_path, "d002"),
+        "e.json": _success(tmp_path, "d003"),
+    }
+    attempted: list[str] = []
+
+    with pytest.raises(RuntimeError, match="Duplicate dialogue_id") as caught:
+        _run_batch(tmp_path, monkeypatch, outcomes, attempted=attempted)
+
+    message = str(caught.value)
+    assert "Duplicate dialogue_id 'd001' found in:" in message
+    assert "Duplicate dialogue_id 'd002' found in:" in message
+    assert message.index("d001") < message.index("d002")
+    assert str(tmp_path / "input" / "a.json") in message
+    assert str(tmp_path / "input" / "b.json") in message
+    assert str(tmp_path / "input" / "c.json") in message
+    assert str(tmp_path / "input" / "d.json") in message
+    assert "d003" not in message
+    assert attempted == []
+
+
+def test_unique_dialogue_ids_reach_the_renderer(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    outcomes = {
+        "a.json": _success(tmp_path, "d001"),
+        "copy_a.json": _success(tmp_path, "d002"),
+        "c.json": _success(tmp_path, "d003"),
+    }
+
+    exit_code, manifest, attempted = _run_batch(tmp_path, monkeypatch, outcomes)
+
+    assert attempted == ["a.json", "c.json", "copy_a.json"]
+    assert exit_code == 0
+    assert manifest["status"] == "success"
+    assert [result["dialogue_id"] for result in manifest["results"]] == [
+        "d001",
+        "d003",
+        "d002",
+    ]
+    assert manifest["dialogues_total"] == 3
+    assert manifest["dialogues_failed"] == 0
+
+
+def test_resume_rejects_current_duplicate_ids_before_skip_or_retry(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    out_dir = _complete_dialogue_output(tmp_path / "output", "d001")
+    marker = out_dir / "preserved.txt"
+    marker.write_text("keep\n", encoding="utf-8")
+    previous = _previous_manifest(
+        tmp_path,
+        [_previous_entry(tmp_path, "a.json", "d001", "success")],
+        status="success",
+    )
+    outcomes = {
+        "a.json": _success(tmp_path, "d001"),
+        "b.json": _success(tmp_path, "d001"),
+    }
+    attempted: list[str] = []
+
+    with pytest.raises(RuntimeError, match="Duplicate dialogue_id 'd001'"):
+        _run_batch(
+            tmp_path,
+            monkeypatch,
+            outcomes,
+            extra_args=["--resume"],
+            previous_manifest=previous,
+            attempted=attempted,
+        )
+
+    assert attempted == []
+    assert marker.read_text(encoding="utf-8") == "keep\n"
+    assert (out_dir / "d001_clean.wav").exists()
+    written = json.loads(
+        (tmp_path / "output" / "batch_result.json").read_text(encoding="utf-8")
+    )
+    assert written["dialogues_total"] == 1
+    assert written["results"][0]["dialogue_id"] == "d001"
+
+
+def test_malformed_input_does_not_invent_an_id_and_still_continues(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    outcomes = {
+        "a.json": _failed(
+            None, "Input validation failed: malformed input", "ValidationError"
+        ),
+        "b.json": _success(tmp_path, "d002"),
+    }
+
+    def validate(path: Path, config: dict) -> NormalizedDialogue:
+        if path.name == "a.json":
+            raise ValidationError("malformed input")
+        return _one_turn_dialogue("d002")
+
+    exit_code, manifest, attempted = _run_batch(
+        tmp_path, monkeypatch, outcomes, validate=validate
+    )
+
+    assert attempted == ["a.json", "b.json"]
+    assert exit_code == 1
+    assert manifest["status"] == "partial_failure"
+    assert manifest["results"][0]["dialogue_id"] is None
+    assert manifest["results"][1]["dialogue_id"] == "d002"

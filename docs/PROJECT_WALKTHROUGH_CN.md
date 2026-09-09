@@ -878,7 +878,7 @@ CosyVoice `expected_sample_rate` 也是 declaration，不是 provisional acousti
 | metadata/provenance | implemented but partial | metadata tests | 缺 commits/hashes/env/seed/QC/runtime audio facts | High |
 | backend capability reporting | Cosy/Kokoro implemented | central registry | Edge/Chatterbox undeclared | High |
 | backend preflight | Cosy controls implemented | preflight tests | 无完整 asset/config preflight for all turns/backends | Medium |
-| batch rendering | implemented sequentially | CLI loop + `batch_result.json` | 无并行、duplicate id guard | Medium |
+| batch rendering | implemented sequentially | CLI loop + `batch_result.json` + unique `dialogue_id` preflight | 无并行 | Medium |
 | retry/resume | opt-in dialogue-level `--resume` | no in-process retry/backoff or turn-level resume | 瞬时 worker 失败需另一次 `--resume` | Medium |
 | QC | basic structural | `qc.py` | 缺 audio/speaker/acoustic/telephone quality gates | Critical |
 | production manifest | `batch_result.json` implemented | CLI atomic write | 缺 interruption checkpoint 与更完整 provenance | Medium |
@@ -896,7 +896,7 @@ CosyVoice `expected_sample_rate` 也是 declaration，不是 provisional acousti
 5. **Worker blocking risk**：startup/request `readline()` 无 timeout；malformed response 不清 cached worker；启动 kill 路径不完整 reap。
 6. **Non-transactional dialogue output**：partial/stale files 保留；batch_result.json 是 atomic 的，`--resume` 可在 dialogue 级跳过已验证完成项。无 atomic dialogue directory、turn-level resume 或 interruption checkpoint。
 7. **Path safety**：schema 对 `dialogue_id` 只要求非空字符串；`output_root / dialogue_id` 没有防绝对路径或 `..` traversal。当前 tests 未覆盖。
-8. **Duplicate dialogue IDs**：batch 不检查不同 input files 的相同 `dialogue_id`，可能覆盖同一目录。
+8. **Duplicate dialogue IDs**：current-batch unique `dialogue_id` preflight rejects collisions before render/`--resume`. 跨 invocation 重用同一 ID 仍由 normal/`--resume` 语义处理。
 9. **Config validation coverage**：未完整验证 `speaker_voice_map`、Edge、Chatterbox generation fields、`tts.default_rate`、`fade_ms`、`telephone.volume_db_reduction`；部分错误会深层失败。
 10. **QC fragility/coverage**：telephone 只查 exists；clean decode error 可变为 generic pipeline exception；无 QC/postprocess 专门 tests；0.1 秒边界与 issue 文本不一致。
 11. **Audio property assumptions**：clean sample rate/channel 不显式规范或记录；Cosy runtime rate 被协议返回却丢弃。

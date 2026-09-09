@@ -131,6 +131,11 @@ and some failed, and `failure` means none succeeded. The CLI exits `0` only for
 `success`; either failure status exits `1`. A failed dialogue does not stop later
 dialogues or remove successful outputs. Configuration and argument errors occur
 before this batch boundary, exit non-zero, and may not produce a manifest.
+Duplicate `dialogue_id` values in the current input set are also a pre-execution
+failure: they are rejected after discovery and canonical validation, before any
+dialogue is rendered or `--resume` skip/retry decisions run, because outputs use
+`<output>/<dialogue_id>/`. The error lists every conflicting path. This does not
+forbid reusing an ID in a later invocation.
 
 Without `--resume`, every discovered dialogue is rendered again. Existing output
 is not skipped.
