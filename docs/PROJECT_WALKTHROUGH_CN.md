@@ -1,5 +1,7 @@
 # 5703tts 项目完整讲解
 
+当前生产就绪范围、语料证据与 demo 见 [TTS Production Readiness](TTS_PRODUCTION_READINESS.md)。下文仍是代码结构讲解，其中部分规模数字可能落后于该证据文档。
+
 > 本文描述的是仓库提交 `2a235f8e387354055a3b1ac915fbaf4e783ef51d` 的**当前实现**。证据优先级为 `src/tts5703/` → `tests/` → `schemas/` → `config/` → `scripts/` → `pyproject.toml` → README。文中“支持”会区分 schema 接受、backend 映射、真实运行以及声学效果验证，不能互换理解。
 
 ## 1. 项目要解决什么问题

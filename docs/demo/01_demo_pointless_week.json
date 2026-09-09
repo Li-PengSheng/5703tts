@@ -1,0 +1,51 @@
+{
+  "schema_version": "0.2",
+  "dialogue_id": "demo_pointless_week",
+  "turns": [
+    {
+      "turn_id": 1,
+      "speaker": "counsellor",
+      "text": "What happened earlier today?",
+      "label": "normal",
+      "acoustic_spec": {
+        "rate": "normal",
+        "pause_before_ms": 0,
+        "pause_after_ms": 400,
+        "arousal": null,
+        "coarse_affect": null,
+        "emotion": null,
+        "paralinguistic_events": []
+      }
+    },
+    {
+      "turn_id": 2,
+      "speaker": "caller",
+      "text": "Everything just feels pointless lately.",
+      "label": "alert",
+      "acoustic_spec": {
+        "rate": "slow",
+        "pause_before_ms": 0,
+        "pause_after_ms": 1200,
+        "arousal": null,
+        "coarse_affect": null,
+        "emotion": null,
+        "paralinguistic_events": []
+      }
+    },
+    {
+      "turn_id": 3,
+      "speaker": "counsellor",
+      "text": "How long has this been going on for?",
+      "label": "normal",
+      "acoustic_spec": {
+        "rate": "normal",
+        "pause_before_ms": 0,
+        "pause_after_ms": 400,
+        "arousal": null,
+        "coarse_affect": null,
+        "emotion": null,
+        "paralinguistic_events": []
+      }
+    }
+  ]
+}

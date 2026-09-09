@@ -1,0 +1,51 @@
+{
+  "schema_version": "0.2",
+  "dialogue_id": "demo_needed_to_talk",
+  "turns": [
+    {
+      "turn_id": 1,
+      "speaker": "counsellor",
+      "text": "I hear you. Take your time.",
+      "label": "normal",
+      "acoustic_spec": {
+        "rate": "normal",
+        "pause_before_ms": 0,
+        "pause_after_ms": 400,
+        "arousal": null,
+        "coarse_affect": null,
+        "emotion": null,
+        "paralinguistic_events": []
+      }
+    },
+    {
+      "turn_id": 2,
+      "speaker": "caller",
+      "text": "I don't know how much more of this I can take.",
+      "label": "alert",
+      "acoustic_spec": {
+        "rate": "slow",
+        "pause_before_ms": 0,
+        "pause_after_ms": 1000,
+        "arousal": null,
+        "coarse_affect": null,
+        "emotion": null,
+        "paralinguistic_events": []
+      }
+    },
+    {
+      "turn_id": 3,
+      "speaker": "counsellor",
+      "text": "I hear you. Take your time.",
+      "label": "normal",
+      "acoustic_spec": {
+        "rate": "normal",
+        "pause_before_ms": 0,
+        "pause_after_ms": 400,
+        "arousal": null,
+        "coarse_affect": null,
+        "emotion": null,
+        "paralinguistic_events": []
+      }
+    }
+  ]
+}

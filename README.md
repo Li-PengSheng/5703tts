@@ -4,6 +4,10 @@
 
 The distribution and command are named `5703tts`. Its import package is `tts5703`, because Python package names cannot start with a digit.
 
+## Production status
+
+The TTS renderer is production-ready under the current canonical v0.2 interface for controlled batch generation. The final upstream nested acoustic adapter is pending until that interface is frozen. Evidence, limits, and a two-dialogue demo: [TTS Production Readiness](docs/TTS_PRODUCTION_READINESS.md).
+
 ## Project layout
 
 | Path | Purpose | Git policy |

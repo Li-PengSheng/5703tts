@@ -158,6 +158,8 @@ There are no protocol request IDs or locks because production synthesis is seque
 
 ## Evidence and status
 
-This reference describes repository commit `2a235f8e387354055a3b1ac915fbaf4e783ef51d`. Primary evidence is under `src/tts5703/`, followed by `tests/`, `schemas/`, and `config/`. The offline suite has 243 passing tests but loads no real model. Gitignored local benchmark artefacts show prior real CosyVoice and Kokoro runs on this installation; they are experiment records, not portable CI evidence or proof of perceptual fidelity.
+Current production-readiness, corpus-run scales, and evidence boundaries are in [TTS Production Readiness](TTS_PRODUCTION_READINESS.md). This architecture note remains a code-structure reference.
+
+This reference originally described repository commit `2a235f8e387354055a3b1ac915fbaf4e783ef51d`. Primary evidence is under `src/tts5703/`, followed by `tests/`, `schemas/`, and `config/`. The offline suite loads no real model. Gitignored local GPU artefacts are experiment records, not portable CI evidence or proof of perceptual fidelity.
 
 The pinned upstream checkout used during inspection is [QwenAudio/CosyVoice at `074ca6dc`](https://github.com/QwenAudio/CosyVoice/tree/074ca6dc9e80a2f424f1f74b48bdd7d3fea531cc). It is external, ignored, and absent from a fresh clone.
