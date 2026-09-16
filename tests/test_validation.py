@@ -292,6 +292,35 @@ def test_cosyvoice_uses_its_own_voice_map() -> None:
     assert dialogue.turns[1].speaker == "caller"
 
 
+def test_higgs_uses_its_own_voice_map() -> None:
+    config = copy.deepcopy(CONFIG)
+    config["tts"]["engine"] = "higgs"
+    config["tts"]["higgs"] = {
+        "voice_map": {"spk_001": {"reference_wav": "refs/spk_001.wav"}}
+    }
+    raw = _canonical_dialogue()
+    raw["turns"][0]["speaker"] = "spk_001"
+
+    dialogue = validate_and_normalize(raw, config)
+
+    assert dialogue.turns[0].speaker == "spk_001"
+
+
+def test_higgs_missing_speaker_fails_before_synthesis() -> None:
+    config = copy.deepcopy(CONFIG)
+    config["tts"]["engine"] = "higgs"
+    config["tts"]["higgs"] = {
+        "voice_map": {"spk_001": {"reference_wav": "refs/spk_001.wav"}}
+    }
+    raw = _canonical_dialogue()
+    raw["turns"][0]["speaker"] = "spk_002"
+
+    with pytest.raises(
+        ValidationError, match="speaker 'spk_002' has no configured voice"
+    ):
+        validate_and_normalize(raw, config)
+
+
 def test_cosyvoice_requires_complete_voice_entries() -> None:
     config = copy.deepcopy(CONFIG)
     del config["tts"]["cosyvoice"]["voice_map"]["caller"]["prompt_text"]

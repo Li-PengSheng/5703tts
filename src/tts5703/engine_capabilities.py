@@ -15,6 +15,9 @@ Support vocabulary:
 ``pipeline_timing``
     Not sent to the backend at all; realised by this project's own assembly
     stage, so it is honoured regardless of backend support.
+``pipeline_postprocess``
+    Not sent to the backend as a model control; planned for this project's
+    audio postprocessing stage.
 ``unsupported``
     The backend cannot consume this control; a requested value is ignored.
 """
@@ -25,10 +28,17 @@ from typing import Any
 MODEL_CONTROL = "model_control"
 PROVISIONAL_MODEL_CONTROL = "provisional_model_control"
 PIPELINE_TIMING = "pipeline_timing"
+PIPELINE_POSTPROCESS = "pipeline_postprocess"
 UNSUPPORTED = "unsupported"
 
 CAPABILITY_VOCABULARY: frozenset[str] = frozenset(
-    {MODEL_CONTROL, PROVISIONAL_MODEL_CONTROL, PIPELINE_TIMING, UNSUPPORTED}
+    {
+        MODEL_CONTROL,
+        PROVISIONAL_MODEL_CONTROL,
+        PIPELINE_TIMING,
+        PIPELINE_POSTPROCESS,
+        UNSUPPORTED,
+    }
 )
 
 # Declaration order is also the reporting order of derived control lists.
@@ -43,6 +53,15 @@ ACOUSTIC_CONTROL_FIELDS: tuple[str, ...] = (
 )
 
 ENGINE_CAPABILITIES: dict[str, dict[str, dict[str, str]]] = {
+    "higgs": {
+        "rate": {"support": PIPELINE_POSTPROCESS},
+        "pause_before_ms": {"support": PIPELINE_TIMING},
+        "pause_after_ms": {"support": PIPELINE_TIMING},
+        "arousal": {"support": PROVISIONAL_MODEL_CONTROL},
+        "coarse_affect": {"support": PROVISIONAL_MODEL_CONTROL},
+        "emotion": {"support": UNSUPPORTED},
+        "paralinguistic_events": {"support": UNSUPPORTED},
+    },
     "cosyvoice": {
         "rate": {"support": MODEL_CONTROL},
         "pause_before_ms": {"support": PIPELINE_TIMING},

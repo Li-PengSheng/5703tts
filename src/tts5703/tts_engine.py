@@ -20,6 +20,7 @@ from .cosyvoice_controls import (
     resolve_cosyvoice_controls,
     validate_cosyvoice_controls,
 )
+from .higgs_controls import HiggsControlError, resolve_higgs_controls
 from .validate import NormalizedTurn
 
 logger = logging.getLogger(__name__)
@@ -83,14 +84,33 @@ def preflight_cosyvoice_controls(turn: NormalizedTurn) -> None:
     validate_cosyvoice_controls(turn.arousal, turn.coarse_affect)
 
 
+def preflight_higgs_controls(turn: NormalizedTurn) -> None:
+    """Resolve one Higgs control plan without starting a model or worker."""
+    try:
+        resolve_higgs_controls(
+            text=turn.text,
+            rate=turn.rate,
+            arousal=turn.arousal,
+            coarse_affect=turn.coarse_affect,
+            pause_before_ms=turn.pause_before_ms,
+            pause_after_ms=turn.pause_after_ms,
+            speaker_id=turn.speaker,
+        )
+    except HiggsControlError as error:
+        raise BackendControlError(str(error)) from error
+
+
 def preflight_backend_controls(turn: NormalizedTurn, config: dict[str, Any]) -> None:
     """Validate one turn against the selected backend's control mappings.
 
     Backends that ignore a control (see ``engine_capabilities``) must not reject
     it here; the requested value is preserved and reported as ignored instead.
     """
-    if get_engine(config) == "cosyvoice":
+    engine = get_engine(config)
+    if engine == "cosyvoice":
         preflight_cosyvoice_controls(turn)
+    elif engine == "higgs":
+        preflight_higgs_controls(turn)
 
 
 def preflight_dialogue_controls(
@@ -340,6 +360,10 @@ async def synthesize_turn(
 ) -> Path:
     """Synthesize one turn with the engine selected in ``tts.engine``."""
     engine = get_engine(config)
+    if engine == "higgs":
+        raise RuntimeError(
+            "Higgs synthesis is not available until its isolated worker is implemented"
+        )
     if engine == "edge_tts":
         import edge_tts  # Lazy import: only needed when Edge TTS is selected.
 

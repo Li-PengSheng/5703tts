@@ -2,6 +2,7 @@
 
 import asyncio
 import copy
+import sys
 from pathlib import Path
 
 import pytest
@@ -12,6 +13,7 @@ from tts5703.tts_engine import (
     preflight_backend_controls,
     preflight_cosyvoice_controls,
     preflight_dialogue_controls,
+    preflight_higgs_controls,
 )
 from tts5703.validate import NormalizedTurn, validate_and_normalize
 
@@ -36,6 +38,7 @@ def kokoro_config() -> dict:
 def _turn(
     *,
     turn_id: int = 1,
+    rate: str = "normal",
     arousal: str | None = None,
     coarse_affect: str | None = None,
 ) -> NormalizedTurn:
@@ -44,7 +47,7 @@ def _turn(
         speaker="caller",
         text="I do not know what to do next.",
         label="alert",
-        rate="normal",
+        rate=rate,
         pause_before_ms=0,
         pause_after_ms=500,
         arousal=arousal,
@@ -122,6 +125,92 @@ def test_kokoro_does_not_reject_schema_valid_ignored_controls(
     assert dialogue.turns[0].coarse_affect == "anxious"
     assert preflight_backend_controls(dialogue.turns[0], kokoro_config) is None
     assert preflight_backend_controls(_turn(arousal="frantic"), kokoro_config) is None
+
+
+def test_higgs_preflight_delegates_exact_turn_values(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict = {}
+
+    def resolve(**kwargs: object) -> dict:
+        captured.update(kwargs)
+        return {}
+
+    monkeypatch.setattr(tts_engine, "resolve_higgs_controls", resolve)
+    turn = _turn(rate="slow", arousal="low", coarse_affect="warm")
+
+    assert preflight_higgs_controls(turn) is None
+    assert captured == {
+        "text": turn.text,
+        "rate": "slow",
+        "arousal": "low",
+        "coarse_affect": "warm",
+        "pause_before_ms": 0,
+        "pause_after_ms": 500,
+        "speaker_id": "caller",
+    }
+
+
+@pytest.mark.parametrize(
+    ("arousal", "coarse_affect"),
+    [(None, None), ("low", "warm")],
+)
+def test_higgs_preflight_accepts_supported_controls(
+    arousal: str | None, coarse_affect: str | None
+) -> None:
+    config = {"tts": {"engine": "higgs"}}
+
+    assert (
+        preflight_backend_controls(
+            _turn(arousal=arousal, coarse_affect=coarse_affect), config
+        )
+        is None
+    )
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [("arousal", "frantic"), ("coarse_affect", "cheerful")],
+)
+def test_higgs_preflight_rejects_invalid_non_null_controls(
+    field: str, value: str
+) -> None:
+    config = {"tts": {"engine": "higgs"}}
+
+    with pytest.raises(BackendControlError, match=rf"Unsupported Higgs {field}"):
+        preflight_backend_controls(_turn(**{field: value}), config)
+
+
+@pytest.mark.parametrize("rate", ["+10%", "-20%"])
+def test_higgs_preflight_rejects_legacy_percentage_rates(rate: str) -> None:
+    config = {"tts": {"engine": "higgs"}}
+
+    with pytest.raises(BackendControlError, match="Unsupported Higgs rate mapping"):
+        preflight_backend_controls(_turn(rate=rate), config)
+
+
+def test_higgs_preflight_has_no_worker_or_sglang_dependency() -> None:
+    config = {"tts": {"engine": "higgs"}}
+
+    assert preflight_backend_controls(_turn(), config) is None
+    assert not hasattr(tts_engine, "_get_higgs_worker")
+    assert "sglang" not in sys.modules
+
+
+def test_higgs_synthesis_fails_without_falling_through_to_another_backend(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = {"tts": {"engine": "higgs"}}
+
+    def unreachable_model(*args: object) -> object:
+        raise AssertionError("Higgs must not fall through to Chatterbox")
+
+    monkeypatch.setattr(tts_engine, "_get_chatterbox_turbo", unreachable_model)
+
+    with pytest.raises(RuntimeError, match="Higgs synthesis is not available"):
+        asyncio.run(tts_engine.synthesize_turn(_turn(), tmp_path, config))
+
+    assert list(tmp_path.iterdir()) == []
 
 
 def test_dialogue_preflight_reports_the_offending_turn(

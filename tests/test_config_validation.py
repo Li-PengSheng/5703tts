@@ -33,6 +33,15 @@ def _kokoro_config() -> dict[str, Any]:
     return config
 
 
+def _higgs_config() -> dict[str, Any]:
+    config = copy.deepcopy(load_config(CONFIG_PATH))
+    config["tts"]["engine"] = "higgs"
+    config["tts"]["higgs"] = {
+        "voice_map": {"spk_001": {"reference_wav": "refs/spk_001.wav"}}
+    }
+    return config
+
+
 def _at(config: dict[str, Any], path: tuple[str, ...]) -> Any:
     value: Any = config
     for key in path:
@@ -42,6 +51,85 @@ def _at(config: dict[str, Any], path: tuple[str, ...]) -> Any:
 
 def test_reference_kokoro_config_is_valid() -> None:
     assert load_config(KOKORO_CONFIG_PATH)["tts"]["engine"] == "kokoro"
+
+
+def test_higgs_is_a_valid_engine_with_minimal_reference_config() -> None:
+    assert _validate_config(_higgs_config()) is None
+
+
+@pytest.mark.parametrize(
+    "engine", ["edge_tts", "kokoro", "chatterbox_turbo", "cosyvoice"]
+)
+def test_existing_engines_remain_valid(engine: str) -> None:
+    config = copy.deepcopy(load_config(CONFIG_PATH))
+    config["tts"]["engine"] = engine
+
+    assert _validate_config(config) is None
+
+
+def test_unknown_engine_remains_rejected() -> None:
+    config = copy.deepcopy(load_config(CONFIG_PATH))
+    config["tts"]["engine"] = "unknown"
+
+    with pytest.raises(ConfigError, match="tts.engine must be one of"):
+        _validate_config(config)
+
+
+def test_selected_higgs_requires_higgs_config() -> None:
+    config = _higgs_config()
+    del config["tts"]["higgs"]
+
+    with pytest.raises(ConfigError, match="tts.higgs configuration is required"):
+        _validate_config(config)
+
+
+@pytest.mark.parametrize("higgs", [None, [], "higgs"])
+def test_higgs_config_must_be_a_mapping(higgs: Any) -> None:
+    config = _higgs_config()
+    config["tts"]["higgs"] = higgs
+
+    with pytest.raises(ConfigError, match="tts.higgs must be a mapping"):
+        _validate_config(config)
+
+
+@pytest.mark.parametrize("voice_map", [None, {}, [], "voice"])
+def test_higgs_voice_map_must_be_non_empty_mapping(voice_map: Any) -> None:
+    config = _higgs_config()
+    config["tts"]["higgs"]["voice_map"] = voice_map
+
+    with pytest.raises(
+        ConfigError, match="tts.higgs.voice_map must be a non-empty mapping"
+    ):
+        _validate_config(config)
+
+
+@pytest.mark.parametrize("speaker", [None, "", "  ", 7])
+def test_higgs_speaker_ids_must_be_non_empty_strings(speaker: Any) -> None:
+    config = _higgs_config()
+    config["tts"]["higgs"]["voice_map"] = {
+        speaker: {"reference_wav": "refs/spk_001.wav"}
+    }
+
+    with pytest.raises(ConfigError, match="voice_map keys must be non-empty strings"):
+        _validate_config(config)
+
+
+@pytest.mark.parametrize("voice", [None, [], "refs/spk_001.wav"])
+def test_higgs_voice_entries_must_be_mappings(voice: Any) -> None:
+    config = _higgs_config()
+    config["tts"]["higgs"]["voice_map"]["spk_001"] = voice
+
+    with pytest.raises(ConfigError, match="voice_map.spk_001 must be a mapping"):
+        _validate_config(config)
+
+
+@pytest.mark.parametrize("reference_wav", [None, "", "  ", 7])
+def test_higgs_reference_wav_must_be_non_empty_string(reference_wav: Any) -> None:
+    config = _higgs_config()
+    config["tts"]["higgs"]["voice_map"]["spk_001"] = {"reference_wav": reference_wav}
+
+    with pytest.raises(ConfigError, match="reference_wav must be a non-empty string"):
+        _validate_config(config)
 
 
 @pytest.mark.parametrize("lang_code", [None, "", "   ", 42, ["a"]])

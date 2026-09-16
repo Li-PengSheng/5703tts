@@ -5,7 +5,7 @@ from typing import Any
 
 import yaml
 
-VALID_ENGINES = {"edge_tts", "kokoro", "chatterbox_turbo", "cosyvoice"}
+VALID_ENGINES = {"edge_tts", "kokoro", "chatterbox_turbo", "cosyvoice", "higgs"}
 
 
 class ConfigError(Exception):
@@ -64,6 +64,29 @@ def _validate_kokoro(kokoro: Any) -> None:
         raise ConfigError(
             f"tts.kokoro.device must be null or a non-empty string; got: {device!r}"
         )
+
+
+def _validate_higgs(higgs: Any) -> None:
+    """Validate the bounded downstream reference-audio contract."""
+    if not isinstance(higgs, dict):
+        raise ConfigError("tts.higgs must be a mapping")
+
+    voice_map = higgs.get("voice_map")
+    if not isinstance(voice_map, dict) or not voice_map:
+        raise ConfigError("tts.higgs.voice_map must be a non-empty mapping")
+    for speaker, voice in voice_map.items():
+        if not isinstance(speaker, str) or not speaker.strip():
+            raise ConfigError(
+                f"tts.higgs.voice_map keys must be non-empty strings; got: {speaker!r}"
+            )
+        if not isinstance(voice, dict):
+            raise ConfigError(f"tts.higgs.voice_map.{speaker} must be a mapping")
+        reference_wav = voice.get("reference_wav")
+        if not isinstance(reference_wav, str) or not reference_wav.strip():
+            raise ConfigError(
+                f"tts.higgs.voice_map.{speaker}.reference_wav "
+                "must be a non-empty string"
+            )
 
 
 def _validate_config(config: dict[str, Any]) -> None:
@@ -170,3 +193,9 @@ def _validate_config(config: dict[str, Any]) -> None:
                 "tts.cosyvoice.sample_rate must be a positive integer; "
                 f"got: {sample_rate!r}"
             )
+    if engine == "higgs" and "higgs" not in config.get("tts", {}):
+        raise ConfigError(
+            "tts.higgs configuration is required when tts.engine is higgs"
+        )
+    if engine == "higgs":
+        _validate_higgs(config["tts"]["higgs"])

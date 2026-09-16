@@ -159,6 +159,8 @@ def validate_and_normalize(
             voice_map = config["tts"]["kokoro"]["voice_map"]
         elif engine == "cosyvoice":
             voice_map = config["tts"]["cosyvoice"]["voice_map"]
+        elif engine == "higgs":
+            voice_map = config["tts"]["higgs"]["voice_map"]
         elif engine == "chatterbox_turbo":
             # Turbo can use its bundled voice, so speaker availability still follows
             # the project-level speaker map; reference audio is optional per speaker.
