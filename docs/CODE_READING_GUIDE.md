@@ -5,7 +5,7 @@ This guide is ordered by questions, not by filename. Read the implementation bef
 ## Level 1 — Understand external behaviour
 
 1. **`pyproject.toml`** — What command is installed, which Python version is required, and which backends are actually present in the locked main environment?
-2. **`config/config.yaml`** — Which engine is selected now? Which role/voice and telephone settings will the default command use? Notice that the opening comment says EdgeTTS while `tts.engine` actually says `cosyvoice`.
+2. **`config/config.yaml`** — Which engine is selected now? Which backend voice and telephone settings will the default command use?
 3. **`schemas/dialogue_schema.json`** — What is the canonical v0.2 contract, and which acoustic fields are merely accepted rather than required?
 4. **`tests/fixtures/dialogue_v0_2.json`** — What does a small canonical dialogue look like in practice?
 5. **`src/tts5703/cli.py`** — What does `uv run 5703tts` discover, in what order does it process files, and which failures abort versus remain per-dialogue?
@@ -36,10 +36,10 @@ At the end of this level, calculate the timestamps of a three-turn dialogue by h
 
 Read focused sections of **`src/tts5703/tts_engine.py`** in this order:
 
-1. `get_engine()`, `turn_audio_extension()`, rate maps — What is shared and what is backend-specific?
-2. `synthesize_turn()` EdgeTTS branch — Which request arguments are consumed, and why does this path require the network?
-3. Kokoro branch and `_get_kokoro_pipeline()` — How are chunks joined, which sample rate writes the WAV, and how is the model cached?
-4. Chatterbox branch — Why is this code experimental despite being selectable?
+1. `get_engine()` and the rate maps — What is shared and what is backend-specific?
+2. Kokoro branch and `_get_kokoro_pipeline()` — How are chunks joined, which sample rate writes the WAV, and how is the model cached?
+3. CosyVoice worker request/lifecycle — How does the isolated environment communicate over JSON lines?
+4. Higgs worker request/lifecycle and rate postprocess — Where do model controls and FFmpeg ownership meet?
 5. `describe_engine()` — What provenance is produced for each path, and what is missing?
 
 Then read **`config/config.kokoro.yaml`** and **`tests/test_config_validation.py`** to understand the supported local comparison configuration.

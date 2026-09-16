@@ -48,7 +48,7 @@ flowchart LR
 
 ## 3. 当前仓库已经实现到什么程度
 
-当前默认 `config/config.yaml` 选择 `cosyvoice`。仓库有四条 engine 代码路径，但成熟度不同：CosyVoice 和 Kokoro 有 central capability declaration 与 controlled benchmark；EdgeTTS 有可调用代码和已安装依赖，但没有 capability declaration；Chatterbox Turbo 只有实验代码，依赖未列入项目环境。
+当前默认 `config/config.yaml` 选择 `cosyvoice`。仓库有三条 engine 代码路径：CosyVoice 是本机真实验证的默认 backend，Kokoro 是本地 comparison backend，Higgs 已完成 production integration 与离线验证，但仍等待真实 GPU cloud gate。
 
 状态词在本文中的含义：
 
@@ -76,10 +76,7 @@ flowchart LR
 | QC | basic runtime result only | `qc.py`；无独立 QC JSON |
 | Retry/resume/batch manifest | batch manifest implemented; `--resume` is opt-in dialogue-level skip/retry | 无 turn-level resume、无进程内自动重试、无 interruption checkpoint |
 
-文档与实现有两处容易误读的差异：
-
-1. `config/config.yaml` 第一行注释仍写“Default: online Edge TTS”，实际 `tts.engine: cosyvoice`；实际配置值优先。
-2. README 说输出“accompanied by ... QC results”，但主 pipeline 只把 `QCResult` 返回给 CLI 并写入日志；没有独立 QC 文件，也没有把 QC 写进 metadata。
+文档与实现有一处容易误读的差异：README 说输出“accompanied by ... QC results”，但主 pipeline 只把 `QCResult` 返回给 CLI 并写入日志；没有独立 QC 文件，也没有把 QC 写进 metadata。
 
 ## 4. 一张图理解整个系统
 
@@ -175,10 +172,9 @@ uv run 5703tts
 
 真实 backend 要求：
 
-- EdgeTTS：主环境已安装 `edge-tts 7.2.8`，每次合成需要在线服务。
 - Kokoro：主环境已安装 `kokoro 0.9.4`，首次可能下载模型，之后可依赖本地 cache。
 - CosyVoice：另一个 Python 3.10 环境、外部 repo、Matcha-TTS、model snapshot、prompt WAV；GPU 对实用性能很重要。
-- Chatterbox：`chatterbox` 当前未安装，选择它会在 lazy import/load 时失败。
+- Higgs：外部 `sgl-omni` executable、model checkpoint 与显式批准的 reference WAV；production path 已离线验证，真实 GPU runtime 仍待 cloud gate。
 
 ### 6.1 Configuration system：`config/config.yaml` 字段说明
 
@@ -188,8 +184,7 @@ uv run 5703tts
 
 | Key | 当前值/用途 | 要求与状态 | Reproducibility |
 | --- | --- | --- | --- |
-| `speaker_voice_map` | Edge：counsellor→Aria、caller→Guy；Chatterbox validation 也用此 role set | Edge/Chatterbox dialogue 实际需要；当前 validator 不检查 map 本身 | voice identity 关键 |
-| `tts.engine` | `cosyvoice` | 必需；四选一 | 决定全部 backend 行为 |
+| `tts.engine` | `cosyvoice` | 必需；`cosyvoice`、`higgs`、`kokoro` 三选一 | 决定全部 backend 行为 |
 | `tts.default_rate` | `+0%` | validation 每次都读取；只给 legacy 缺省 rate 使用，canonical 默认是代码中的 `normal` | legacy corpus 关键 |
 | `pause.default_ms` | `500` | 必需、non-negative；canonical/legacy 缺省 after pause | timeline 关键 |
 | `fade_ms` | `5` | optional，assembly 缺省 5；没有 type/range validation | waveform edge 关键 |
@@ -219,9 +214,9 @@ uv run 5703tts
 | `voice_map.*.prompt_wav` | zero-shot/instruct speaker reference | 每 configured voice 必需 non-empty string；文件到 synthesis 前才查 existence |
 | `voice_map.*.prompt_text` | zero-shot reference transcript | 每 configured voice 必需 non-empty string；instruct2 worker 不消费它 |
 
-**Chatterbox-specific**
+**Higgs-specific**
 
-`device`、`variant`、`model_dir`、`reference_audio_map`、`temperature`、`top_p`、`top_k`、`repetition_penalty` 供 experimental branch 使用。选择该 engine 时 validator 只要求整个 section 存在，不验证这些内部值。`model_dir=null` 会走 `from_pretrained`；reference null 使用 built-in voice。
+Higgs 的完整 runtime config 位于 `config/config.higgs.example.yaml`：外部 `sgl-omni` executable、model directory、loopback host/port、timeouts、FFmpeg command，以及 `tts.higgs.voice_map.*.reference_wav`。主 config 不启用 Higgs，真实 GPU validation 见 cloud checklist。
 
 **Telephone processing**
 
@@ -302,9 +297,9 @@ Canonical turn 不能混入 legacy 顶层 `rate` 等字段，因为 `additionalP
 6. `pipeline.run_dialogue()` 先以文件 stem 作为临时 `dialogue_id`，便于 parse 失败时报告。
 7. `load_and_validate()` 读文本、`json.loads()`，选择 canonical 或 legacy schema。
 8. `validate_and_normalize()` 检查 speaker voice availability、turn id uniqueness/order，并输出 `NormalizedDialogue`。这一段不把 acoustic semantics 转成模型参数。
-9. `preflight_dialogue_controls()` 对所有 turns 做 backend mapping preflight。当前只有 CosyVoice 检查 arousal/affect mapping；失败发生在 output directory 创建之前，所以不会生成音频。
+9. `preflight_dialogue_controls()` 对所有 turns 做 backend mapping preflight。CosyVoice 和 Higgs 都检查各自的 arousal/affect mapping；失败发生在 output directory 创建之前，所以不会生成音频。
 10. 创建 `output_root/dialogue_id/`。这里没有 staging/temp transaction。
-11. `synthesize_all_turns()` 按顺序逐个调用 `synthesize_turn()`。Edge 输出 MP3；其余路径输出 WAV。一个失败会停止本 dialogue，先前文件保留。
+11. `synthesize_all_turns()` 按顺序逐个调用 `synthesize_turn()`。所有 backend 都输出 WAV。一个失败会停止本 dialogue，先前文件保留。
 12. `assemble_dialogue()` 按 turn 顺序读取文件，先插入当前 `pause_before_ms`，记录 segment start/end，再插入当前 `pause_after_ms`；边缘做短 fade，不做 crossfade。
 13. 返回内存中的 `full_audio` 和 `TurnTiming[]`。时间戳单位秒、round 到 3 位，代表 clean timeline 的 speech interval。
 14. 先把 `full_audio` export 为 `<id>_clean.wav`。
@@ -332,7 +327,7 @@ Model-independent 阶段：config shell、JSON/schema validation、normalization
 | `validate.py` | `load_and_validate()` / `validate_and_normalize()` → normalized dataclasses | pipeline、benchmark；jsonschema、config engine list | 读 JSON；legacy warning；`ValidationError` | `test_validation.py`, preflight/fixture tests |
 | `engine_capabilities.py` | registry queries、request snapshot、ignored list | metadata、benchmark、tests | 纯函数；undeclared engine 抛 `UnknownEngineCapabilityError` | `test_engine_capabilities.py` |
 | `pipeline.py` | `run_dialogue() → PipelineResult` | CLI；调用所有 stage | 创建 output、export、metadata；捕获并分类异常；不 rollback | `test_pipeline_error_paths.py` |
-| `tts_engine.py` | rate map、preflight、`synthesize_turn()`、`synthesize_all_turns()`、`describe_engine()` | pipeline、benchmark；edge/kokoro/soundfile/subprocess | 网络/model/GPU/worker；写 turn 文件；lazy cache | controls、worker lifecycle、preflight、metadata tests |
+| `tts_engine.py` | rate map、preflight、`synthesize_turn()`、`synthesize_all_turns()`、`describe_engine()` | pipeline、benchmark；kokoro/soundfile/subprocess | model/GPU/worker；写 turn 文件；lazy cache | controls、worker lifecycle、preflight、metadata tests |
 | `cosyvoice_worker.py` | executable `main()`；init/request JSON → response JSON | 由 `tts_engine` subprocess 启动；CosyVoice/torch/torchaudio | 加载模型、占 GPU、写 WAV；stderr diagnostics | `test_cosyvoice_worker.py`（fake deps） |
 | `assemble.py` | `assemble_dialogue(turns, paths, config) → AudioSegment, timings` | pipeline、benchmark；pydub | 读所有 turn audio；missing/corrupt file 抛异常 | `test_pipeline_compatibility.py`, benchmark runner tests |
 | `postprocess.py` | `apply_telephone_effect(AudioSegment, config) → AudioSegment` | pipeline；pydub | 函数自身不写文件；无专门 tests | 间接未充分覆盖 |
@@ -343,7 +338,7 @@ Model-independent 阶段：config shell、JSON/schema validation、normalization
 
 ## 10. TTS Engine abstraction
 
-当前 abstraction 不是 abstract base class 或 plugin system，而是 `synthesize_turn()` 内的四路 branch。统一 contract 是：
+当前 abstraction 不是 abstract base class 或 plugin system，而是 `synthesize_turn()` 内的三路 branch。统一 contract 是：
 
 ```text
 NormalizedTurn + out_dir + config
@@ -354,14 +349,14 @@ NormalizedTurn + out_dir + config
 共同逻辑：
 
 - `get_engine()` 从 `tts.engine` 选路。
-- `turn_audio_extension()` 说明 Edge 为 `.mp3`，其他为 `.wav`。
+- 每个 backend 都写 turn WAV。
 - schema semantic rate 在 backend boundary 映射。
 - pause 不进入任何 backend branch，由 `assemble.py` 统一实现。
 - `synthesize_all_turns()` 串行执行，适配 stateful model 和单一 CosyVoice stdio channel。
 
 没有共同 interface 对输出 sample rate/channel、actual controls 或 worker timing 作结构化返回；只有 `Path`。这正是 CosyVoice runtime sample rate 无法进入 production metadata 的原因之一。
 
-Central registry 只声明 CosyVoice 与 Kokoro。Edge/Chatterbox 虽然 code exists，但 metadata 的 `control_support` 和每 turn 的 `ignored_requested_controls` 都是 `null`，意思是“没有声明”，不是“什么都没忽略”。
+Central registry 为 CosyVoice、Higgs 与 Kokoro 都声明了 capability map。
 
 ## 11. CosyVoice3 深度讲解
 
@@ -454,20 +449,17 @@ Worker 把所有 `tts_speech` chunk detach/cpu 后在 dimension 1 拼接，用 `
 
 CosyVoice metadata 保留 model label、mode list、provisional mapping flag、repo/model paths、fp16/TRT/vLLM flags，以及每角色 prompt WAV/text。它没有保留 `python_bin`、CosyVoice commit、model snapshot revision/hash、依赖版本、seed、GPU/CUDA 信息、config hash 或 audio hash。因此是有用但不完整的 provenance。
 
-## 12. EdgeTTS / Kokoro / 其他 backend
+## 12. Production backends
 
 | Backend | Code exists | Dependency available | Local/online | Turn output | Rate | Pause | Arousal | Affect | Emotion | Paralinguistics | Current role |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | CosyVoice3 | 是 | 隔离环境/资产本机存在；fresh clone 无 | local model | WAV，worker model rate | `model_control`, 0.8/1.0/1.2 | `pipeline_timing` | `provisional_model_control` | `provisional_model_control`，仅 neutral/distressed mapping | `unsupported` | `unsupported` | 默认配置、主要实验 candidate |
 | Kokoro | 是 | 主环境已安装 0.9.4 | initial download 后 local cache | WAV，configured 24 kHz | `model_control`, 0.8/1.0/1.2 | `pipeline_timing` | `unsupported` | `unsupported` | `unsupported` | `unsupported` | lightweight local baseline / benchmark |
-| EdgeTTS | 是 | 主环境已安装 7.2.8 | online | MP3 | 实际传 `rate`；但 registry 未声明 | assembly 可实现 | 未传模型；registry 未声明 | 未传模型；registry 未声明 | 未传模型；registry 未声明 | 未传模型；registry 未声明 | online fallback/code path；metadata capability incomplete |
-| Chatterbox Turbo/Nano | 是 | **未安装**、不在 dependencies | local cache 或 pretrained download，取决配置 | WAV at `model.sr` | turn rate 未传给 model | assembly 可实现 | 未传模型 | 未传模型 | 未传模型 | 未传模型 | retained experimental path，不宜视为 supported production backend |
-
-EdgeTTS 用 project-level `speaker_voice_map`，当前 Aria/Guy；`Communicate(..., rate=...)` 后在线保存 MP3。没有真实 Edge tests。
+| Higgs | 是 | external isolated SGLang runtime；本机未安装 | local loopback server | WAV，worker + FFmpeg | `pipeline_postprocess`, 0.85/none/1.15 | `pipeline_timing` | `provisional_model_control` | `provisional_model_control` | `unsupported` | `unsupported` | offline validated；真实 GPU cloud gate pending |
 
 Kokoro lazy-load `KPipeline(lang_code, device)`，同 `(lang_code, device)` cache；每个 generator result 的 `audio` 转 numpy，全部 concatenate 后由 `soundfile` 按 config sample rate 写 WAV。没有真实 Kokoro model test，但本机 gitignored benchmark 显示曾完成真实 run。
 
-Chatterbox lazy import `ChatterboxTurboTTS`；可 `from_local` 或 `from_pretrained`，生成参数是 temperature/top-p/top-k/repetition penalty，optional speaker reference。当前 config 的两个 reference 都为 null，会使用 bundled voice，无法保证 role distinguishability；config validator 也只检查 section 存在，没有逐字段验证。
+Higgs 由 persistent JSON-lines worker 管理 loopback SGLang server；production resolver 生成 model input，slow/fast rate 在 turn-level synthesis 后用 FFmpeg atempo 实现。Reference WAV 必须按 speaker 显式配置，当前仍待真实 cloud validation。
 
 ## 13. Acoustic Specification 完整控制链
 
@@ -510,18 +502,16 @@ flowchart LR
 
 Canonical rate 是 semantic enum；legacy 是 signed percentage。映射在 backend boundary：
 
-| Requested | EdgeTTS | Kokoro | CosyVoice |
+| Requested | Kokoro | CosyVoice | Higgs |
 | --- | --- | --- | --- |
-| `slow` | `-20%` | `speed=0.8` | `speed=0.8` |
-| `normal` | `+0%` | `speed=1.0` | `speed=1.0` |
-| `fast` | `+20%` | `speed=1.2` | `speed=1.2` |
-| legacy `±N%` | 原样 | `max(0.1, 1 + N/100)` | 同 Kokoro |
+| `slow` | `speed=0.8` | `speed=0.8` | FFmpeg `atempo=0.85` |
+| `normal` | `speed=1.0` | `speed=1.0` | no atempo |
+| `fast` | `speed=1.2` | `speed=1.2` | FFmpeg `atempo=1.15` |
+| legacy `±N%` | `max(0.1, 1 + N/100)` | 同 Kokoro | 不支持，preflight 拒绝 |
 
 Kokoro/Cosy legacy conversion 使用 `int(rate[:-1])`；非法 percentage 应在 legacy schema 被挡住。Semantic maps 是固定代码，不从 YAML 配置。
 
-能力 registry 把 CosyVoice/Kokoro rate 标为 `model_control`。Controlled fixture 固定 text/speaker/label/其他 acoustic fields，只改 slow/normal/fast；runner 记录 end-to-end RTF 与 duration，并检查 `slow duration > normal > fast`，但该检查明确是 `diagnostic_only`。本机当前提交的 gitignored CosyVoice/Kokoro run 都匹配方向；这说明参数路径和 duration direction 有实验迹象，不证明自然度、精确 rate 或 perceptual fidelity。
-
-Edge 的 semantic mapping 有 unit tests，但 Edge 不在 controlled benchmark supported engines，registry 也没有 Edge declaration。
+能力 registry 把 CosyVoice/Kokoro rate 标为 `model_control`，Higgs rate 标为 `pipeline_postprocess`。Controlled fixture 固定 text/speaker/label/其他 acoustic fields，只改 slow/normal/fast；runner 记录 end-to-end RTF 与 duration，并检查 `slow duration > normal > fast`，但该检查明确是 `diagnostic_only`。本机当前提交的 gitignored CosyVoice/Kokoro run 都匹配方向；这说明参数路径和 duration direction 有实验迹象，不证明自然度、精确 rate 或 perceptual fidelity。
 
 ## 15. pause 是如何实现的
 
@@ -554,7 +544,7 @@ Schema 接受 `low|medium|high|null`。CosyVoice preflight 接受同样三值，
 
 只要非 null，就组装完整 instruct2 instruction 并切换到 `inference_instruct2`。这是真实 model-boundary control，因此不是“完全没实现”；但 registry 特意称为 `provisional_model_control`，因为英文 instruction 到实际 prosody 的映射没有通过听测或 validated arousal estimator 证明。
 
-Kokoro 不消费 arousal，仍生成音频并把非 null 请求列进 `ignored_requested_controls`。Edge/Chatterbox 也不传 arousal，但因没有 declaration，metadata 对 ignored 状态只能给 `null`。
+Kokoro 不消费 arousal，仍生成音频并把非 null 请求列进 `ignored_requested_controls`。Higgs 使用 frozen Controlled TTS v1 provisional tokens；真实模型效果仍待 cloud gate。
 
 Benchmark 有 low/high controlled pair，analysis 只算 duration、RMS、peak、silence proportion；F0 为 `null`。出现描述性差异也不能作为 arousal fidelity score。
 
@@ -580,26 +570,25 @@ Kokoro 接受但完全忽略任意 coarse affect，并通过 metadata 明示。C
 - CosyVoice/Kokoro capability 均为 `unsupported`。
 - non-null emotion 或 non-empty events 会出现在 `ignored_requested_controls`。
 - empty events 与 null emotion 视为“没有请求”，不会误报 ignored。
-- `synthesize_turn()` 的四个 backend branch 都不把它们传给模型。
+- 三个 backend 都不把它们传给模型。
 - benchmark fixture 为避免 confound，把 emotion 全设 null、events 全设 `[]`。
 
 因此 fine-grained emotion 与 complex paralinguistic events 当前是 deferred/best-effort representation，不能因为 JSON 有字段就说已实现。
 
 ## 19. Speaker / Voice 管理
 
-内部没有独立 `Speaker` class、speaker ID registry、pool sampler 或 assignment manifest。`speaker` 只是输入 turn 的字符串，validation 根据所选 backend 找 voice map：
+`speaker` 是输入 turn 中的 persistent speaker ID，validation 根据所选 backend 找 voice map：
 
-- EdgeTTS：project-level `speaker_voice_map`。
 - Kokoro：`tts.kokoro.voice_map`。
 - CosyVoice：`tts.cosyvoice.voice_map`，每项含 `prompt_wav` + `prompt_text`。
-- Chatterbox：validation 使用 project-level map；synthesis 另查 optional `reference_audio_map`。
+- Higgs：`tts.higgs.voice_map`，每项含显式批准的 `reference_wav`。
 
-当前两个角色是 `caller` 与 `counsellor`。默认 `config.yaml` 仍是全局 role→voice。Corpus 预处理用 `scripts/assign_dialogue_speakers.py`（seed 5703）分配持久 `speaker_id`，再用 `scripts/materialize_speaker_assignments.py` 把 turn `speaker` 改写成该 ID，并把 CosyVoice `voice_map` 按 `speaker_id` 填入，因此同一 role 名可以在不同 dialogue 上对应不同 speaker。渲染 CLI 不负责 assignment。
+默认示例仍可直接使用 `caller` 与 `counsellor`。Corpus 预处理用 `scripts/assign_dialogue_speakers.py`（seed 5703）分配持久 `speaker_id`，再用 `scripts/materialize_speaker_assignments.py` 把 turn `speaker` 改写成该 ID，并生成 backend-owned voice maps。Higgs map 只在 registry 有显式 `higgs_reference` approval 时生成；渲染 CLI 不负责 assignment。
 
 | 项目要求 | 分类 | 当前证据与解释 |
 | --- | --- | --- |
 | caller/counsellor 表示 | implemented | 输入 speaker + backend voice maps |
-| 两角色可区分 | partial / configuration responsibility | Edge/Kokoro 默认 voice 不同；CosyVoice 默认两个 role 使用同一 prompt，实际不区分 |
+| 两角色可区分 | partial / configuration responsibility | Kokoro 默认 voice 不同；CosyVoice 默认两个 role 使用同一 prompt，实际不区分；Higgs 要求显式 reference approval |
 | reasonably large speaker pool | not implemented | 没有 pool 数据结构或 selection algorithm |
 | cross-dialogue identity reuse | partial | 固定 role mapping 会重复 voice；没有多个 identity 的显式 reuse contract |
 | reproducible assignment | partial | 静态 YAML deterministic；没有 seed/assignment manifest/hash |
@@ -619,7 +608,7 @@ CosyVoice reference clip 的 license、音质、语言匹配、exact transcript 
 - pause 是 silence segment，同样 direct append。
 - 没有 crossfade、overlap、mixing、background noise 或 two-channel spatial rendering。
 - 没有显式统一 clean sample rate/channel/sample width；pydub 在拼接时处理 segment compatibility，实际 clean properties 取决于输入 backend audio。QC 不验证这些 properties。
-- Edge turn MP3 需要 pydub/FFmpeg decode；其他 turn 是 WAV。
+- 所有 turn 文件都是 WAV。
 - 最终 clean 与 telephone 都 export 为 WAV。
 - turn files 被保留，不是临时文件，也不会在成功后清理。
 
@@ -629,8 +618,8 @@ CosyVoice reference clip 的 license、音质、语言匹配、exact transcript 
 
 ```mermaid
 flowchart TD
-    D[data/output/dialogue_id/] --> T1[turn_001.wav or .mp3]
-    D --> TN[turn_NNN.wav or .mp3]
+    D[data/output/dialogue_id/] --> T1[turn_001.wav]
+    D --> TN[turn_NNN.wav]
     D --> C[dialogue_id_clean.wav]
     D --> P[dialogue_id_telephone.wav]
     D --> M[dialogue_id_metadata.json]
@@ -697,7 +686,7 @@ dialogue metadata
 
 `requested_acoustic_spec` 是 `TurnTiming` 的七个控制字段 snapshot。Flat `rate/pause/...` 为 backward-compatible duplicate，测试要求两者完全相同。它们描述的是**请求**，不是音频测量结果。
 
-`tts.control_support` 描述 backend 的声明：CosyVoice/Kokoro 有完整 map；Edge/Chatterbox 是 `null`。`ignored_requested_controls` 只列 `unsupported` 且实际 non-null/non-empty 的请求；pipeline pause 不列，因为 assembly honor 了它；provisional controls 也不列，因为它们确实被送给 CosyVoice。
+`tts.control_support` 描述 backend 的声明：CosyVoice、Higgs、Kokoro 都有完整 map。`ignored_requested_controls` 只列 `unsupported` 且实际 non-null/non-empty 的请求；pipeline pause 不列，因为 assembly honor 了它；provisional controls 也不列，因为它们确实被送给对应 backend。
 
 容易误解的字段：
 
@@ -707,14 +696,12 @@ dialogue metadata
 - Kokoro `sample_rate`：pipeline 写 WAV 时使用的 configured value。
 - CosyVoice `expected_sample_rate`：declaration，**不是**实际 output measurement。
 - CosyVoice `control_mapping="provisional"`：映射存在但 fidelity 未验证。
-- `ignored_requested_controls=null`：capability undeclared，不等于没有忽略。
 
 ### 23.2 Backend provenance 内容
 
-- Edge：engine + role voice names。
 - Kokoro：engine、hard-coded model label `Kokoro-82M`、configured sample rate、voice map。
 - CosyVoice：engine、hard-coded model label、available modes、provisional marker、repo/model paths、fp16/TRT/vLLM、expected/runtime sample-rate semantics、prompt WAV/text。
-- Chatterbox：variant-derived model label、device、reference map、generation parameters。
+- Higgs：model ID/directory、runtime command、frozen control mapping provenance、reference path/hash、identity completeness 与 exact per-turn resolution。
 
 ### 23.3 缺失的 production provenance
 
@@ -828,7 +815,7 @@ Pause 已由 assembly diagnostic 精确验证，analysis 不把它当 speech pro
 
 - 接受 canonical v0.2 或 temporary legacy dialogue JSON。
 - 验证结构、标签、turn order/uniqueness 与 configured voice availability。
-- 在四条代码路径中选择 backend；默认 CosyVoice，Kokoro 为受控 baseline。
+- 在三条代码路径中选择 backend；默认 CosyVoice，Kokoro 为受控 baseline，Higgs 仍待真实 GPU gate。
 - 一 turn 一 audio unit，串行生成并保留 per-turn 文件。
 - 对 CosyVoice/Kokoro 控制 semantic rate。
 - 由 pipeline deterministic 实现 before/after pauses。
@@ -858,7 +845,7 @@ Pause 已由 assembly diagnostic 精确验证，analysis 不把它当 speech pro
 
 Rate registry 使用 `model_control`，比 provisional 更强，表示 backend receives/expected to change acoustics；但仍不代表校准完成。当前真实 run 只提供 duration direction diagnostic。
 
-CosyVoice `expected_sample_rate` 也是 declaration，不是 provisional acoustic control，更不是 runtime fact。Chatterbox 则应称 experimental/unsupported installation，而不是 provisional production backend。
+CosyVoice `expected_sample_rate` 也是 declaration，不是 provisional acoustic control，更不是 runtime fact。Higgs production integration 是 offline validated；真实模型质量和 runtime stability 仍属 cloud-pending，而非本机已验证事实。
 
 ## 31. 与 CS-28 最终 TTS 目标之间还差什么
 
@@ -878,8 +865,8 @@ CosyVoice `expected_sample_rate` 也是 declaration，不是 provisional acousti
 | telephone audio | basic implementation | postprocess | 缺 codec/noise/channel realism 与验证 | High |
 | timestamps | implemented construction alignment | assembly/tests | 缺 waveform/VAD verification；telephone alignment未核 | Medium |
 | metadata/provenance | implemented but partial | metadata tests | 缺 commits/hashes/env/seed/QC/runtime audio facts | High |
-| backend capability reporting | Cosy/Kokoro implemented | central registry | Edge/Chatterbox undeclared | High |
-| backend preflight | Cosy controls implemented | preflight tests | 无完整 asset/config preflight for all turns/backends | Medium |
+| backend capability reporting | Cosy/Higgs/Kokoro implemented | central registry | mapping fidelity 仍需真实模型验证 | Medium |
+| backend preflight | Cosy/Higgs controls implemented | preflight tests | runtime asset checks 到实际 synthesis 才执行 | Medium |
 | batch rendering | implemented sequentially | CLI loop + `batch_result.json` + unique `dialogue_id` preflight | 无并行 | Medium |
 | retry/resume | opt-in dialogue-level `--resume` | no in-process retry/backoff or turn-level resume | 瞬时 worker 失败需另一次 `--resume` | Medium |
 | QC | basic structural | `qc.py` | 缺 audio/speaker/acoustic/telephone quality gates | Critical |
@@ -894,17 +881,17 @@ CosyVoice `expected_sample_rate` 也是 declaration，不是 provisional acousti
 1. **Speaker risk**：默认 Cosy 两角色同 reference，是当前最直接的数据有效性阻碍。
 2. **Fidelity evidence gap**：arousal/affect mapping 有代码、test 和 descriptive run，却没有 validated perceptual/prosodic acceptance criterion。
 3. **Production provenance 不完整**：无法仅靠 metadata 精确重建 model/repo/environment/audio artefact。
-4. **Capability registry 不完整**：Edge/Chatterbox 为 `null`；特别是 Edge rate 实际传入却没有声明。
-5. **Worker blocking risk**：startup/request `readline()` 无 timeout；malformed response 不清 cached worker；启动 kill 路径不完整 reap。
+4. **Cloud evidence gap**：Higgs integration 已离线验证，但 reference conditioning、稳定性与质量仍需真实 GPU gate。
+5. **Worker blocking risk**：CosyVoice startup/request `readline()` 无 timeout；启动异常路径仍需要生产环境观察。
 6. **Non-transactional dialogue output**：partial/stale files 保留；batch_result.json 是 atomic 的，`--resume` 可在 dialogue 级跳过已验证完成项。无 atomic dialogue directory、turn-level resume 或 interruption checkpoint。
 7. **Path safety**：schema 对 `dialogue_id` 只要求非空字符串；`output_root / dialogue_id` 没有防绝对路径或 `..` traversal。当前 tests 未覆盖。
 8. **Duplicate dialogue IDs**：current-batch unique `dialogue_id` preflight rejects collisions before render/`--resume`. 跨 invocation 重用同一 ID 仍由 normal/`--resume` 语义处理。
-9. **Config validation coverage**：未完整验证 `speaker_voice_map`、Edge、Chatterbox generation fields、`tts.default_rate`、`fade_ms`、`telephone.volume_db_reduction`；部分错误会深层失败。
+9. **Config validation coverage**：未完整验证 `tts.default_rate`、`fade_ms`、`telephone.volume_db_reduction`；部分错误会深层失败。
 10. **QC fragility/coverage**：telephone 只查 exists；clean decode error 可变为 generic pipeline exception；无 QC/postprocess 专门 tests；0.1 秒边界与 issue 文本不一致。
 11. **Audio property assumptions**：clean sample rate/channel 不显式规范或记录；Cosy runtime rate 被协议返回却丢弃。
-12. **Async surface, synchronous work**：Kokoro/Cosy/Chatterbox 在 async function 内做阻塞工作；当前串行所以可接受，但不能提供 async concurrency。
+12. **Async surface, synchronous work**：Kokoro/Cosy/Higgs 在 async function 内做阻塞工作；当前串行所以可接受，但不能提供 async concurrency。
 13. **Legacy corpus migration**：自带 30 个 inputs 全走 temporary compatibility path，canonical schema 的 upstream integration 尚未体现在 corpus。
-14. **Documentation drift**：config 首注释与 actual engine 冲突；README 的 QC output wording 容易让人以为有 QC artefact。
+14. **Documentation drift risk**：backend 与 cloud-validation 状态变化时，需要同步更新 current-state 文档。
 
 这些是当前状态记录。本任务没有静默修复它们，也没有改变 architecture/API/schema。
 

@@ -203,7 +203,7 @@ def test_higgs_preflight_has_no_worker_or_sglang_dependency(
     assert "sglang" not in sys.modules
 
 
-def test_higgs_missing_reference_fails_without_starting_or_falling_through(
+def test_higgs_missing_reference_fails_before_worker_startup(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     config = {
@@ -219,13 +219,9 @@ def test_higgs_missing_reference_fails_without_starting_or_falling_through(
         }
     }
 
-    def unreachable_model(*args: object) -> object:
-        raise AssertionError("Higgs must not fall through to Chatterbox")
-
     def unreachable_worker(*args: object) -> object:
         raise AssertionError("missing reference must fail before worker startup")
 
-    monkeypatch.setattr(tts_engine, "_get_chatterbox_turbo", unreachable_model)
     monkeypatch.setattr(tts_engine, "_get_higgs_worker", unreachable_worker)
 
     with pytest.raises(RuntimeError, match="Higgs reference audio is missing"):

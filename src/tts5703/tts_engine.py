@@ -40,7 +40,10 @@ logger = logging.getLogger(__name__)
 
 
 def get_engine(config: dict[str, Any]) -> str:
-    engine = config["tts"].get("engine", "edge_tts")
+    try:
+        engine = config["tts"]["engine"]
+    except (KeyError, TypeError) as error:
+        raise ValueError("Missing required configuration key: tts.engine") from error
     if engine not in VALID_ENGINES:
         raise ValueError(
             f"Unsupported tts.engine: {engine} (available: {sorted(VALID_ENGINES)})"
@@ -58,26 +61,11 @@ def _resolve_path(root: Path, value: str) -> Path:
     return path if path.is_absolute() else root / path
 
 
-def turn_audio_extension(config: dict[str, Any]) -> str:
-    """Return the per-turn container extension emitted by the selected engine."""
-    return ".mp3" if get_engine(config) == "edge_tts" else ".wav"
-
-
-_EDGE_TTS_SEMANTIC_RATES = {
-    "slow": "-20%",
-    "normal": "+0%",
-    "fast": "+20%",
-}
 _KOKORO_SEMANTIC_RATES = {
     "slow": 0.8,
     "normal": 1.0,
     "fast": 1.2,
 }
-
-
-def rate_to_edge_tts(rate: str) -> str:
-    """Map semantic rates to EdgeTTS percentages, preserving legacy values."""
-    return _EDGE_TTS_SEMANTIC_RATES.get(rate, rate)
 
 
 def rate_to_kokoro_speed(rate: str) -> float:
@@ -166,7 +154,7 @@ def build_cosyvoice_request(
 
 @lru_cache(maxsize=4)
 def _get_kokoro_pipeline(lang_code: str, device: str | None):
-    # Lazy import keeps EdgeTTS runs independent of Kokoro model loading.
+    # Load Kokoro only when its backend is selected.
     from kokoro import KPipeline
 
     return KPipeline(lang_code=lang_code, device=device)
@@ -792,16 +780,6 @@ def _synthesize_higgs_turn(
     return final_path
 
 
-@lru_cache(maxsize=2)
-def _get_chatterbox_turbo(device: str, model_dir: str | None, nano: bool):
-    """Load Turbo/Nano lazily so EdgeTTS/Kokoro runs do not import its model stack."""
-    from chatterbox.tts_turbo import ChatterboxTurboTTS
-
-    if model_dir:
-        return ChatterboxTurboTTS.from_local(model_dir, device=device)
-    return ChatterboxTurboTTS.from_pretrained(device=device, nano=nano)
-
-
 async def synthesize_turn(
     turn: NormalizedTurn, out_dir: Path, config: dict[str, Any]
 ) -> Path:
@@ -809,30 +787,6 @@ async def synthesize_turn(
     engine = get_engine(config)
     if engine == "higgs":
         return _synthesize_higgs_turn(turn, out_dir, config)
-    if engine == "edge_tts":
-        import edge_tts  # Lazy import: only needed when Edge TTS is selected.
-
-        voice = config["speaker_voice_map"][turn.speaker]
-        output_path = out_dir / f"turn_{turn.turn_id:03d}.mp3"
-        logger.debug(
-            "event=turn_tts_start engine=edge_tts turn=%d speaker=%s voice=%s rate=%s",
-            turn.turn_id,
-            turn.speaker,
-            voice,
-            turn.rate,
-        )
-        await edge_tts.Communicate(
-            text=turn.text,
-            voice=voice,
-            rate=rate_to_edge_tts(turn.rate),
-        ).save(str(output_path))
-        logger.debug(
-            "event=turn_tts_complete engine=edge_tts turn=%d output=%s bytes=%d",
-            turn.turn_id,
-            output_path.name,
-            output_path.stat().st_size,
-        )
-        return output_path
 
     output_path = out_dir / f"turn_{turn.turn_id:03d}.wav"
     if engine == "kokoro":
@@ -935,34 +889,7 @@ async def synthesize_turn(
         )
         return output_path
 
-    turbo = config["tts"]["chatterbox_turbo"]
-    reference_audio = turbo.get("reference_audio_map", {}).get(turn.speaker)
-    logger.debug(
-        "event=turn_tts_start engine=chatterbox_turbo turn=%d speaker=%s reference_audio=%s",
-        turn.turn_id,
-        turn.speaker,
-        reference_audio or "builtin",
-    )
-    model = _get_chatterbox_turbo(
-        turbo["device"], turbo.get("model_dir"), turbo.get("variant", "turbo") == "nano"
-    )
-    kwargs = {
-        "temperature": turbo["temperature"],
-        "top_p": turbo["top_p"],
-        "top_k": turbo["top_k"],
-        "repetition_penalty": turbo["repetition_penalty"],
-    }
-    if reference_audio:
-        kwargs["audio_prompt_path"] = reference_audio
-    audio = model.generate(turn.text, **kwargs)
-    sf.write(output_path, audio.squeeze(0).detach().cpu().numpy(), model.sr)
-    logger.debug(
-        "event=turn_tts_complete engine=chatterbox_turbo turn=%d output=%s bytes=%d",
-        turn.turn_id,
-        output_path.name,
-        output_path.stat().st_size,
-    )
-    return output_path
+    raise RuntimeError(f"Synthesis is not implemented for tts.engine {engine!r}")
 
 
 async def synthesize_all_turns(
@@ -1050,9 +977,6 @@ def backend_identity(config: dict[str, Any]) -> dict[str, Any]:
                 ),
             }
         )
-    elif engine == "chatterbox_turbo":
-        variant = config["tts"]["chatterbox_turbo"].get("variant", "turbo")
-        identity["model"] = f"chatterbox-{variant}"
     return identity
 
 
@@ -1060,12 +984,6 @@ def describe_engine(config: dict[str, Any]) -> dict[str, Any]:
     """Return an engine and voice configuration snapshot for metadata traceability."""
     engine = get_engine(config)
     identity = backend_identity(config)
-    if engine == "edge_tts":
-        return {
-            "engine": "edge_tts",
-            "backend_identity": identity,
-            "voices": config["speaker_voice_map"],
-        }
     if engine == "kokoro":
         kokoro = config["tts"]["kokoro"]
         return {
@@ -1139,18 +1057,4 @@ def describe_engine(config: dict[str, Any]) -> dict[str, Any]:
             "references": identity["references"],
         }
 
-    turbo = config["tts"]["chatterbox_turbo"]
-    variant = turbo.get("variant", "turbo")
-    return {
-        "engine": "chatterbox_turbo",
-        "backend_identity": identity,
-        "model": f"chatterbox-{variant}",
-        "device": turbo["device"],
-        "reference_audio": turbo.get("reference_audio_map", {}),
-        "generation_params": {
-            "temperature": turbo["temperature"],
-            "top_p": turbo["top_p"],
-            "top_k": turbo["top_k"],
-            "repetition_penalty": turbo["repetition_penalty"],
-        },
-    }
+    raise ValueError(f"Engine description is not implemented for {engine!r}")

@@ -323,7 +323,7 @@ async def main() -> int:
         raise
     logger.info(
         "event=engine_selected engine=%s",
-        config.get("tts", {}).get("engine", "edge_tts"),
+        config["tts"]["engine"],
     )
     config_sha256 = _sha256(args.config)
     backend_identity = _backend_identity(config)

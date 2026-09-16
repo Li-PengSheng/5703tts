@@ -64,9 +64,8 @@ def build_metadata(
     likewise contains configuration declarations unless its key explicitly says
     that a value was runtime-observed.
     """
-    # Engines without a capability declaration (EdgeTTS, Chatterbox Turbo) report
-    # null rather than an empty map, so consumers cannot read "nothing declared"
-    # as "nothing ignored".
+    # Keep defensive null handling for callers that pass an unknown engine, so
+    # "nothing declared" cannot be read as "nothing ignored".
     engine = engine_info.get("engine")
     declared = has_declared_capabilities(engine)
     support = control_support(engine) if declared else None

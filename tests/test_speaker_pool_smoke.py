@@ -136,7 +136,6 @@ def _build_workspace(
     workspace.config_path.write_text(
         yaml.safe_dump(
             {
-                "speaker_voice_map": {"counsellor": "en-US-AriaNeural"},
                 "tts": {
                     "engine": engine,
                     "default_rate": "+0%",

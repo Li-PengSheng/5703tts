@@ -328,8 +328,9 @@ def test_cosyvoice_requires_complete_voice_entries() -> None:
         validate_config(config)
 
 
-def test_chatterbox_turbo_uses_project_speaker_map() -> None:
+def test_missing_engine_does_not_select_an_implicit_backend() -> None:
     config = copy.deepcopy(CONFIG)
-    config["tts"]["engine"] = "chatterbox_turbo"
-    dialogue = validate_and_normalize(LEGACY_MINIMAL, config)
-    assert dialogue.turns[1].speaker == "caller"
+    del config["tts"]["engine"]
+
+    with pytest.raises(ValidationError, match="missing required field.*engine"):
+        validate_and_normalize(LEGACY_MINIMAL, config)

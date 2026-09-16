@@ -14,10 +14,9 @@ CONFIG_PATH = Path("config/config.yaml")
 KOKORO_CONFIG_PATH = Path("config/config.kokoro.yaml")
 HIGGS_EXAMPLE_CONFIG_PATH = Path("config/config.higgs.example.yaml")
 
-# config.yaml selects CosyVoice and additionally configures EdgeTTS, Chatterbox
-# Turbo, and CosyVoice; config.kokoro.yaml only carries what the Kokoro
-# controlled-benchmark baseline needs. Everything below must stay identical so a
-# Kokoro run means the same thing under either file.
+# config.yaml selects CosyVoice and also configures Kokoro; config.kokoro.yaml
+# only carries what the Kokoro controlled-benchmark baseline needs. Everything
+# below must stay identical so a Kokoro run means the same thing under either file.
 SHARED_KOKORO_FIELDS = (
     ("tts", "kokoro"),
     ("tts", "default_rate"),
@@ -163,14 +162,21 @@ def test_higgs_ffmpeg_bin_must_be_non_empty_string(ffmpeg_bin: Any) -> None:
         _validate_config(config)
 
 
-@pytest.mark.parametrize(
-    "engine", ["edge_tts", "kokoro", "chatterbox_turbo", "cosyvoice"]
-)
-def test_existing_engines_remain_valid(engine: str) -> None:
+@pytest.mark.parametrize("engine", ["kokoro", "cosyvoice"])
+def test_remaining_configured_engines_are_valid(engine: str) -> None:
     config = copy.deepcopy(load_config(CONFIG_PATH))
     config["tts"]["engine"] = engine
 
     assert _validate_config(config) is None
+
+
+@pytest.mark.parametrize("engine", ["edge_tts", "chatterbox_turbo"])
+def test_removed_engines_are_rejected(engine: str) -> None:
+    config = copy.deepcopy(load_config(CONFIG_PATH))
+    config["tts"]["engine"] = engine
+
+    with pytest.raises(ConfigError, match="tts.engine must be one of"):
+        _validate_config(config)
 
 
 def test_unknown_engine_remains_rejected() -> None:
@@ -178,6 +184,14 @@ def test_unknown_engine_remains_rejected() -> None:
     config["tts"]["engine"] = "unknown"
 
     with pytest.raises(ConfigError, match="tts.engine must be one of"):
+        _validate_config(config)
+
+
+def test_missing_engine_is_rejected_without_an_implicit_default() -> None:
+    config = copy.deepcopy(load_config(CONFIG_PATH))
+    del config["tts"]["engine"]
+
+    with pytest.raises(ConfigError, match="Missing required configuration key: tts"):
         _validate_config(config)
 
 

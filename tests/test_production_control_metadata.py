@@ -486,7 +486,7 @@ def test_flat_legacy_fields_still_mirror_the_requested_spec() -> None:
 
 
 def test_engine_without_declared_capabilities_reports_null_not_empty() -> None:
-    metadata = _metadata(_timing(arousal="high"), {"engine": "edge_tts"})
+    metadata = _metadata(_timing(arousal="high"), {"engine": "unknown_engine"})
 
     assert metadata["tts"]["control_support"] is None
     assert metadata["turns"][0]["ignored_requested_controls"] is None

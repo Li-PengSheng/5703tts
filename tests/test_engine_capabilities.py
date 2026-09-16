@@ -49,7 +49,7 @@ def test_declared_engines_are_only_the_current_backends() -> None:
     assert registry.declared_engines() == ["cosyvoice", "higgs", "kokoro"]
     assert registry.has_declared_capabilities("kokoro")
     assert registry.has_declared_capabilities("higgs")
-    assert not registry.has_declared_capabilities("edge_tts")
+    assert not registry.has_declared_capabilities("unknown_engine")
     assert not registry.has_declared_capabilities(None)
 
 
@@ -83,9 +83,9 @@ def test_capabilities_are_returned_as_an_isolated_copy() -> None:
 def test_undeclared_engine_is_rejected_with_declared_engines_listed() -> None:
     with pytest.raises(
         registry.UnknownEngineCapabilityError,
-        match=r"engine 'edge_tts'.*\['cosyvoice', 'higgs', 'kokoro'\]",
+        match=r"engine 'unknown_engine'.*\['cosyvoice', 'higgs', 'kokoro'\]",
     ):
-        registry.engine_capabilities("edge_tts")
+        registry.engine_capabilities("unknown_engine")
 
 
 class _Turn:

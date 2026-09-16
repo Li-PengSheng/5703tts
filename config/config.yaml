@@ -1,10 +1,3 @@
-# Default: online Edge TTS. Set this to kokoro to use the installed local-model alternative.
-# Chatterbox code remains in the package for future experimentation, but its dependencies
-# are intentionally not installed or configured by default.
-speaker_voice_map:
-  counsellor: en-US-AriaNeural
-  caller: en-US-GuyNeural
-
 tts:
   engine: cosyvoice
   default_rate: "+0%"
@@ -16,28 +9,6 @@ tts:
     voice_map:
       counsellor: af_heart
       caller: am_adam
-  chatterbox_turbo:
-    # "cpu", "cuda", or "mps". Use cpu when no supported GPU is available.
-    device: cuda
-    # "turbo" (350M) or "nano" (110M, CPU-friendly, ~3x realtime on 8-core CPU)
-    variant: turbo
-    # null loads ResembleAI/chatterbox-turbo from its Hugging Face cache.
-    # Set a directory here to load a previously downloaded local checkpoint instead.
-    model_dir: null
-    # null uses Turbo's built-in voice. This can assign caller and counsellor
-    # the same or inconsistent voices, violating the requirement for a
-    # consistent voice per role.
-    # Before using chatterbox_turbo, replace these with two distinct reference
-    # audio paths. Each clip must be longer than five seconds, for example:
-    #   counsellor: assets/voices/counsellor_ref.wav
-    #   caller: assets/voices/caller_ref.wav
-    reference_audio_map:
-      counsellor: null
-      caller: null
-    temperature: 0.8
-    top_p: 0.95
-    top_k: 1000
-    repetition_penalty: 1.2
   cosyvoice:
     # CosyVoice3's dependencies live in their own virtual environment,
     # separate from this project's .venv, so synthesis runs in a subprocess
@@ -53,10 +24,9 @@ tts:
     fp16: true
     # Zero-shot voice cloning: each speaker needs a short reference clip
     # (prompt_wav) and the transcript of that clip (prompt_text). Both
-    # roles are pointed at CosyVoice's bundled sample clip for now, same
-    # as this repo's placeholder kokoro/chatterbox voices — replace with
-    # two distinct reference clips before real use, otherwise counsellor
-    # and caller will sound identical.
+    # roles are pointed at CosyVoice's bundled sample clip for now. Replace
+    # them with two distinct reference clips before real use, otherwise
+    # counsellor and caller will sound identical.
     voice_map:
       counsellor:
         prompt_wav: third_party/CosyVoice/asset/zero_shot_prompt.wav

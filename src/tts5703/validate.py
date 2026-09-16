@@ -152,19 +152,13 @@ def validate_and_normalize(
     _validate_schema(raw, _load_schema() if is_v0_2 else _LEGACY_DIALOGUE_SCHEMA)
 
     try:
-        engine = config["tts"].get("engine", "edge_tts")
-        if engine == "edge_tts":
-            voice_map = config["speaker_voice_map"]
-        elif engine == "kokoro":
+        engine = config["tts"]["engine"]
+        if engine == "kokoro":
             voice_map = config["tts"]["kokoro"]["voice_map"]
         elif engine == "cosyvoice":
             voice_map = config["tts"]["cosyvoice"]["voice_map"]
         elif engine == "higgs":
             voice_map = config["tts"]["higgs"]["voice_map"]
-        elif engine == "chatterbox_turbo":
-            # Turbo can use its bundled voice, so speaker availability still follows
-            # the project-level speaker map; reference audio is optional per speaker.
-            voice_map = config["speaker_voice_map"]
         else:
             raise ValidationError(
                 f"Unsupported tts.engine: {engine} "

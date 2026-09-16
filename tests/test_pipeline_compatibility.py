@@ -8,16 +8,8 @@ import pytest
 
 from tts5703.assemble import TurnTiming, assemble_dialogue
 from tts5703.metadata import build_metadata
-from tts5703.tts_engine import rate_to_edge_tts, rate_to_kokoro_speed
+from tts5703.tts_engine import rate_to_kokoro_speed
 from tts5703.validate import NormalizedTurn
-
-
-@pytest.mark.parametrize(
-    ("semantic_rate", "edge_rate"),
-    [("slow", "-20%"), ("normal", "+0%"), ("fast", "+20%")],
-)
-def test_semantic_rate_maps_to_edge_tts(semantic_rate: str, edge_rate: str) -> None:
-    assert rate_to_edge_tts(semantic_rate) == edge_rate
 
 
 @pytest.mark.parametrize(
@@ -26,10 +18,6 @@ def test_semantic_rate_maps_to_edge_tts(semantic_rate: str, edge_rate: str) -> N
 )
 def test_semantic_rate_maps_to_kokoro(semantic_rate: str, kokoro_speed: float) -> None:
     assert rate_to_kokoro_speed(semantic_rate) == kokoro_speed
-
-
-def test_legacy_percentage_rate_is_preserved_for_edge_tts() -> None:
-    assert rate_to_edge_tts("-10%") == "-10%"
 
 
 def test_legacy_percentage_rate_maps_to_kokoro_speed() -> None:

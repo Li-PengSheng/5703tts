@@ -4,7 +4,7 @@
 
 `5703tts` converts structured crisis-dialogue JSON into a turn-aligned audio dataset. For each valid dialogue it renders one audio file per turn, assembles non-overlapping clean dialogue audio, derives a telephone-band version, writes per-turn metadata, and runs basic structural QC.
 
-The repository is a rendering workstream, not a crisis detector. It preserves upstream crisis labels for downstream use but does not predict or validate those labels. The default configuration selects CosyVoice3; Kokoro is the supported local comparison backend, EdgeTTS is an online code path, and Chatterbox Turbo is an uninstalled experimental path.
+The repository is a rendering workstream, not a crisis detector. It preserves upstream crisis labels for downstream use but does not predict or validate those labels. The default configuration selects the locally validated CosyVoice3 backend; Kokoro is the supported local comparison backend, while Higgs is production-integrated and offline-validated pending its real-GPU cloud gate.
 
 ## Architectural principles
 
@@ -96,7 +96,7 @@ sequenceDiagram
         P->>T: preflight all turns
         loop each normalized turn
             P->>T: synthesize_turn
-            T-->>P: turn_NNN.mp3 or .wav
+            T-->>P: turn_NNN.wav
         end
         P->>A: assemble turns + pauses
         A-->>P: AudioSegment + TurnTiming[]
@@ -113,9 +113,8 @@ The abstraction is a selected code path rather than a base class or plugin inter
 | Backend | Boundary | Current declaration |
 | --- | --- | --- |
 | CosyVoice | JSON-lines subprocess; WAV output | Full capability declaration; rate model control, provisional arousal/affect instruction controls, pipeline pauses, emotion/events unsupported |
+| Higgs | JSON-lines worker owning a loopback SGLang server; WAV output | Rate pipeline postprocess, provisional arousal/affect controls, pipeline pauses, emotion/events unsupported; real-GPU validation pending |
 | Kokoro | Lazy in-process `KPipeline`; WAV written by `soundfile` | Full capability declaration; rate model control, pipeline pauses, all other acoustic controls unsupported |
-| EdgeTTS | Async online `edge_tts.Communicate`; MP3 output | Code path exists, but no capability declaration; metadata support is `null` |
-| Chatterbox Turbo | Lazy in-process model; WAV written by `soundfile` | Experimental code; dependency absent from `pyproject.toml`; no capability declaration |
 
 ## CosyVoice process boundary
 

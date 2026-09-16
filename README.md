@@ -275,15 +275,13 @@ tts:
   engine: cosyvoice
 ```
 
-The pipeline has five engine code paths, but their runtime availability differs:
+The pipeline has three engine code paths, with different runtime validation status:
 
 | Engine | Turn format | Additional setup and limitations |
 | --- | --- | --- |
 | `cosyvoice` | WAV | Current configured engine. Requires the ignored source checkout, isolated environment, downloaded model, and reference audio described above. |
 | `higgs` | WAV | Integrated and offline-tested; requires an external `sgl-omni` executable, local checkpoint, explicitly approved reference WAVs, and completion of the real-GPU [cloud gate](docs/HIGGS_CLOUD_VALIDATION.md). |
-| `edge_tts` | MP3 | Installed in the main environment. Requires network access for every synthesis run and voices in `speaker_voice_map`. |
 | `kokoro` | WAV | Installed in the main environment. Downloads its model on first use, then can run from the local Hugging Face cache; voices are configured in `tts.kokoro.voice_map`. |
-| `chatterbox_turbo` | WAV | Code remains for experimentation, but its dependencies are not installed or supported by the locked project environment. |
 
 To use Kokoro instead, set:
 
@@ -340,7 +338,7 @@ Canonical schema validation stays backend-independent: `coarse_affect` remains a
 
 Each input dialogue writes to `data/output/<dialogue_id>/` by default:
 
-- `turn_001.mp3` or `turn_001.wav` (one file per turn, depending on engine)
+- `turn_001.wav` (one file per turn)
 - `<dialogue_id>_clean.wav` (assembled speech and configured pauses)
 - `<dialogue_id>_telephone.wav` (8 kHz mono, band-pass telephone treatment by default)
 - `<dialogue_id>_metadata.json` (audio file names, TTS settings, labels, and timestamps)
@@ -354,7 +352,7 @@ completed dialogues remain `status: success`.
 
 The assembly uses direct joins plus short fades; turns are never crossfaded. Metadata timestamps therefore align with the non-overlapping turn boundaries. Generated audio and logs are intentionally ignored by Git.
 
-Metadata separates requested intent from backend behaviour. Every turn keeps its flat requested fields for compatibility, repeats them under `requested_acoustic_spec`, and lists `ignored_requested_controls` for requested controls the selected backend cannot consume. `tts.control_support` records the whole capability map for the engine used; both fields are `null` for engines with no capability declaration (EdgeTTS, Chatterbox Turbo) so that "nothing declared" cannot be read as "nothing ignored". Under CosyVoice, `tts` also records the reproducibility-relevant configuration: `model_dir`, `repo_dir`, `fp16`, `load_trt`, `load_vllm`, and each speaker's `prompt_wav` and `prompt_text`. Sample rate is reported as a declaration rather than an observation. `expected_sample_rate` is Fun-CosyVoice3-0.5B's official 24 kHz output rate, or the optional `tts.cosyvoice.sample_rate` override, with `expected_sample_rate_source` stating which of the two applies. The worker reports its own rate over the protocol, but `synthesize_turn` returns only a path, so `runtime_sample_rate` stays `null` and `sample_rate_verification` is `not_runtime_verified`: no field claims to describe the audio actually written. Kokoro is different, because the pipeline itself writes Kokoro audio at the configured `tts.kokoro.sample_rate`, so that value is reported directly.
+Metadata separates requested intent from backend behaviour. Every turn keeps its flat requested fields for compatibility, repeats them under `requested_acoustic_spec`, and lists `ignored_requested_controls` for requested controls the selected backend cannot consume. `tts.control_support` records the whole capability map for the selected engine. Under CosyVoice, `tts` also records the reproducibility-relevant configuration: `model_dir`, `repo_dir`, `fp16`, `load_trt`, `load_vllm`, and each speaker's `prompt_wav` and `prompt_text`. Sample rate is reported as a declaration rather than an observation. `expected_sample_rate` is Fun-CosyVoice3-0.5B's official 24 kHz output rate, or the optional `tts.cosyvoice.sample_rate` override, with `expected_sample_rate_source` stating which of the two applies. The worker reports its own rate over the protocol, but `synthesize_turn` returns only a path, so `runtime_sample_rate` stays `null` and `sample_rate_verification` is `not_runtime_verified`: no field claims to describe the audio actually written. Kokoro is different, because the pipeline itself writes Kokoro audio at the configured `tts.kokoro.sample_rate`, so that value is reported directly.
 
 ## Configuration
 

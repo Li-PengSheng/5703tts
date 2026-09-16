@@ -136,9 +136,9 @@ def test_cosyvoice_and_kokoro_are_supported_benchmark_engines() -> None:
 def test_other_production_engine_is_rejected_for_controlled_benchmark() -> None:
     with pytest.raises(
         benchmark.BenchmarkDesignError,
-        match="Unsupported controlled benchmark engine: 'edge_tts'",
+        match="Unsupported controlled benchmark engine: 'higgs'",
     ):
-        benchmark.benchmark_engine({"tts": {"engine": "edge_tts"}})
+        benchmark.benchmark_engine({"tts": {"engine": "higgs"}})
 
 
 def test_unsupported_engine_is_rejected_before_synthesis(
@@ -147,12 +147,12 @@ def test_unsupported_engine_is_rejected_before_synthesis(
     calls: list[int] = []
     _install_fake_synthesizer(monkeypatch, calls)
     monkeypatch.setattr(
-        benchmark, "load_config", lambda _path: {"tts": {"engine": "edge_tts"}}
+        benchmark, "load_config", lambda _path: {"tts": {"engine": "higgs"}}
     )
 
     with pytest.raises(
         benchmark.BenchmarkDesignError,
-        match="Unsupported controlled benchmark engine: 'edge_tts'",
+        match="Unsupported controlled benchmark engine: 'higgs'",
     ):
         benchmark.run_benchmark(
             config_path=tmp_path / "unused.yaml",
@@ -173,9 +173,9 @@ def test_benchmark_uses_the_central_capability_registry() -> None:
 def test_undeclared_engine_capability_lookup_becomes_a_design_error() -> None:
     with pytest.raises(
         benchmark.BenchmarkDesignError,
-        match="No controlled benchmark capabilities declared for engine 'edge_tts'",
+        match="No controlled benchmark capabilities declared for engine 'unknown_engine'",
     ):
-        benchmark.engine_capabilities("edge_tts")
+        benchmark.engine_capabilities("unknown_engine")
 
 
 def test_engine_capabilities_distinguish_model_pipeline_and_unsupported() -> None:

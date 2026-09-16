@@ -61,7 +61,7 @@ async def run_dialogue(
         logger.info(
             "event=stage_start dialogue=%s stage=tts engine=%s",
             dialogue_id,
-            config["tts"].get("engine"),
+            config["tts"]["engine"],
         )
         turn_paths = await synthesize_all_turns(dialogue.turns, out_dir, config)
         logger.info(

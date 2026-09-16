@@ -16,8 +16,9 @@ from tts5703.pipeline import PipelineResult
 from tts5703.validate import NormalizedDialogue, NormalizedTurn, ValidationError
 
 _INPUT_BODY = "{}\n"
-_CONFIG_TEXT = "tts:\n  engine: edge_tts\n"
-_CONFIG = {"tts": {"engine": "edge_tts"}, "speaker_voice_map": {}}
+_CONFIG_TEXT = "tts:\n  engine: kokoro\n"
+_CONFIG = {"tts": {"engine": "kokoro"}}
+_KOKORO_IDENTITY = {"backend": "kokoro", "model": "Kokoro-82M"}
 
 
 def _sha256_text(text: str) -> str:
@@ -60,7 +61,7 @@ def _complete_dialogue_output(
     output_root: Path,
     dialogue_id: str,
     *,
-    engine: str = "edge_tts",
+    engine: str = "kokoro",
     backend_identity: dict | None = None,
 ) -> Path:
     out_dir = output_root / dialogue_id
@@ -74,7 +75,8 @@ def _complete_dialogue_output(
         "telephone_audio": f"{dialogue_id}_telephone.wav",
         "tts": {
             "engine": engine,
-            "backend_identity": backend_identity or {"backend": engine},
+            "backend_identity": backend_identity
+            or (_KOKORO_IDENTITY if engine == "kokoro" else {"backend": engine}),
         },
         "turns": [
             {
@@ -261,7 +263,7 @@ def _previous_manifest(
     backend_identity: dict | None = None,
 ) -> dict:
     succeeded = sum(item["status"] == "success" for item in results)
-    identity = backend_identity or {"backend": "edge_tts"}
+    identity = backend_identity or _KOKORO_IDENTITY
     manifest = {
         "status": status,
         "backend": identity["backend"],
@@ -302,7 +304,7 @@ def test_all_success_writes_manifest_and_returns_zero(
     assert manifest["dialogues_skipped"] == 0
     assert manifest["resume_requested"] is False
     assert manifest["config_sha256"] == _sha256_text(_CONFIG_TEXT)
-    assert manifest["backend_identity"] == {"backend": "edge_tts"}
+    assert manifest["backend_identity"] == _KOKORO_IDENTITY
     assert [result["status"] for result in manifest["results"]] == [
         "success",
         "success",
@@ -1236,7 +1238,7 @@ def test_resume_old_step8a_manifest_rerenders_and_writes_fingerprints(
     assert manifest["results"][0]["action"] == "rendered"
     assert manifest["config_sha256"] == _sha256_text(_CONFIG_TEXT)
     assert manifest["results"][0]["input_sha256"] == _sha256_text(_INPUT_BODY)
-    assert manifest["backend_identity"] == {"backend": "edge_tts"}
+    assert manifest["backend_identity"] == _KOKORO_IDENTITY
     assert manifest["dialogues_skipped"] == 0
 
 

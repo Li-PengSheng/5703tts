@@ -5,7 +5,7 @@ from typing import Any
 
 import yaml
 
-VALID_ENGINES = {"edge_tts", "kokoro", "chatterbox_turbo", "cosyvoice", "higgs"}
+VALID_ENGINES = {"cosyvoice", "higgs", "kokoro"}
 
 
 class ConfigError(Exception):
@@ -171,10 +171,6 @@ def _validate_config(config: dict[str, Any]) -> None:
         )
     if engine == "kokoro":
         _validate_kokoro(config["tts"]["kokoro"])
-    if engine == "chatterbox_turbo" and "chatterbox_turbo" not in config.get("tts", {}):
-        raise ConfigError(
-            "tts.chatterbox_turbo configuration is required when tts.engine is chatterbox_turbo"
-        )
     if engine == "cosyvoice" and "cosyvoice" not in config.get("tts", {}):
         raise ConfigError(
             "tts.cosyvoice configuration is required when tts.engine is cosyvoice"
