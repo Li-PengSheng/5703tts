@@ -1,11 +1,10 @@
-"""Resolve assignment JSONL into render-ready dialogues and CosyVoice voice_map.
+"""Resolve assignment JSONL into render-ready dialogues and backend voice maps.
 
 Canonical dialogues still use role names (``caller``, ``counsellor``, ...).
 Assignment maps those roles to persistent ``speaker_id`` values. This helper
 rewrites each turn's ``speaker`` field to that ID and builds a CosyVoice
-``voice_map`` keyed by ``speaker_id``, so the same role name can map to
-different speakers in different dialogues without a global caller/counsellor
-voice.
+``voice_map`` keyed by ``speaker_id``. Optional Higgs materialization requires
+separate, explicitly approved ``higgs_reference`` registry entries.
 
 It does not assign speakers, synthesise audio, or change the renderer.
 """
@@ -216,6 +215,50 @@ def _resolve_reference(
     }
 
 
+def _resolve_higgs_reference(
+    speaker_id: str,
+    entry: dict[str, Any],
+    *,
+    project_root: Path,
+) -> dict[str, str]:
+    reference = entry.get("higgs_reference")
+    if not isinstance(reference, dict):
+        raise SpeakerMaterializationError(
+            f"Speaker {speaker_id} has no approved higgs_reference"
+        )
+    wav_value = reference.get("reference_wav")
+    if not isinstance(wav_value, str) or not wav_value.strip():
+        raise SpeakerMaterializationError(
+            f"Speaker {speaker_id} higgs_reference.reference_wav must be a "
+            "non-empty string"
+        )
+    expected_hash = reference.get("sha256")
+    if (
+        not isinstance(expected_hash, str)
+        or len(expected_hash) != 64
+        or any(character not in "0123456789abcdefABCDEF" for character in expected_hash)
+    ):
+        raise SpeakerMaterializationError(
+            f"Speaker {speaker_id} higgs_reference.sha256 must be exactly "
+            "64 hexadecimal characters"
+        )
+    wav_rel = wav_value.strip()
+    wav_path = Path(wav_rel)
+    if not wav_path.is_absolute():
+        wav_path = project_root / wav_path
+    if not wav_path.is_file():
+        raise SpeakerMaterializationError(
+            f"Approved Higgs reference WAV missing for {speaker_id}: {wav_path}"
+        )
+    actual_hash = _sha256_file(wav_path)
+    if actual_hash != expected_hash.lower():
+        raise SpeakerMaterializationError(
+            f"SHA-256 mismatch for {speaker_id} Higgs reference {wav_path}: "
+            f"registry={expected_hash.lower()} file={actual_hash}"
+        )
+    return {"reference_wav": wav_rel, "sha256": actual_hash}
+
+
 def _require_empty_directory(path: Path) -> None:
     if not path.exists():
         path.mkdir(parents=True)
@@ -277,8 +320,9 @@ def materialize_speaker_assignments(
     base_config_path: Path,
     manifest_path: Path | None = None,
     project_root: Path = PROJECT_ROOT,
+    higgs_ready: bool = False,
 ) -> dict[str, Any]:
-    """Rewrite role names to speaker IDs and emit a CosyVoice speaker voice_map."""
+    """Rewrite roles and emit explicitly requested backend speaker maps."""
     try:
         pool = assign.load_and_validate_active_pool(active_speakers_path, registry_path)
         dialogues = assign.load_dialogues(input_path)
@@ -300,6 +344,7 @@ def materialize_speaker_assignments(
         )
 
     used_speakers: dict[str, dict[str, str]] = {}
+    higgs_references: dict[str, dict[str, str]] = {}
     dialogue_rows: list[dict[str, Any]] = []
     output_names: dict[str, str] = {}
 
@@ -352,6 +397,12 @@ def materialize_speaker_assignments(
                     registry_entries[speaker_id],
                     project_root=project_root,
                 )
+                if higgs_ready:
+                    higgs_references[speaker_id] = _resolve_higgs_reference(
+                        speaker_id,
+                        registry_entries[speaker_id],
+                        project_root=project_root,
+                    )
         output_name = dialogue.source_path.name
         previous = output_names.get(output_name)
         if previous is not None:
@@ -413,6 +464,20 @@ def materialize_speaker_assignments(
         for speaker_id in sorted(used_speakers)
     }
     cosyvoice["voice_map"] = voice_map
+    if higgs_ready:
+        try:
+            higgs = base_config["tts"]["higgs"]
+        except (KeyError, TypeError) as error:
+            raise SpeakerMaterializationError(
+                "--higgs-ready requires an existing tts.higgs runtime mapping "
+                "in the base config"
+            ) from error
+        if not isinstance(higgs, dict):
+            raise SpeakerMaterializationError("tts.higgs must be a mapping")
+        higgs["voice_map"] = {
+            speaker_id: {"reference_wav": higgs_references[speaker_id]["reference_wav"]}
+            for speaker_id in sorted(higgs_references)
+        }
 
     if manifest_path is None:
         manifest_path = config_out.parent / "materialization_manifest.json"
@@ -459,7 +524,7 @@ def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
             "Materialize speaker assignments into render-ready dialogues and "
-            "a CosyVoice speaker voice_map. Does not run TTS."
+            "backend speaker maps. Does not run TTS."
         )
     )
     parser.add_argument(
@@ -506,6 +571,14 @@ def _parser() -> argparse.ArgumentParser:
         default=PROJECT_ROOT,
         help="Root used to resolve registry prompt_wav paths",
     )
+    parser.add_argument(
+        "--higgs-ready",
+        action="store_true",
+        help=(
+            "also emit tts.higgs.voice_map; every used speaker must have an "
+            "explicit hash-pinned higgs_reference"
+        ),
+    )
     return parser
 
 
@@ -522,6 +595,7 @@ def main(argv: list[str] | None = None) -> int:
             base_config_path=args.base_config,
             manifest_path=args.manifest,
             project_root=args.project_root,
+            higgs_ready=args.higgs_ready,
         )
     except (SpeakerMaterializationError, OSError) as error:
         print(

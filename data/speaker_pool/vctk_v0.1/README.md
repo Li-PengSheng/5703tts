@@ -9,6 +9,32 @@ Speaker identity here is **rendering configuration**. It is not written into
 the dialogue schema or `acoustic_spec`, and it is not yet used for corpus-scale
 production rendering.
 
+## Backend-specific reference approval
+
+`primary_reference.prompt_wav` and `prompt_text` are CosyVoice3-specific: the
+selection and refinement lifecycle below used CosyVoice3 zero-shot smoke QA.
+The same file is not automatically approved for another backend.
+
+The registry may optionally record an independently reviewed Higgs asset:
+
+```json
+"higgs_reference": {
+  "reference_wav": "path/to/approved.wav",
+  "sha256": "<exact 64-character SHA-256>"
+}
+```
+
+This means the exact bytes were explicitly approved for Higgs
+reference-conditioned synthesis. It carries no transcript, embedding, seed, or
+named voice. `scripts/materialize_speaker_assignments.py --higgs-ready` requires
+this object for every used speaker and verifies the path and hash before emitting
+`tts.higgs.voice_map`.
+
+**No production Higgs references are currently approved.** The existing VCTK
+primary WAVs may be tested as candidates in Google Cloud, but the registry must
+remain unchanged until real Higgs voice/quality review passes. See
+[`docs/HIGGS_CLOUD_VALIDATION.md`](../../../docs/HIGGS_CLOUD_VALIDATION.md).
+
 ## Lifecycle
 
 ```

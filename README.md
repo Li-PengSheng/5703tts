@@ -6,7 +6,7 @@ The distribution and command are named `5703tts`. Its import package is `tts5703
 
 ## Production status
 
-The TTS renderer is production-ready under the current canonical v0.2 interface for controlled batch generation. The final upstream nested acoustic adapter is pending until that interface is frozen. Evidence, limits, and a two-dialogue demo: [TTS Production Readiness](docs/TTS_PRODUCTION_READINESS.md).
+The TTS renderer is production-ready under the current canonical v0.2 interface for controlled batch generation. CosyVoice3 is the current real/local-validated and default backend. Higgs production integration is implemented and offline-validated, but real reference-conditioned GPU validation remains required before it becomes the primary/default backend. Evidence, limits, and a two-dialogue demo: [TTS Production Readiness](docs/TTS_PRODUCTION_READINESS.md). The executable cloud gate is [Higgs Google Cloud validation](docs/HIGGS_CLOUD_VALIDATION.md).
 
 ## Project layout
 
@@ -200,6 +200,42 @@ assigned `speaker_id` and keys CosyVoice `voice_map` by those IDs. The same role
 name can therefore map to different speakers in different dialogues. The helper
 does not run TTS. `--output` must be a new or empty directory.
 
+Higgs-ready materialization is explicit and fail-fast:
+
+```bash
+uv run python scripts/materialize_speaker_assignments.py \
+  --input path/to/canonical \
+  --assignments path/to/speaker_assignments.jsonl \
+  --output path/to/render_input \
+  --config-out path/to/config.yaml \
+  --base-config path/to/config-with-cosyvoice-and-higgs.yaml \
+  --higgs-ready
+```
+
+Every used registry speaker must then have a hash-pinned `higgs_reference`, and
+the base config must already contain the Higgs runtime settings. The materializer
+verifies the approved file and emits the same persistent IDs under both maps:
+
+```yaml
+tts:
+  cosyvoice:
+    voice_map:
+      spk_001:
+        prompt_wav: refs/cosyvoice_prompt.wav
+        prompt_text: You are a helpful assistant.<|endofprompt|>Exact transcript.
+  higgs:
+    voice_map:
+      spk_001:
+        reference_wav: refs/approved_higgs_reference.wav
+```
+
+`primary_reference` is a CosyVoice3-selected prompt asset.
+`higgs_reference` is an independently approved Higgs conditioning asset with a
+required SHA-256. They may deliberately point to the same physical WAV after
+real Higgs review, but the materializer never infers that equivalence and never
+copies `prompt_text` into Higgs configuration. The current production registry
+contains no approved Higgs references.
+
 ## Input format
 
 Schema v0.2 is the preferred input format and is defined in [`schemas/dialogue_schema.json`](schemas/dialogue_schema.json). Acoustic controls describe model-independent intent under `acoustic_spec`:
@@ -239,11 +275,12 @@ tts:
   engine: cosyvoice
 ```
 
-The pipeline has four engine code paths, but their runtime availability differs:
+The pipeline has five engine code paths, but their runtime availability differs:
 
 | Engine | Turn format | Additional setup and limitations |
 | --- | --- | --- |
 | `cosyvoice` | WAV | Current configured engine. Requires the ignored source checkout, isolated environment, downloaded model, and reference audio described above. |
+| `higgs` | WAV | Integrated and offline-tested; requires an external `sgl-omni` executable, local checkpoint, explicitly approved reference WAVs, and completion of the real-GPU [cloud gate](docs/HIGGS_CLOUD_VALIDATION.md). |
 | `edge_tts` | MP3 | Installed in the main environment. Requires network access for every synthesis run and voices in `speaker_voice_map`. |
 | `kokoro` | WAV | Installed in the main environment. Downloads its model on first use, then can run from the local Hugging Face cache; voices are configured in `tts.kokoro.voice_map`. |
 | `chatterbox_turbo` | WAV | Code remains for experimentation, but its dependencies are not installed or supported by the locked project environment. |
@@ -256,6 +293,31 @@ tts:
 ```
 
 CosyVoice runs in its own Python 3.10 environment configured by `tts.cosyvoice.python_bin`. `load_trt` and `load_vllm` are disabled in the sample configuration.
+
+### Higgs production path and current limits
+
+The implemented path is:
+
+```text
+canonical v0.2 -> persistent speaker_id -> approved Higgs reference
+-> CPU control preflight -> resolve_higgs_controls -> persistent higgs_worker
+-> loopback SGLang -> raw turn WAV -> resolver-defined FFmpeg atempo
+-> final turn WAV -> assembly -> telephone rendering -> metadata/QC -> batch/resume
+```
+
+SGLang speed stays `1.0`. Semantic `slow` and `fast` are realized afterward by
+FFmpeg `atempo=0.85` and `1.15`; normal needs no rate postprocess. Boundary
+pauses remain assembly-owned. There is no automatic fallback and no reference
+transcript is sent to Higgs. Metadata pins `controlled_tts_v1` provenance, and
+resume rejects cross-backend or changed/incomplete reference identity.
+
+The frozen mapping remains provisional: low arousal and sad use related proxies
+(`expressive_low` and helplessness), while high arousal and anxious/fear are
+context-dependent proxies. Angry and warm have mapped controls; low + warm uses
+the contentment override. Pause-within count, hesitation count, and best-effort
+fine affect are not represented by the current canonical bridge. Combination
+behaviour beyond frozen evidence remains unvalidated. Successful synthesis must
+not be read as proof of perceptual fidelity.
 
 ### CosyVoice3 production control mapping v1
 
@@ -297,6 +359,11 @@ Metadata separates requested intent from backend behaviour. Every turn keeps its
 ## Configuration
 
 [`config/config.yaml`](config/config.yaml) controls speaker-to-voice mappings, default rate and pauses, engine-specific settings, fades, and telephone filtering. The current configuration uses CosyVoice3 and produces 8 kHz mono telephone audio in addition to the clean output. The Kokoro block specifies its 24 kHz synthesis settings when it is selected.
+
+[`config/config.higgs.example.yaml`](config/config.higgs.example.yaml) is a
+structurally valid, illustrative Higgs cloud configuration. Its paths are not
+approved local assets and it does not change the default backend. Replace them
+only after completing the reference-approval and runtime gates.
 
 CosyVoice paths are resolved relative to the repository root:
 

@@ -12,6 +12,7 @@ from tts5703.validate import ValidationError, validate_and_normalize
 
 CONFIG_PATH = Path("config/config.yaml")
 KOKORO_CONFIG_PATH = Path("config/config.kokoro.yaml")
+HIGGS_EXAMPLE_CONFIG_PATH = Path("config/config.higgs.example.yaml")
 
 # config.yaml selects CosyVoice and additionally configures EdgeTTS, Chatterbox
 # Turbo, and CosyVoice; config.kokoro.yaml only carries what the Kokoro
@@ -57,6 +58,13 @@ def test_reference_kokoro_config_is_valid() -> None:
 
 def test_higgs_is_a_valid_engine_with_minimal_runtime_config() -> None:
     assert _validate_config(_higgs_config()) is None
+
+
+def test_higgs_example_config_is_structurally_valid_and_non_default() -> None:
+    example = load_config(HIGGS_EXAMPLE_CONFIG_PATH)
+
+    assert example["tts"]["engine"] == "higgs"
+    assert load_config(CONFIG_PATH)["tts"]["engine"] == "cosyvoice"
 
 
 @pytest.mark.parametrize("field", ["server_executable", "model_dir"])

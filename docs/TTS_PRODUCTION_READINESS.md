@@ -5,6 +5,12 @@
 The TTS renderer is production-ready under the current canonical v0.2
 interface for controlled batch generation.
 
+That statement currently applies to the locally verified CosyVoice3 production
+path. Higgs integration is implemented and offline-validated, but remains
+provisional until the real reference-conditioned GPU gate in
+[HIGGS_CLOUD_VALIDATION.md](HIGGS_CLOUD_VALIDATION.md) passes. CosyVoice remains
+the default backend.
+
 The final upstream adapter remains pending because the final nested
 acoustic interface is not formally frozen.
 
@@ -32,6 +38,11 @@ Assignment chooses persistent `speaker_id` values. Materialization resolves
 those IDs into the renderer’s current `speaker` field and CosyVoice
 `voice_map`. The renderer does not assign speakers.
 
+Optional `--higgs-ready` materialization also emits a Higgs map, but only when
+every used registry speaker has an explicit hash-pinned `higgs_reference` and
+the base config already supplies Higgs runtime settings. The current real
+registry has no such approvals.
+
 Exact commands: [README](../README.md#speaker-assignment-and-materialization)
 and the [demo](#reproducible-demo) below.
 
@@ -47,7 +58,8 @@ and the [demo](#reproducible-demo) below.
 | Larger corpus run | Step 11 | 30 dialogues / 133 turns | 30/30, 133/133 | Full local realistic set under assign → materialize → render | Final upstream schema; perceptual affect/arousal |
 | Resume validation | Step 11 second invocation | 30 completed dialogues | skipped=30, rendered=0, retried=0, exit 0, 12.85 s | Dialogue-level resume + fingerprint/QC skip; CosyVoice worker not started | Turn-level resume or crash checkpointing |
 | Speaker assignment / materialization | Checked-in scripts + Step 10 tests + Step 11 use | 30 dialogues, seed 5703 | Deterministic JSONL; helper matched Step-9 glue | Repeatable role→`speaker_id`→reference resolution | Formal speaker-similarity scores |
-| Full software tests | `uv run --group dev --with pytest pytest` | 454 tests | 454 passed, 1 existing pydub/`audioop` warning | Offline contracts without loading a TTS model | Real-GPU behaviour (covered by the runs above) |
+| Higgs production integration | Offline resolver/worker/fake-server/E2E/metadata/resume/materializer tests | Full software path without model loading | Success | Deterministic production contracts and backend isolation | Real reference-conditioned GPU behaviour or perceptual quality |
+| Full software tests | `uv run --with pytest pytest -q` | 680 tests | 680 passed, 1 existing pydub/`audioop` warning | Offline contracts without loading a TTS model | Real-GPU behaviour (covered by CosyVoice runs above; Higgs remains cloud-pending) |
 
 ## Evidence boundary
 
@@ -127,6 +139,9 @@ rewrites only speaker resolution; text, labels, acoustics, and pauses are
 unchanged. Assignment is not part of the `5703tts` CLI.
 
 See [speaker-pool README](../data/speaker_pool/vctk_v0.1/README.md).
+Higgs approval is backend-specific: a CosyVoice primary prompt may be evaluated
+as a candidate, but is not reused unless real Higgs review explicitly pins the
+same path and SHA-256 under `higgs_reference`.
 
 ## Reproducible demo
 
@@ -250,11 +265,15 @@ Evidence does **not** identify these as current renderer blockers:
 
 - `cosyvoice3_control_mapping` v1 frozen (runtime fidelity provisional)
 - 30-dialogue / 133-turn real corpus pass; 469.855 s clean audio
-- 454 tests passing (1 existing pydub/`audioop` warning)
+- 680 tests passing (1 existing pydub/`audioop` warning)
 - assign → materialize → render workflow checked in
 - `--resume` verified: 30 skipped, CosyVoice worker not reloaded
+- Higgs runtime, provenance, resume isolation, and explicit-reference
+  materialization are offline-validated
 
 **Blockers**
 
 - Final upstream acoustic schema not yet formally frozen
 - Formal perceptual validation of affect/arousal remains separate evaluation work
+- Real Higgs reference-conditioned GPU validation and reference approval remain
+  pending; no production Higgs references are currently approved

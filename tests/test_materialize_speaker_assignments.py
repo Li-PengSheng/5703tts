@@ -211,6 +211,28 @@ def _assignments(path: Path, rows: list[dict[str, Any]]) -> Path:
     return _write(path, text)
 
 
+def _approve_higgs(pool: dict[str, Path], speaker_ids: tuple[str, ...]) -> None:
+    registry = json.loads(pool["registry"].read_text(encoding="utf-8"))
+    by_id = {entry["speaker_id"]: entry for entry in registry["speakers"]}
+    for speaker_id in speaker_ids:
+        reference = f"higgs_refs/{speaker_id}.wav"
+        payload = f"HIGGS-{speaker_id}".encode()
+        _write(pool["root"] / reference, payload)
+        by_id[speaker_id]["higgs_reference"] = {
+            "reference_wav": reference,
+            "sha256": _sha256_bytes(payload),
+        }
+    _write(pool["registry"], registry)
+
+    config = yaml.safe_load(pool["base_config"].read_text(encoding="utf-8"))
+    config["tts"]["higgs"] = {
+        "server_executable": "/opt/higgs/bin/sgl-omni",
+        "model_dir": "/opt/higgs/model",
+        "voice_map": {"placeholder": {"reference_wav": "unused.wav"}},
+    }
+    _write(pool["base_config"], yaml.safe_dump(config, sort_keys=False))
+
+
 def _run(
     tmp_path: Path,
     pool: dict[str, Path],
@@ -218,6 +240,7 @@ def _run(
     rows: list[dict[str, Any]],
     *,
     output_name: str = "render_input",
+    higgs_ready: bool = False,
 ) -> dict[str, Any]:
     input_dir = tmp_path / "canonical"
     for filename, payload in dialogues.items():
@@ -234,6 +257,7 @@ def _run(
         config_out=config_out,
         base_config_path=pool["base_config"],
         project_root=pool["root"],
+        higgs_ready=higgs_ready,
     )
 
 
@@ -277,11 +301,182 @@ def test_two_dialogue_materialization_rewrites_speakers_and_voice_map(
     assert voice_map["spk_001"]["prompt_wav"] == "refs/spk_001.wav"
     assert voice_map["spk_001"]["prompt_text"] == f"{PREFIX}transcript for spk_001"
     assert config["keep_me"] == "unrelated"
+    assert "higgs" not in config["tts"]
 
     load_and_validate(tmp_path / "render_input" / "a.json", config)
     load_and_validate(tmp_path / "render_input" / "b.json", config)
     assert manifest["input_count"] == 2
     assert "placeholder" not in voice_map
+
+
+def test_higgs_ready_materialization_uses_only_explicit_approved_references(
+    tmp_path: Path,
+) -> None:
+    pool = _pool(tmp_path)
+    _approve_higgs(pool, ("spk_001", "spk_003"))
+    _run(
+        tmp_path,
+        pool,
+        {"a.json": _dialogue("dialogue_a")},
+        [
+            {
+                "dialogue_id": "dialogue_a",
+                "role_assignments": {
+                    "counsellor": "spk_003",
+                    "caller": "spk_001",
+                },
+            }
+        ],
+        higgs_ready=True,
+    )
+    config = yaml.safe_load((tmp_path / "materialized_config.yaml").read_text())
+    cosyvoice_map = config["tts"]["cosyvoice"]["voice_map"]
+    higgs_map = config["tts"]["higgs"]["voice_map"]
+
+    assert set(higgs_map) == set(cosyvoice_map) == {"spk_001", "spk_003"}
+    assert higgs_map == {
+        "spk_001": {"reference_wav": "higgs_refs/spk_001.wav"},
+        "spk_003": {"reference_wav": "higgs_refs/spk_003.wav"},
+    }
+    assert cosyvoice_map["spk_001"]["prompt_wav"] == "refs/spk_001.wav"
+    assert all(set(voice) == {"reference_wav"} for voice in higgs_map.values())
+
+
+def test_higgs_ready_never_reuses_primary_reference_implicitly(tmp_path: Path) -> None:
+    pool = _pool(tmp_path)
+    with pytest.raises(
+        materialize.SpeakerMaterializationError,
+        match="spk_003 has no approved higgs_reference",
+    ):
+        _run(
+            tmp_path,
+            pool,
+            {"a.json": _dialogue("dialogue_a")},
+            [
+                {
+                    "dialogue_id": "dialogue_a",
+                    "role_assignments": {
+                        "counsellor": "spk_003",
+                        "caller": "spk_001",
+                    },
+                }
+            ],
+            higgs_ready=True,
+        )
+
+
+@pytest.mark.parametrize("invalid_hash", [None, "", "0" * 63, "g" * 64])
+def test_higgs_reference_requires_valid_sha256(
+    tmp_path: Path, invalid_hash: object
+) -> None:
+    pool = _pool(tmp_path)
+    _approve_higgs(pool, ("spk_001", "spk_003"))
+    registry = json.loads(pool["registry"].read_text(encoding="utf-8"))
+    registry["speakers"][0]["higgs_reference"]["sha256"] = invalid_hash
+    _write(pool["registry"], registry)
+
+    with pytest.raises(
+        materialize.SpeakerMaterializationError,
+        match="higgs_reference.sha256 must be exactly 64 hexadecimal characters",
+    ):
+        _run(
+            tmp_path,
+            pool,
+            {"a.json": _dialogue("dialogue_a")},
+            [
+                {
+                    "dialogue_id": "dialogue_a",
+                    "role_assignments": {
+                        "counsellor": "spk_003",
+                        "caller": "spk_001",
+                    },
+                }
+            ],
+            higgs_ready=True,
+        )
+
+
+@pytest.mark.parametrize("reference_wav", [None, "", "  ", 7])
+def test_higgs_reference_requires_non_empty_wav_path(
+    tmp_path: Path, reference_wav: object
+) -> None:
+    pool = _pool(tmp_path)
+    _approve_higgs(pool, ("spk_001", "spk_003"))
+    registry = json.loads(pool["registry"].read_text(encoding="utf-8"))
+    registry["speakers"][0]["higgs_reference"]["reference_wav"] = reference_wav
+    _write(pool["registry"], registry)
+
+    with pytest.raises(
+        materialize.SpeakerMaterializationError,
+        match="higgs_reference.reference_wav must be a non-empty string",
+    ):
+        _run(
+            tmp_path,
+            pool,
+            {"a.json": _dialogue("dialogue_a")},
+            [
+                {
+                    "dialogue_id": "dialogue_a",
+                    "role_assignments": {
+                        "counsellor": "spk_003",
+                        "caller": "spk_001",
+                    },
+                }
+            ],
+            higgs_ready=True,
+        )
+
+
+def test_higgs_reference_hash_mismatch_fails(tmp_path: Path) -> None:
+    pool = _pool(tmp_path)
+    _approve_higgs(pool, ("spk_001", "spk_003"))
+    (tmp_path / "higgs_refs" / "spk_001.wav").write_bytes(b"changed")
+
+    with pytest.raises(
+        materialize.SpeakerMaterializationError,
+        match="SHA-256 mismatch for spk_001 Higgs reference",
+    ):
+        _run(
+            tmp_path,
+            pool,
+            {"a.json": _dialogue("dialogue_a")},
+            [
+                {
+                    "dialogue_id": "dialogue_a",
+                    "role_assignments": {
+                        "counsellor": "spk_003",
+                        "caller": "spk_001",
+                    },
+                }
+            ],
+            higgs_ready=True,
+        )
+
+
+def test_missing_approved_higgs_reference_file_fails(tmp_path: Path) -> None:
+    pool = _pool(tmp_path)
+    _approve_higgs(pool, ("spk_001", "spk_003"))
+    (tmp_path / "higgs_refs" / "spk_001.wav").unlink()
+
+    with pytest.raises(
+        materialize.SpeakerMaterializationError,
+        match="Approved Higgs reference WAV missing for spk_001",
+    ):
+        _run(
+            tmp_path,
+            pool,
+            {"a.json": _dialogue("dialogue_a")},
+            [
+                {
+                    "dialogue_id": "dialogue_a",
+                    "role_assignments": {
+                        "counsellor": "spk_003",
+                        "caller": "spk_001",
+                    },
+                }
+            ],
+            higgs_ready=True,
+        )
 
 
 def test_same_role_can_map_to_different_speakers_across_dialogues(
@@ -426,8 +621,11 @@ def test_reference_hash_mismatch_fails(tmp_path: Path) -> None:
         _run(tmp_path, pool, dialogues, rows)
 
 
-def test_materialization_is_deterministic(tmp_path: Path) -> None:
+@pytest.mark.parametrize("higgs_ready", [False, True])
+def test_materialization_is_deterministic(tmp_path: Path, higgs_ready: bool) -> None:
     pool = _pool(tmp_path)
+    if higgs_ready:
+        _approve_higgs(pool, ACTIVE)
     dialogues = {
         "b.json": _dialogue("dialogue_b"),
         "a.json": _dialogue("dialogue_a"),
@@ -442,7 +640,14 @@ def test_materialization_is_deterministic(tmp_path: Path) -> None:
             "role_assignments": {"counsellor": "spk_003", "caller": "spk_001"},
         },
     ]
-    first = _run(tmp_path, pool, dialogues, rows, output_name="out_a")
+    first = _run(
+        tmp_path,
+        pool,
+        dialogues,
+        rows,
+        output_name="out_a",
+        higgs_ready=higgs_ready,
+    )
     materialize.materialize_speaker_assignments(
         input_path=tmp_path / "canonical",
         assignments_path=tmp_path / "speaker_assignments.jsonl",
@@ -453,6 +658,7 @@ def test_materialization_is_deterministic(tmp_path: Path) -> None:
         base_config_path=pool["base_config"],
         manifest_path=tmp_path / "manifest_b.json",
         project_root=pool["root"],
+        higgs_ready=higgs_ready,
     )
     for name in ("a.json", "b.json"):
         assert (tmp_path / "out_a" / name).read_bytes() == (
@@ -530,8 +736,11 @@ def test_refuses_nonempty_output_directory(tmp_path: Path) -> None:
         )
 
 
-def test_cli_wrapper_writes_outputs(tmp_path: Path) -> None:
+@pytest.mark.parametrize("higgs_ready", [False, True])
+def test_cli_wrapper_writes_outputs(tmp_path: Path, higgs_ready: bool) -> None:
     pool = _pool(tmp_path)
+    if higgs_ready:
+        _approve_higgs(pool, ("spk_001", "spk_003"))
     _write(tmp_path / "canonical" / "a.json", _dialogue("dialogue_a"))
     _assignments(
         tmp_path / "speaker_assignments.jsonl",
@@ -542,27 +751,30 @@ def test_cli_wrapper_writes_outputs(tmp_path: Path) -> None:
             }
         ],
     )
-    exit_code = materialize.main(
-        [
-            "--input",
-            str(tmp_path / "canonical"),
-            "--assignments",
-            str(tmp_path / "speaker_assignments.jsonl"),
-            "--registry",
-            str(pool["registry"]),
-            "--active-speakers",
-            str(pool["active"]),
-            "--output",
-            str(tmp_path / "render_input"),
-            "--config-out",
-            str(tmp_path / "config.yaml"),
-            "--base-config",
-            str(pool["base_config"]),
-            "--project-root",
-            str(pool["root"]),
-        ]
-    )
+    arguments = [
+        "--input",
+        str(tmp_path / "canonical"),
+        "--assignments",
+        str(tmp_path / "speaker_assignments.jsonl"),
+        "--registry",
+        str(pool["registry"]),
+        "--active-speakers",
+        str(pool["active"]),
+        "--output",
+        str(tmp_path / "render_input"),
+        "--config-out",
+        str(tmp_path / "config.yaml"),
+        "--base-config",
+        str(pool["base_config"]),
+        "--project-root",
+        str(pool["root"]),
+    ]
+    if higgs_ready:
+        arguments.append("--higgs-ready")
+    exit_code = materialize.main(arguments)
     assert exit_code == 0
     assert (tmp_path / "render_input" / "a.json").is_file()
     assert (tmp_path / "config.yaml").is_file()
     assert (tmp_path / "materialization_manifest.json").is_file()
+    config = yaml.safe_load((tmp_path / "config.yaml").read_text())
+    assert ("higgs" in config["tts"]) is higgs_ready
