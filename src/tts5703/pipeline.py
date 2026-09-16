@@ -7,8 +7,8 @@ from pathlib import Path
 from typing import Any
 
 from .assemble import assemble_dialogue
+from .backend_errors import BackendControlError
 from .backend_info import describe_engine
-from .cosyvoice_controls import BackendControlError
 from .metadata import build_metadata, write_metadata
 from .postprocess import apply_telephone_effect
 from .qc import QCResult, run_qc

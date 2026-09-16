@@ -2,6 +2,8 @@
 
 from typing import Any
 
+from .backend_errors import BackendControlError
+
 COSYVOICE_CONTROL_MAPPING_NAME = "cosyvoice3_control_mapping"
 COSYVOICE_CONTROL_MAPPING_VERSION = "v1"
 COSYVOICE_CONTROL_MAPPING_STATUS = "provisional"
@@ -42,10 +44,6 @@ _AFFECT_INSTRUCTIONS: dict[str, str | None] = {
 }
 _INSTRUCTION_PREFIX = "You are a helpful assistant."
 _END_OF_PROMPT = "<|endofprompt|>"
-
-
-class BackendControlError(ValueError):
-    """Raised when a schema-valid control has no CosyVoice mapping."""
 
 
 def rate_to_cosyvoice_speed(rate: str) -> float:

@@ -9,8 +9,10 @@ import pytest
 
 import tts5703
 from tts5703 import higgs_controls, tts_engine
+from tts5703.backend_errors import BackendControlError as CanonicalBackendControlError
 from tts5703.backends import cosyvoice as cosyvoice_backend
 from tts5703.backends import higgs as higgs_backend
+from tts5703.cosyvoice_controls import BackendControlError as CosyBackendControlError
 from tts5703.tts_engine import (
     BackendControlError,
     preflight_backend_controls,
@@ -288,3 +290,8 @@ def test_cosyvoice_synthesis_fails_preflight_before_reaching_the_worker(
 
 def test_backend_control_error_stays_catchable_as_value_error() -> None:
     assert issubclass(BackendControlError, ValueError)
+
+
+def test_backend_control_error_exports_share_one_class() -> None:
+    assert CanonicalBackendControlError is CosyBackendControlError
+    assert CanonicalBackendControlError is BackendControlError

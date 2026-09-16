@@ -1,4 +1,4 @@
-"""Pure, CPU-only Controlled TTS v1 mappings for future Higgs synthesis."""
+"""Pure, CPU-only Controlled TTS v1 mappings for Higgs production synthesis."""
 
 from __future__ import annotations
 

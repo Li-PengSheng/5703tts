@@ -4,9 +4,9 @@ from pathlib import Path
 from typing import Any
 
 from . import backend_info
+from .backend_errors import BackendControlError
 from .backends import cosyvoice, higgs, kokoro
 from .config import get_engine as _get_engine
-from .cosyvoice_controls import BackendControlError
 from .higgs_controls import HiggsControlError, resolve_higgs_turn_controls
 from .validate import NormalizedTurn
 
