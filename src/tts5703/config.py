@@ -67,9 +67,34 @@ def _validate_kokoro(kokoro: Any) -> None:
 
 
 def _validate_higgs(higgs: Any) -> None:
-    """Validate the bounded downstream reference-audio contract."""
+    """Validate the bounded local-worker and reference-audio contract."""
     if not isinstance(higgs, dict):
         raise ConfigError("tts.higgs must be a mapping")
+
+    for field in ("server_executable", "model_dir"):
+        value = higgs.get(field)
+        if not isinstance(value, str) or not value.strip():
+            raise ConfigError(f"tts.higgs.{field} must be a non-empty string")
+
+    host = higgs.get("host", "127.0.0.1")
+    if host != "127.0.0.1":
+        raise ConfigError("tts.higgs.host must be 127.0.0.1")
+
+    port = higgs.get("port", 18080)
+    if isinstance(port, bool) or not isinstance(port, int) or not 1 <= port <= 65535:
+        raise ConfigError("tts.higgs.port must be an integer from 1 to 65535")
+
+    for field, default in (
+        ("startup_timeout_seconds", 900),
+        ("inference_timeout_seconds", 300),
+    ):
+        value = higgs.get(field, default)
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or value <= 0:
+            raise ConfigError(f"tts.higgs.{field} must be a positive number")
+
+    ffmpeg_bin = higgs.get("ffmpeg_bin", "ffmpeg")
+    if not isinstance(ffmpeg_bin, str) or not ffmpeg_bin.strip():
+        raise ConfigError("tts.higgs.ffmpeg_bin must be a non-empty string")
 
     voice_map = higgs.get("voice_map")
     if not isinstance(voice_map, dict) or not voice_map:

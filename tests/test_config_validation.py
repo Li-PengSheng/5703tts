@@ -37,7 +37,9 @@ def _higgs_config() -> dict[str, Any]:
     config = copy.deepcopy(load_config(CONFIG_PATH))
     config["tts"]["engine"] = "higgs"
     config["tts"]["higgs"] = {
-        "voice_map": {"spk_001": {"reference_wav": "refs/spk_001.wav"}}
+        "server_executable": "tools/sgl-omni",
+        "model_dir": "models/higgs",
+        "voice_map": {"spk_001": {"reference_wav": "refs/spk_001.wav"}},
     }
     return config
 
@@ -53,8 +55,104 @@ def test_reference_kokoro_config_is_valid() -> None:
     assert load_config(KOKORO_CONFIG_PATH)["tts"]["engine"] == "kokoro"
 
 
-def test_higgs_is_a_valid_engine_with_minimal_reference_config() -> None:
+def test_higgs_is_a_valid_engine_with_minimal_runtime_config() -> None:
     assert _validate_config(_higgs_config()) is None
+
+
+@pytest.mark.parametrize("field", ["server_executable", "model_dir"])
+@pytest.mark.parametrize("value", [None, "", "  ", 7])
+def test_higgs_required_runtime_paths_are_non_empty_strings(
+    field: str, value: Any
+) -> None:
+    config = _higgs_config()
+    config["tts"]["higgs"][field] = value
+
+    with pytest.raises(ConfigError, match=rf"tts.higgs.{field} must be a non-empty"):
+        _validate_config(config)
+
+
+def test_higgs_runtime_paths_need_not_exist_during_config_validation() -> None:
+    config = _higgs_config()
+    config["tts"]["higgs"]["server_executable"] = "/definitely/missing/sgl-omni"
+    config["tts"]["higgs"]["model_dir"] = "/definitely/missing/model"
+
+    assert _validate_config(config) is None
+
+
+def test_higgs_optional_runtime_defaults_may_be_omitted() -> None:
+    assert _validate_config(_higgs_config()) is None
+
+
+def test_higgs_explicit_loopback_host_is_valid() -> None:
+    config = _higgs_config()
+    config["tts"]["higgs"]["host"] = "127.0.0.1"
+
+    assert _validate_config(config) is None
+
+
+@pytest.mark.parametrize("host", ["localhost", "::1", "0.0.0.0", 7, None])
+def test_higgs_host_must_be_exact_loopback(host: Any) -> None:
+    config = _higgs_config()
+    config["tts"]["higgs"]["host"] = host
+
+    with pytest.raises(ConfigError, match="tts.higgs.host must be 127.0.0.1"):
+        _validate_config(config)
+
+
+@pytest.mark.parametrize("port", [1, 18080, 65535])
+def test_higgs_valid_ports(port: int) -> None:
+    config = _higgs_config()
+    config["tts"]["higgs"]["port"] = port
+
+    assert _validate_config(config) is None
+
+
+@pytest.mark.parametrize("port", [True, 0, 65536, 1.5, "18080"])
+def test_higgs_port_must_be_valid_integer(port: Any) -> None:
+    config = _higgs_config()
+    config["tts"]["higgs"]["port"] = port
+
+    with pytest.raises(ConfigError, match="tts.higgs.port"):
+        _validate_config(config)
+
+
+@pytest.mark.parametrize(
+    "field", ["startup_timeout_seconds", "inference_timeout_seconds"]
+)
+@pytest.mark.parametrize("value", [0.5, 1, 300])
+def test_higgs_valid_positive_timeouts(field: str, value: float) -> None:
+    config = _higgs_config()
+    config["tts"]["higgs"][field] = value
+
+    assert _validate_config(config) is None
+
+
+@pytest.mark.parametrize(
+    "field", ["startup_timeout_seconds", "inference_timeout_seconds"]
+)
+@pytest.mark.parametrize("value", [True, 0, -1, "300"])
+def test_higgs_timeouts_must_be_positive_numbers(field: str, value: Any) -> None:
+    config = _higgs_config()
+    config["tts"]["higgs"][field] = value
+
+    with pytest.raises(ConfigError, match=rf"tts.higgs.{field}"):
+        _validate_config(config)
+
+
+def test_higgs_custom_ffmpeg_bin_is_valid() -> None:
+    config = _higgs_config()
+    config["tts"]["higgs"]["ffmpeg_bin"] = "tools/fake-ffmpeg"
+
+    assert _validate_config(config) is None
+
+
+@pytest.mark.parametrize("ffmpeg_bin", [None, "", "  ", 7])
+def test_higgs_ffmpeg_bin_must_be_non_empty_string(ffmpeg_bin: Any) -> None:
+    config = _higgs_config()
+    config["tts"]["higgs"]["ffmpeg_bin"] = ffmpeg_bin
+
+    with pytest.raises(ConfigError, match="tts.higgs.ffmpeg_bin"):
+        _validate_config(config)
 
 
 @pytest.mark.parametrize(

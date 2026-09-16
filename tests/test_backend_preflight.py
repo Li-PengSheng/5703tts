@@ -189,25 +189,46 @@ def test_higgs_preflight_rejects_legacy_percentage_rates(rate: str) -> None:
         preflight_backend_controls(_turn(rate=rate), config)
 
 
-def test_higgs_preflight_has_no_worker_or_sglang_dependency() -> None:
+def test_higgs_preflight_has_no_worker_or_sglang_dependency(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     config = {"tts": {"engine": "higgs"}}
 
+    def unreachable_worker(*args: object) -> object:
+        raise AssertionError("preflight must remain CPU-only")
+
+    monkeypatch.setattr(tts_engine, "_get_higgs_worker", unreachable_worker)
+
     assert preflight_backend_controls(_turn(), config) is None
-    assert not hasattr(tts_engine, "_get_higgs_worker")
     assert "sglang" not in sys.modules
 
 
-def test_higgs_synthesis_fails_without_falling_through_to_another_backend(
+def test_higgs_missing_reference_fails_without_starting_or_falling_through(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    config = {"tts": {"engine": "higgs"}}
+    config = {
+        "tts": {
+            "engine": "higgs",
+            "higgs": {
+                "server_executable": "missing-sgl-omni",
+                "model_dir": "missing-model",
+                "voice_map": {
+                    "caller": {"reference_wav": str(tmp_path / "missing.wav")}
+                },
+            },
+        }
+    }
 
     def unreachable_model(*args: object) -> object:
         raise AssertionError("Higgs must not fall through to Chatterbox")
 
-    monkeypatch.setattr(tts_engine, "_get_chatterbox_turbo", unreachable_model)
+    def unreachable_worker(*args: object) -> object:
+        raise AssertionError("missing reference must fail before worker startup")
 
-    with pytest.raises(RuntimeError, match="Higgs synthesis is not available"):
+    monkeypatch.setattr(tts_engine, "_get_chatterbox_turbo", unreachable_model)
+    monkeypatch.setattr(tts_engine, "_get_higgs_worker", unreachable_worker)
+
+    with pytest.raises(RuntimeError, match="Higgs reference audio is missing"):
         asyncio.run(tts_engine.synthesize_turn(_turn(), tmp_path, config))
 
     assert list(tmp_path.iterdir()) == []
