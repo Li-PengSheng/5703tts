@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from tts5703 import tts_engine
+from tts5703.backends import cosyvoice as cosyvoice_backend
 from tts5703.cosyvoice_controls import (
     COSYVOICE_CONTROL_MAPPING_NAME,
     COSYVOICE_CONTROL_MAPPING_STATUS,
@@ -318,14 +319,14 @@ def test_cosyvoice_engine_sends_transformed_request_without_loading_model(
     }
     captured_request: dict = {}
 
-    monkeypatch.setattr(tts_engine, "_get_cosyvoice_worker", lambda *args: object())
+    monkeypatch.setattr(cosyvoice_backend, "_get_worker", lambda *args: object())
 
     def fake_worker_request(worker: object, request: dict) -> dict:
         captured_request.update(request)
         Path(request["output_path"]).write_bytes(b"RIFF-fake-output")
         return {"status": "ok"}
 
-    monkeypatch.setattr(tts_engine, "_cosyvoice_request", fake_worker_request)
+    monkeypatch.setattr(cosyvoice_backend, "_request", fake_worker_request)
     turn = _turn(rate="slow", arousal="high", coarse_affect=None)
 
     output_path = asyncio.run(tts_engine.synthesize_turn(turn, tmp_path, config))

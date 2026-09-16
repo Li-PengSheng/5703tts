@@ -65,7 +65,7 @@ flowchart LR
 | --- | --- | --- |
 | Canonical model-independent schema | implemented + tested | `schemas/dialogue_schema.json`, `validate.py`, `test_validation.py` |
 | Legacy versionless input | temporary compatibility | `_LEGACY_DIALOGUE_SCHEMA`, `_normalize_legacy_turn()` |
-| CosyVoice3 synthesis path | implemented/configured；本机有过真实 benchmark | `tts_engine.py`, `cosyvoice_worker.py`, gitignored benchmark results |
+| CosyVoice3 synthesis path | implemented/configured；本机有过真实 benchmark | `backends/cosyvoice.py`, `cosyvoice_worker.py`, gitignored benchmark results |
 | CosyVoice rate | `model_control`；本机 duration direction 有诊断证据 | `rate_to_cosyvoice_speed()`, benchmark results |
 | CosyVoice arousal/affect | `provisional_model_control` | instruction mapping + tests；没有 perceptual fidelity score |
 | Pause | implemented as `pipeline_timing` | `assemble.py`, timing tests |
@@ -228,7 +228,7 @@ Higgs 的完整 runtime config 位于 `config/config.higgs.example.yaml`：外�
 | `low_pass_hz` | 3400 | positive、低于 Nyquist |
 | `volume_db_reduction` | 3 | runtime 必需；validator 没有提前检查 |
 
-Acoustic rate/arousal/affect mappings 不在 YAML，而是 hard-coded 于 `tts_engine.py`；emotion/events 没有 mapping config。Output/log 路径也不在 YAML，由 CLI flags 管理。对可复现运行最关键的是 engine、model/repo 路径与版本、voice/prompt、rate mapping 代码、pause/fade、telephone settings；当前 metadata 只保存其中一部分。
+Acoustic rate/arousal/affect mappings 不在 YAML，而在 control/backend modules；emotion/events 没有 mapping config。Output/log 路径也不在 YAML，由 CLI flags 管理。对可复现运行最关键的是 engine、model/repo 路径与版本、voice/prompt、rate mapping 代码、pause/fade、telephone settings；当前 metadata 只保存其中一部分。
 
 ## 7. 输入 JSON/schema 详解
 
@@ -327,8 +327,10 @@ Model-independent 阶段：config shell、JSON/schema validation、normalization
 | `validate.py` | `load_and_validate()` / `validate_and_normalize()` → normalized dataclasses | pipeline、benchmark；jsonschema、config engine list | 读 JSON；legacy warning；`ValidationError` | `test_validation.py`, preflight/fixture tests |
 | `engine_capabilities.py` | registry queries、request snapshot、ignored list | metadata、benchmark、tests | 纯函数；undeclared engine 抛 `UnknownEngineCapabilityError` | `test_engine_capabilities.py` |
 | `pipeline.py` | `run_dialogue() → PipelineResult` | CLI；调用所有 stage | 创建 output、export、metadata；捕获并分类异常；不 rollback | `test_pipeline_error_paths.py` |
-| `tts_engine.py` | rate map、preflight、`synthesize_turn()`、`synthesize_all_turns()`、`describe_engine()` | pipeline、benchmark；kokoro/soundfile/subprocess | model/GPU/worker；写 turn 文件；lazy cache | controls、worker lifecycle、preflight、metadata tests |
-| `cosyvoice_worker.py` | executable `main()`；init/request JSON → response JSON | 由 `tts_engine` subprocess 启动；CosyVoice/torch/torchaudio | 加载模型、占 GPU、写 WAV；stderr diagnostics | `test_cosyvoice_worker.py`（fake deps） |
+| `tts_engine.py` | preflight、explicit dispatch、`synthesize_turn()`、`synthesize_all_turns()` | pipeline、benchmark；`backends/*` | 将 turn 委派给选定 backend | preflight、integration tests |
+| `backends/*` | Kokoro cache；Cosy/Higgs parent worker lifecycle；Higgs rate postprocess | `tts_engine`；controls/workers | model/GPU/worker；写 turn WAV | backend lifecycle/engine tests |
+| `backend_info.py` | `backend_identity()`、`describe_engine()` | CLI、pipeline；config/control contract | reference identity hashing；不启动 runtime | metadata/resume tests |
+| `cosyvoice_worker.py` / `higgs_worker.py` | executable `main()`；init/request JSON → response JSON | 由各自 backend module subprocess 启动 | 加载/管理 runtime；写 WAV；stderr diagnostics | fake worker tests |
 | `assemble.py` | `assemble_dialogue(turns, paths, config) → AudioSegment, timings` | pipeline、benchmark；pydub | 读所有 turn audio；missing/corrupt file 抛异常 | `test_pipeline_compatibility.py`, benchmark runner tests |
 | `postprocess.py` | `apply_telephone_effect(AudioSegment, config) → AudioSegment` | pipeline；pydub | 函数自身不写文件；无专门 tests | 间接未充分覆盖 |
 | `metadata.py` | `build_metadata() → dict`; `write_metadata() → Path` | pipeline；capability registry | 写 JSON；路径/id/key 错误传播 | production metadata + compatibility tests |
@@ -377,7 +379,7 @@ Central registry 为 CosyVoice、Higgs 与 Kokoro 都声明了 capability map。
 
 ```mermaid
 sequenceDiagram
-    participant M as main Python 3.11<br/>tts_engine.py
+    participant M as main Python 3.11<br/>backends/cosyvoice.py
     participant W as Python 3.10<br/>cosyvoice_worker.py
     participant CV as CosyVoice3 model
 
@@ -400,7 +402,7 @@ JSON-lines stdout 是 protocol 专用；worker 用 `redirect_stdout(sys.stderr)`
 
 ### 11.3 Worker lifecycle
 
-- `_get_cosyvoice_worker()` 用 `lru_cache(maxsize=1)`，同一组参数通常只加载一次模型并跨 turns/dialogues 复用。
+- `backends/cosyvoice.py` 的 `_get_worker()` 用 `lru_cache(maxsize=1)`，同一组参数通常只加载一次模型并跨 turns/dialogues 复用。
 - startup 没有显式 timeout；`readline()` 可无限等候。
 - startup empty/malformed/non-`ready` response 变为 `RuntimeError`；部分路径 kill worker，但 startup cleanup 没有完整 wait/reap guarantee。
 - request 前发现 worker 已退出：清 cache，报告 stderr tail。
@@ -483,7 +485,7 @@ flowchart LR
 
 | Field | Schema accepted/validated | CosyVoice consumes | Kokoro consumes | 实现位置 | Model itself? | 可忽略/如何报告 | Fidelity evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `rate` | enum | 是，numeric `speed` | 是，numeric `speed` | `tts_engine.py` | 是 | 声明为 `model_control`，不忽略 | tests + real-run duration direction diagnostic；非 perceptual proof |
+| `rate` | enum | 是，numeric `speed` | 是，numeric `speed` | backend modules | 是 | 声明为 `model_control`，不忽略 | tests + real-run duration direction diagnostic；非 perceptual proof |
 | `pause_before_ms` | int ≥0 | 不传 | 不传 | `assemble.py` | 否，`pipeline_timing` | 不列 ignored，因为 pipeline honor | deterministic timing tests + benchmark diagnostic |
 | `pause_after_ms` | int ≥0 | 不传 | 不传 | `assemble.py` | 否，`pipeline_timing` | 同上 | 同上 |
 | `arousal` | enum/null | instruction mapping | 否 | `build_cosyvoice_instruction()` | Cosy：是但 provisional | Kokoro 列 ignored；Cosy 不列 ignored | mapping/protocol tests；descriptive metrics，不足以验证 fidelity |
@@ -902,7 +904,7 @@ CosyVoice `expected_sample_rate` 也是 declaration，不是 provisional acousti
 1. `schemas/dialogue_schema.json`：问“上游必须给什么，哪些只是可选请求？”
 2. `src/tts5703/validate.py`：问“canonical/legacy 如何变成同一 internal model？”
 3. `src/tts5703/pipeline.py`：问“stage 的准确顺序、output 创建点和 failure boundary 在哪里？”
-4. `src/tts5703/tts_engine.py`：问“哪个 backend 实际收到哪些参数，Cosy worker 如何管理？”
+4. `src/tts5703/tts_engine.py` 与 `src/tts5703/backends/`：问“如何 dispatch，以及各 backend 实际收到哪些参数、如何管理 runtime？”
 5. `src/tts5703/assemble.py`：问“pause 与 timestamp 为什么能对齐且不 overlap？”
 
 随后读 `engine_capabilities.py`、`metadata.py`、`cosyvoice_worker.py`、`qc.py`。测试优先从 `test_production_control_metadata.py` 和 `test_pipeline_error_paths.py` 开始；benchmark 最后读。更细的分层路线见 `docs/CODE_READING_GUIDE.md`。

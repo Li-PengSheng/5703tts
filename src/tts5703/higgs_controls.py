@@ -285,3 +285,16 @@ def resolve_higgs_controls(
             "contract_sha256": HIGGS_CONTROL_CONTRACT_SHA256,
         },
     }
+
+
+def resolve_higgs_turn_controls(turn: Any) -> dict[str, Any]:
+    """Resolve the deterministic Higgs plan from a normalized production turn."""
+    return resolve_higgs_controls(
+        text=turn.text,
+        rate=turn.rate,
+        arousal=turn.arousal,
+        coarse_affect=turn.coarse_affect,
+        pause_before_ms=turn.pause_before_ms,
+        pause_after_ms=turn.pause_after_ms,
+        speaker_id=turn.speaker,
+    )

@@ -24,8 +24,10 @@ flowchart LR
     CLI --> PIPE[pipeline.py]
     PIPE --> VAL[validate.py]
     PIPE --> ENG[tts_engine.py]
-    ENG --> CAP[engine_capabilities.py]
-    ENG <--> WORKER[cosyvoice_worker.py]
+    ENG --> BACKENDS[backends/cosyvoice.py<br/>backends/higgs.py<br/>backends/kokoro.py]
+    BACKENDS <--> WORKERS[cosyvoice_worker.py<br/>higgs_worker.py]
+    CLI --> INFO[backend_info.py]
+    PIPE --> INFO
     PIPE --> ASM[assemble.py]
     PIPE --> POST[postprocess.py]
     PIPE --> META[metadata.py]
@@ -44,8 +46,11 @@ The intended dependency direction is from orchestration toward narrow services. 
 | `config.py` | YAML loading and partial semantic validation | `load_config()` | Reads a YAML file |
 | `validate.py` | Canonical/legacy JSON validation, normalization, turn ordering, voice availability | `load_and_validate()`, `validate_and_normalize()` | Reads JSON; emits a legacy warning |
 | `engine_capabilities.py` | Shared acoustic-support vocabulary and ignored-control derivation | `engine_capabilities()`, `control_support()` | None |
-| `tts_engine.py` | Backend selection, control mapping/preflight, per-turn synthesis, engine metadata | `synthesize_turn()`, `synthesize_all_turns()`, `describe_engine()` | Writes turn files; may access network/load models/start worker |
+| `tts_engine.py` | Backend selection, control preflight, and explicit turn dispatch | `synthesize_turn()`, `synthesize_all_turns()` | Delegates turn writes to the selected backend |
+| `backends/` | Backend-owned model caches, parent worker lifecycles, requests, synthesis, and Higgs rate processing | each module's `synthesize_turn()` | Writes turn files; may load a model or start a worker |
+| `backend_info.py` | Side-effect-free backend identity and metadata descriptions | `backend_identity()`, `describe_engine()` | Reads configured reference files for identity hashing |
 | `cosyvoice_worker.py` | Isolated CosyVoice3 model host and JSON-lines protocol endpoint | executable `main()` | Loads model/GPU resources; writes WAV files; writes protocol stdout and diagnostics stderr |
+| `higgs_worker.py` | Standard-library SGLang server owner and HTTP/JSON-lines protocol endpoint | executable `main()` | Starts/stops SGLang; writes raw WAV files; writes protocol stdout and diagnostics stderr |
 | `assemble.py` | Insert pauses, fade edges, concatenate turns, compute speech boundaries | `assemble_dialogue()` | Reads turn audio |
 | `postprocess.py` | Resample, downmix, band-limit, and attenuate telephone copy | `apply_telephone_effect()` | None until caller exports result |
 | `metadata.py` | Build and write alignment/provenance JSON | `build_metadata()`, `write_metadata()` | Writes metadata JSON |

@@ -20,6 +20,7 @@ from typing import Any
 import pytest
 
 from tts5703 import pipeline, tts_engine
+from tts5703.backends import higgs as higgs_backend
 from tts5703.config import load_config
 from tts5703.validate import NormalizedTurn
 
@@ -207,9 +208,9 @@ def _requests(model_dir: Path, name: str) -> list[dict[str, Any]]:
 
 @pytest.fixture(autouse=True)
 def shutdown_higgs_worker() -> Any:
-    tts_engine._shutdown_higgs_worker()
+    higgs_backend._shutdown_worker()
     yield
-    tts_engine._shutdown_higgs_worker()
+    higgs_backend._shutdown_worker()
 
 
 def test_parent_starts_once_reuses_worker_and_drains_large_stderr(
@@ -220,11 +221,11 @@ def test_parent_starts_once_reuses_worker_and_drains_large_stderr(
     script, model_dir = _fake_parent_worker(
         tmp_path, {"stderr_lines": 300, "stderr_width": 10000}
     )
-    monkeypatch.setattr(tts_engine, "_HIGGS_WORKER_SCRIPT", script)
+    monkeypatch.setattr(higgs_backend, "_WORKER_SCRIPT", script)
     caplog.set_level(logging.DEBUG, logger="tts5703.tts_engine")
-    proc = tts_engine._get_higgs_worker(*_worker_args(model_dir))
+    proc = higgs_backend._get_worker(*_worker_args(model_dir))
     try:
-        assert tts_engine._get_higgs_worker(*_worker_args(model_dir)) is proc
+        assert higgs_backend._get_worker(*_worker_args(model_dir)) is proc
         assert (model_dir / "parent-worker-launches.txt").read_text() == "1"
         assert proc.args == [sys.executable, str(script)]
         deadline = time.monotonic() + 2
@@ -233,8 +234,8 @@ def test_parent_starts_once_reuses_worker_and_drains_large_stderr(
             line.startswith("diagnostic-299-") for line in tail
         ):
             time.sleep(0.01)
-        assert len(tail) <= tts_engine._HIGGS_STDERR_TAIL_LINES
-        assert max(map(len, tail)) <= tts_engine._HIGGS_STDERR_FRAGMENT_CHARS + 1
+        assert len(tail) <= higgs_backend._STDERR_TAIL_LINES
+        assert max(map(len, tail)) <= higgs_backend._STDERR_FRAGMENT_CHARS + 1
         assert any(line.startswith("diagnostic-299-") for line in tail)
         assert "event=higgs_worker_stderr" in caplog.text
         assert json.loads((model_dir / "parent-worker-init.json").read_text()) == {
@@ -247,7 +248,7 @@ def test_parent_starts_once_reuses_worker_and_drains_large_stderr(
         }
     finally:
         pid = proc.pid
-        tts_engine._discard_higgs_worker(proc)
+        higgs_backend._discard_worker(proc)
         _wait_stopped(pid)
 
 
@@ -258,11 +259,11 @@ def test_non_utf8_stderr_does_not_stop_drain_or_protocol(
         tmp_path,
         {"invalid_stderr": True, "stderr_lines": 60, "stderr_width": 1500},
     )
-    monkeypatch.setattr(tts_engine, "_HIGGS_WORKER_SCRIPT", script)
-    proc = tts_engine._get_higgs_worker(*_worker_args(model_dir))
+    monkeypatch.setattr(higgs_backend, "_WORKER_SCRIPT", script)
+    proc = higgs_backend._get_worker(*_worker_args(model_dir))
     output_path = tmp_path / "non-utf8-output.wav"
     try:
-        response = tts_engine._higgs_request(
+        response = higgs_backend._request(
             proc,
             {
                 "model_input": "resolved",
@@ -287,7 +288,7 @@ def test_non_utf8_stderr_does_not_stop_drain_or_protocol(
         )
     finally:
         pid = proc.pid
-        tts_engine._discard_higgs_worker(proc)
+        higgs_backend._discard_worker(proc)
         _wait_stopped(pid)
 
 
@@ -295,7 +296,7 @@ def test_drain_setup_failure_after_popen_reaps_uncached_worker(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     script, model_dir = _fake_parent_worker(tmp_path, {})
-    monkeypatch.setattr(tts_engine, "_HIGGS_WORKER_SCRIPT", script)
+    monkeypatch.setattr(higgs_backend, "_WORKER_SCRIPT", script)
     real_popen = subprocess.Popen
     created: list[subprocess.Popen[str]] = []
 
@@ -307,17 +308,17 @@ def test_drain_setup_failure_after_popen_reaps_uncached_worker(
     def fail_drain(proc: subprocess.Popen[str]) -> deque[str]:
         raise RuntimeError("synthetic stderr drain setup failure")
 
-    monkeypatch.setattr(tts_engine.subprocess, "Popen", capture_popen)
-    monkeypatch.setattr(tts_engine, "_drain_higgs_stderr", fail_drain)
+    monkeypatch.setattr(higgs_backend.subprocess, "Popen", capture_popen)
+    monkeypatch.setattr(higgs_backend, "_drain_stderr", fail_drain)
 
     with pytest.raises(RuntimeError, match="synthetic stderr drain setup failure"):
-        tts_engine._get_higgs_worker(*_worker_args(model_dir))
+        higgs_backend._get_worker(*_worker_args(model_dir))
 
     assert len(created) == 1
     proc = created[0]
     assert proc.poll() is not None
     _wait_stopped(proc.pid)
-    assert tts_engine._higgs_worker_cache is None
+    assert higgs_backend._worker_cache is None
 
 
 def test_changing_runtime_config_reaps_worker_before_replacement(
@@ -327,11 +328,11 @@ def test_changing_runtime_config_reaps_worker_before_replacement(
     second_model = tmp_path / "other-model"
     second_model.mkdir()
     (second_model / "parent-worker-behavior.json").write_text("{}", encoding="utf-8")
-    monkeypatch.setattr(tts_engine, "_HIGGS_WORKER_SCRIPT", script)
-    first = tts_engine._get_higgs_worker(*_worker_args(first_model))
+    monkeypatch.setattr(higgs_backend, "_WORKER_SCRIPT", script)
+    first = higgs_backend._get_worker(*_worker_args(first_model))
     first_pid = first.pid
 
-    second = tts_engine._get_higgs_worker(*_worker_args(second_model))
+    second = higgs_backend._get_worker(*_worker_args(second_model))
     try:
         assert second is not first
         assert first.poll() is not None
@@ -339,7 +340,7 @@ def test_changing_runtime_config_reaps_worker_before_replacement(
         assert (first_model / "parent-worker-launches.txt").read_text() == "1"
         assert (second_model / "parent-worker-launches.txt").read_text() == "1"
     finally:
-        tts_engine._discard_higgs_worker(second)
+        higgs_backend._discard_worker(second)
 
 
 def test_startup_failure_includes_bounded_stderr_and_reaps_worker(
@@ -349,13 +350,13 @@ def test_startup_failure_includes_bounded_stderr_and_reaps_worker(
         tmp_path,
         {"startup": "error", "stderr_lines": 150, "stderr_width": 1000},
     )
-    monkeypatch.setattr(tts_engine, "_HIGGS_WORKER_SCRIPT", script)
+    monkeypatch.setattr(higgs_backend, "_WORKER_SCRIPT", script)
 
     with pytest.raises(RuntimeError, match="synthetic startup failure") as raised:
-        tts_engine._get_higgs_worker(*_worker_args(model_dir))
+        higgs_backend._get_worker(*_worker_args(model_dir))
 
     assert "diagnostic-149-" in str(raised.value)
-    assert tts_engine._higgs_worker_cache is None
+    assert higgs_backend._worker_cache is None
     _wait_stopped(int((model_dir / "parent-worker.pid").read_text()))
 
 
@@ -365,13 +366,13 @@ def test_invalid_startup_json_includes_stderr_and_reaps_worker(
     script, model_dir = _fake_parent_worker(
         tmp_path, {"startup": "invalid", "stderr_lines": 1}
     )
-    monkeypatch.setattr(tts_engine, "_HIGGS_WORKER_SCRIPT", script)
+    monkeypatch.setattr(higgs_backend, "_WORKER_SCRIPT", script)
 
     with pytest.raises(RuntimeError, match="invalid startup data") as raised:
-        tts_engine._get_higgs_worker(*_worker_args(model_dir))
+        higgs_backend._get_worker(*_worker_args(model_dir))
 
     assert "diagnostic-0-" in str(raised.value)
-    assert tts_engine._higgs_worker_cache is None
+    assert higgs_backend._worker_cache is None
     _wait_stopped(int((model_dir / "parent-worker.pid").read_text()))
 
 
@@ -379,8 +380,8 @@ def test_already_exited_worker_clears_cache_with_stderr_diagnostic(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     script, model_dir = _fake_parent_worker(tmp_path, {"exit_after_ready": True})
-    monkeypatch.setattr(tts_engine, "_HIGGS_WORKER_SCRIPT", script)
-    proc = tts_engine._get_higgs_worker(*_worker_args(model_dir))
+    monkeypatch.setattr(higgs_backend, "_WORKER_SCRIPT", script)
+    proc = higgs_backend._get_worker(*_worker_args(model_dir))
     assert proc.wait(timeout=3) == 7
     deadline = time.monotonic() + 1
     while (
@@ -390,9 +391,9 @@ def test_already_exited_worker_clears_cache_with_stderr_diagnostic(
         time.sleep(0.01)
 
     with pytest.raises(RuntimeError, match="worker-exited-after-ready"):
-        tts_engine._higgs_request(proc, {"model_input": "unused"})
+        higgs_backend._request(proc, {"model_input": "unused"})
 
-    assert tts_engine._higgs_worker_cache is None
+    assert higgs_backend._worker_cache is None
 
 
 @pytest.mark.parametrize(
@@ -410,12 +411,12 @@ def test_unusable_worker_response_clears_cache_and_reaps(
     message: str,
 ) -> None:
     script, model_dir = _fake_parent_worker(tmp_path, {"request": mode})
-    monkeypatch.setattr(tts_engine, "_HIGGS_WORKER_SCRIPT", script)
-    proc = tts_engine._get_higgs_worker(*_worker_args(model_dir))
+    monkeypatch.setattr(higgs_backend, "_WORKER_SCRIPT", script)
+    proc = higgs_backend._get_worker(*_worker_args(model_dir))
     pid = proc.pid
 
     with pytest.raises(RuntimeError, match=message) as raised:
-        tts_engine._higgs_request(
+        higgs_backend._request(
             proc,
             {
                 "model_input": "resolved",
@@ -426,7 +427,7 @@ def test_unusable_worker_response_clears_cache_and_reaps(
 
     if mode == "fatal":
         assert "runtime-fatal-diagnostic" in str(raised.value)
-    assert tts_engine._higgs_worker_cache is None
+    assert higgs_backend._worker_cache is None
     _wait_stopped(pid)
 
 
@@ -434,8 +435,8 @@ def test_recoverable_error_keeps_worker_for_later_request(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     script, model_dir = _fake_parent_worker(tmp_path, {"request": "recoverable_first"})
-    monkeypatch.setattr(tts_engine, "_HIGGS_WORKER_SCRIPT", script)
-    proc = tts_engine._get_higgs_worker(*_worker_args(model_dir))
+    monkeypatch.setattr(higgs_backend, "_WORKER_SCRIPT", script)
+    proc = higgs_backend._get_worker(*_worker_args(model_dir))
     request = {
         "model_input": "resolved",
         "reference_wav": "/reference.wav",
@@ -443,16 +444,16 @@ def test_recoverable_error_keeps_worker_for_later_request(
     }
     try:
         with pytest.raises(RuntimeError, match="synthetic recoverable"):
-            tts_engine._higgs_request(proc, request)
+            higgs_backend._request(proc, request)
 
-        response = tts_engine._higgs_request(proc, request)
+        response = higgs_backend._request(proc, request)
 
         assert response["status"] == "ok"
         assert proc.poll() is None
-        assert tts_engine._get_higgs_worker(*_worker_args(model_dir)) is proc
+        assert higgs_backend._get_worker(*_worker_args(model_dir)) is proc
         assert (model_dir / "parent-worker-launches.txt").read_text() == "1"
     finally:
-        tts_engine._discard_higgs_worker(proc)
+        higgs_backend._discard_worker(proc)
 
 
 def _turn(
@@ -534,10 +535,10 @@ def test_dispatch_sends_only_resolved_model_input_and_absolute_reference(
         worker_args.append(args)
         return object()
 
-    monkeypatch.setattr(tts_engine, "_get_higgs_worker", get_worker)
-    monkeypatch.setattr(tts_engine, "_higgs_request", _successful_request(captured))
+    monkeypatch.setattr(higgs_backend, "_get_worker", get_worker)
+    monkeypatch.setattr(higgs_backend, "_request", _successful_request(captured))
     monkeypatch.setattr(
-        tts_engine.subprocess,
+        higgs_backend.subprocess,
         "run",
         lambda *args, **kwargs: pytest.fail("normal rate must not run FFmpeg"),
     )
@@ -574,21 +575,21 @@ def test_success_response_rejects_wrong_or_missing_raw_output(
 ) -> None:
     worker: Any = ProtocolWorker({"status": "ok"})
     discarded: list[object] = []
-    monkeypatch.setattr(tts_engine, "_discard_higgs_worker", discarded.append)
+    monkeypatch.setattr(higgs_backend, "_discard_worker", discarded.append)
     expected = tmp_path / "expected.higgs_raw.wav"
 
     with pytest.raises(RuntimeError, match="has no output_path"):
-        tts_engine._validate_higgs_success(worker, {"status": "ok"}, expected)
+        higgs_backend._validate_success(worker, {"status": "ok"}, expected)
 
     with pytest.raises(RuntimeError, match="unexpected output_path"):
-        tts_engine._validate_higgs_success(
+        higgs_backend._validate_success(
             worker,
             {"status": "ok", "output_path": str(tmp_path / "other.wav")},
             expected,
         )
 
     with pytest.raises(RuntimeError, match="did not produce a non-empty WAV"):
-        tts_engine._validate_higgs_success(
+        higgs_backend._validate_success(
             worker,
             {"status": "ok", "output_path": str(expected)},
             expected,
@@ -608,9 +609,9 @@ def test_rate_postprocess_uses_exact_resolver_factor(
     config["tts"]["higgs"]["ffmpeg_bin"] = "/fake/ffmpeg"
     captured_requests: list[dict[str, Any]] = []
     commands: list[list[str]] = []
-    monkeypatch.setattr(tts_engine, "_get_higgs_worker", lambda *args: object())
+    monkeypatch.setattr(higgs_backend, "_get_worker", lambda *args: object())
     monkeypatch.setattr(
-        tts_engine, "_higgs_request", _successful_request(captured_requests)
+        higgs_backend, "_request", _successful_request(captured_requests)
     )
 
     def fake_ffmpeg(
@@ -620,7 +621,7 @@ def test_rate_postprocess_uses_exact_resolver_factor(
         Path(command[-1]).write_bytes(Path(command[3]).read_bytes())
         return subprocess.CompletedProcess(command, 0, "", "")
 
-    monkeypatch.setattr(tts_engine.subprocess, "run", fake_ffmpeg)
+    monkeypatch.setattr(higgs_backend.subprocess, "run", fake_ffmpeg)
 
     final = asyncio.run(tts_engine.synthesize_turn(_turn(rate=rate), tmp_path, config))
 
@@ -647,10 +648,10 @@ def test_ffmpeg_failure_preserves_old_final_and_retains_raw_for_diagnosis(
     config = _runtime_config(tmp_path)
     final = tmp_path / "turn_001.wav"
     final.write_bytes(b"historical-final")
-    monkeypatch.setattr(tts_engine, "_get_higgs_worker", lambda *args: object())
-    monkeypatch.setattr(tts_engine, "_higgs_request", _successful_request([]))
+    monkeypatch.setattr(higgs_backend, "_get_worker", lambda *args: object())
+    monkeypatch.setattr(higgs_backend, "_request", _successful_request([]))
     monkeypatch.setattr(
-        tts_engine.subprocess,
+        higgs_backend.subprocess,
         "run",
         lambda *args, **kwargs: subprocess.CompletedProcess(
             args[0], 7, "", "synthetic ffmpeg failure"
@@ -672,7 +673,7 @@ def test_failed_current_request_never_uses_stale_final_as_success(
     final = tmp_path / "turn_001.wav"
     final.write_bytes(b"historical-final")
     worker = ProtocolWorker({"status": "error", "message": "new request failed"})
-    monkeypatch.setattr(tts_engine, "_get_higgs_worker", lambda *args: worker)
+    monkeypatch.setattr(higgs_backend, "_get_worker", lambda *args: worker)
 
     with pytest.raises(RuntimeError, match="new request failed"):
         asyncio.run(tts_engine.synthesize_turn(_turn(), tmp_path, config))
@@ -689,7 +690,7 @@ def test_pipeline_reports_failure_despite_stale_final_wav(
     config["tts"]["engine"] = "higgs"
     config["tts"]["higgs"] = runtime_config["tts"]["higgs"]
     worker = ProtocolWorker({"status": "error", "message": "new request failed"})
-    monkeypatch.setattr(tts_engine, "_get_higgs_worker", lambda *args: worker)
+    monkeypatch.setattr(higgs_backend, "_get_worker", lambda *args: worker)
     dialogue = {
         "schema_version": "0.2",
         "dialogue_id": "stale_higgs",
@@ -781,9 +782,9 @@ def test_offline_higgs_pipeline_e2e_with_two_speaker_references(tmp_path: Path) 
     result = asyncio.run(pipeline.run_dialogue(dialogue_path, config, output_root))
 
     server_pid = int((model_dir / "fake-sglang.pid").read_text())
-    tts_engine._shutdown_higgs_worker()
+    higgs_backend._shutdown_worker()
     _wait_stopped(server_pid)
-    assert tts_engine._higgs_worker_cache is None
+    assert higgs_backend._worker_cache is None
 
     assert result.status == "success"
     assert result.qc is not None and result.qc.passed

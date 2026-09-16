@@ -12,6 +12,19 @@ class ConfigError(Exception):
     """Raised when config.yaml is structurally present but semantically invalid."""
 
 
+def get_engine(config: dict[str, Any]) -> str:
+    """Return the explicitly selected supported engine."""
+    try:
+        engine = config["tts"]["engine"]
+    except (KeyError, TypeError) as error:
+        raise ValueError("Missing required configuration key: tts.engine") from error
+    if engine not in VALID_ENGINES:
+        raise ValueError(
+            f"Unsupported tts.engine: {engine} (available: {sorted(VALID_ENGINES)})"
+        )
+    return engine
+
+
 def load_config(config_path: Path) -> dict[str, Any]:
     """Load and validate a YAML pipeline configuration file."""
     config = yaml.safe_load(config_path.read_text(encoding="utf-8"))

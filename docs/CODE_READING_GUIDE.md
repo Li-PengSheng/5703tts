@@ -17,7 +17,7 @@ At the end of this level, you should be able to answer: “What goes in, what co
 1. **`src/tts5703/validate.py`** — How do canonical and versionless legacy JSON converge into `NormalizedDialogue`? Where are turn uniqueness, ordering, and configured speaker checks enforced?
 2. **`src/tts5703/pipeline.py`** — What is the exact stage order? When is the output directory created? Which partial outputs survive a failure?
 3. **`src/tts5703/engine_capabilities.py`** — What is the difference between `model_control`, `provisional_model_control`, `pipeline_timing`, and `unsupported`?
-4. **`src/tts5703/tts_engine.py` lines around rate mappings, preflight, and `synthesize_all_turns()`** — Where does model-independent intent become backend parameters, and why is synthesis sequential?
+4. **`src/tts5703/tts_engine.py`** — How are preflight and explicit backend dispatch kept sequential?
 5. **`src/tts5703/metadata.py`** — Which fields are requested intent, which are configuration declarations, and how are ignored controls exposed?
 
 At the end of this level, trace one `NormalizedTurn` from validation to one turn file and one metadata entry.
@@ -34,13 +34,13 @@ At the end of this level, calculate the timestamps of a three-turn dialogue by h
 
 ## Level 4 — Understand each backend
 
-Read focused sections of **`src/tts5703/tts_engine.py`** in this order:
+Read these focused modules in order:
 
-1. `get_engine()` and the rate maps — What is shared and what is backend-specific?
-2. Kokoro branch and `_get_kokoro_pipeline()` — How are chunks joined, which sample rate writes the WAV, and how is the model cached?
-3. CosyVoice worker request/lifecycle — How does the isolated environment communicate over JSON lines?
-4. Higgs worker request/lifecycle and rate postprocess — Where do model controls and FFmpeg ownership meet?
-5. `describe_engine()` — What provenance is produced for each path, and what is missing?
+1. **`src/tts5703/tts_engine.py`** — How do preflight and explicit dispatch select one of three backends?
+2. **`src/tts5703/backends/kokoro.py`** — How are chunks joined, which sample rate writes the WAV, and how is the model cached?
+3. **`src/tts5703/backends/cosyvoice.py`** — How does the isolated environment communicate over JSON lines?
+4. **`src/tts5703/backends/higgs.py`** — Where do worker ownership, resolved model input, WAV validation, and FFmpeg meet?
+5. **`src/tts5703/backend_info.py`** — What stable identity and metadata provenance does each backend expose?
 
 Then read **`config/config.kokoro.yaml`** and **`tests/test_config_validation.py`** to understand the supported local comparison configuration.
 
@@ -48,8 +48,8 @@ At the end of this level, you should be able to distinguish code existence, inst
 
 ## Level 5 — Understand the CosyVoice boundary
 
-1. **`src/tts5703/tts_engine.py`: `build_cosyvoice_instruction()` and `build_cosyvoice_request()`** — When does the adapter select `zero_shot` versus `instruct2`? Which requested fields never cross the process boundary?
-2. **`src/tts5703/tts_engine.py`: `_get_cosyvoice_worker()` through `_cosyvoice_request()`** — How is the worker cached, how is stderr drained, and how are startup/EOF/malformed responses handled?
+1. **`src/tts5703/cosyvoice_controls.py` and `backends/cosyvoice.py`: `build_request()`** — When does the adapter select `zero_shot` versus `instruct2`? Which requested fields never cross the process boundary?
+2. **`src/tts5703/backends/cosyvoice.py`: `_get_worker()` through `_request()`** — How is the worker cached, how is stderr drained, and how are startup/EOF/malformed responses handled?
 3. **`src/tts5703/cosyvoice_worker.py`** — What does the Python 3.10 process validate, load, invoke, concatenate, and save?
 4. **`tests/test_cosyvoice_controls.py`** — What do deterministic mapping tests prove?
 5. **`tests/test_cosyvoice_worker.py`** — How do fake dependencies verify the JSON-lines protocol without a real model?

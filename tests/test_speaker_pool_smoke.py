@@ -17,6 +17,7 @@ import pytest
 import yaml
 
 from tts5703 import tts_engine
+from tts5703.backends import cosyvoice as cosyvoice_backend
 from tts5703.validate import NormalizedTurn
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -647,8 +648,8 @@ def test_production_engine_path_reuses_one_mocked_worker(
         _write_wav(Path(request["output_path"]), 2.0, sample_rate=24_000)
         return {"status": "ok"}
 
-    monkeypatch.setattr(tts_engine, "_get_cosyvoice_worker", fake_worker)
-    monkeypatch.setattr(tts_engine, "_cosyvoice_request", fake_request)
+    monkeypatch.setattr(cosyvoice_backend, "_get_worker", fake_worker)
+    monkeypatch.setattr(cosyvoice_backend, "_request", fake_request)
 
     results, _ = workspace.run()
 
@@ -874,8 +875,8 @@ def test_targeted_run_reuses_one_mocked_worker(
         _write_wav(Path(request["output_path"]), 2.0, sample_rate=24_000)
         return {"status": "ok"}
 
-    monkeypatch.setattr(tts_engine, "_get_cosyvoice_worker", fake_worker)
-    monkeypatch.setattr(tts_engine, "_cosyvoice_request", fake_request)
+    monkeypatch.setattr(cosyvoice_backend, "_get_worker", fake_worker)
+    monkeypatch.setattr(cosyvoice_backend, "_request", fake_request)
 
     results, _ = workspace.run(speaker_ids=["spk_002", "spk_005"], role="backup")
 

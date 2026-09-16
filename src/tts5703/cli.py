@@ -11,10 +11,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from .backend_info import backend_identity
 from .config import load_config
 from .pipeline import PipelineResult, run_dialogue
 from .qc import run_qc
-from .tts_engine import backend_identity
 from .validate import ValidationError, load_and_validate
 
 _RENDERED = "rendered"

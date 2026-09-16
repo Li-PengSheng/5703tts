@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from tts5703 import cli, tts_engine
+from tts5703 import backend_info, cli
 from tts5703.config import ConfigError
 from tts5703.pipeline import PipelineResult
 from tts5703.validate import NormalizedDialogue, NormalizedTurn, ValidationError
@@ -739,7 +739,7 @@ def test_current_higgs_reference_hash_failure_never_resumes(
     def unreadable_reference(path: Path) -> str:
         raise OSError(f"cannot read {path}")
 
-    monkeypatch.setattr(tts_engine, "_reference_sha256", unreadable_reference)
+    monkeypatch.setattr(backend_info, "_reference_sha256", unreadable_reference)
 
     _, manifest, attempted = _run_batch(
         tmp_path,
@@ -802,7 +802,7 @@ def test_both_incomplete_higgs_identities_never_resume_on_null_hash_equality(
     def unreadable_reference(path: Path) -> str:
         raise OSError(f"cannot read {path}")
 
-    monkeypatch.setattr(tts_engine, "_reference_sha256", unreadable_reference)
+    monkeypatch.setattr(backend_info, "_reference_sha256", unreadable_reference)
     incomplete_identity = cli.backend_identity(config)
     assert incomplete_identity["identity_complete"] is False
     _complete_dialogue_output(

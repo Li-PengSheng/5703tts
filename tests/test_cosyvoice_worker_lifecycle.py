@@ -6,7 +6,7 @@ from collections import deque
 
 import pytest
 
-from tts5703 import tts_engine
+from tts5703.backends import cosyvoice as cosyvoice_backend
 
 
 class FakeWorker:
@@ -63,7 +63,7 @@ class CacheSpy:
 @pytest.fixture
 def events(monkeypatch: pytest.MonkeyPatch) -> list[str]:
     recorded: list[str] = []
-    monkeypatch.setattr(tts_engine, "_get_cosyvoice_worker", CacheSpy(recorded))
+    monkeypatch.setattr(cosyvoice_backend, "_get_worker", CacheSpy(recorded))
     return recorded
 
 
@@ -71,7 +71,7 @@ def _request(worker: FakeWorker) -> str:
     with pytest.raises(
         RuntimeError, match="CosyVoice worker closed its output"
     ) as raised:
-        tts_engine._cosyvoice_request(worker, {"text": "Hello"})
+        cosyvoice_backend._request(worker, {"text": "Hello"})
     return str(raised.value)
 
 
@@ -133,7 +133,7 @@ def test_kill_race_leaves_cleanup_helper_without_raising(events: list[str]) -> N
         kill_error=ProcessLookupError(3, "No such process"),
     )
 
-    assert tts_engine._terminate_cosyvoice_worker(worker) is None
+    assert cosyvoice_backend._terminate_worker(worker) is None
     assert worker.returncode == -15
 
 
@@ -152,7 +152,7 @@ def test_already_exited_worker_is_not_terminated_again(events: list[str]) -> Non
     worker.returncode = 1
 
     with pytest.raises(RuntimeError, match="CosyVoice worker exited unexpectedly"):
-        tts_engine._cosyvoice_request(worker, {"text": "Hello"})
+        cosyvoice_backend._request(worker, {"text": "Hello"})
 
     assert "terminate" not in events
     assert "kill" not in events
@@ -163,6 +163,6 @@ def test_terminate_helper_leaves_exited_worker_untouched(events: list[str]) -> N
     worker = FakeWorker(events)
     worker.returncode = 0
 
-    tts_engine._terminate_cosyvoice_worker(worker)
+    cosyvoice_backend._terminate_worker(worker)
 
     assert events == []

@@ -12,7 +12,7 @@ from .engine_capabilities import (
     ignored_requested_controls,
     requested_acoustic_spec,
 )
-from .tts_engine import resolve_higgs_turn_controls
+from .higgs_controls import resolve_higgs_turn_controls
 
 
 def _control_resolution(timing: TurnTiming, engine: str | None) -> dict | None:

@@ -7,7 +7,10 @@ from pathlib import Path
 
 import pytest
 
-from tts5703 import tts_engine
+import tts5703
+from tts5703 import higgs_controls, tts_engine
+from tts5703.backends import cosyvoice as cosyvoice_backend
+from tts5703.backends import higgs as higgs_backend
 from tts5703.tts_engine import (
     BackendControlError,
     preflight_backend_controls,
@@ -19,6 +22,16 @@ from tts5703.validate import NormalizedTurn, validate_and_normalize
 
 CONFIG_PATH = Path("config/config.yaml")
 KOKORO_CONFIG_PATH = Path("config/config.kokoro.yaml")
+
+
+def test_backend_modules_keep_package_worker_and_project_root_paths() -> None:
+    package_dir = Path(tts5703.__file__).resolve().parent
+    project_root = package_dir.parents[1]
+
+    assert cosyvoice_backend._WORKER_SCRIPT == package_dir / "cosyvoice_worker.py"
+    assert higgs_backend._WORKER_SCRIPT == package_dir / "higgs_worker.py"
+    assert cosyvoice_backend._project_root() == project_root
+    assert higgs_backend._project_root() == project_root
 
 
 @pytest.fixture(scope="module")
@@ -136,7 +149,7 @@ def test_higgs_preflight_delegates_exact_turn_values(
         captured.update(kwargs)
         return {}
 
-    monkeypatch.setattr(tts_engine, "resolve_higgs_controls", resolve)
+    monkeypatch.setattr(higgs_controls, "resolve_higgs_controls", resolve)
     turn = _turn(rate="slow", arousal="low", coarse_affect="warm")
 
     assert preflight_higgs_controls(turn) is None
@@ -197,7 +210,7 @@ def test_higgs_preflight_has_no_worker_or_sglang_dependency(
     def unreachable_worker(*args: object) -> object:
         raise AssertionError("preflight must remain CPU-only")
 
-    monkeypatch.setattr(tts_engine, "_get_higgs_worker", unreachable_worker)
+    monkeypatch.setattr(higgs_backend, "_get_worker", unreachable_worker)
 
     assert preflight_backend_controls(_turn(), config) is None
     assert "sglang" not in sys.modules
@@ -222,7 +235,7 @@ def test_higgs_missing_reference_fails_before_worker_startup(
     def unreachable_worker(*args: object) -> object:
         raise AssertionError("missing reference must fail before worker startup")
 
-    monkeypatch.setattr(tts_engine, "_get_higgs_worker", unreachable_worker)
+    monkeypatch.setattr(higgs_backend, "_get_worker", unreachable_worker)
 
     with pytest.raises(RuntimeError, match="Higgs reference audio is missing"):
         asyncio.run(tts_engine.synthesize_turn(_turn(), tmp_path, config))
@@ -260,7 +273,7 @@ def test_cosyvoice_synthesis_fails_preflight_before_reaching_the_worker(
         worker_calls.append({"args": args})
         raise AssertionError("preflight must run before the worker starts")
 
-    monkeypatch.setattr(tts_engine, "_get_cosyvoice_worker", unreachable_worker)
+    monkeypatch.setattr(cosyvoice_backend, "_get_worker", unreachable_worker)
 
     with pytest.raises(BackendControlError, match="coarse_affect mapping: 'cheerful'"):
         asyncio.run(
