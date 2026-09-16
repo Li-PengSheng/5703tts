@@ -1,6 +1,7 @@
 """Stage 5: write the turn-label-audio alignment contract."""
 
 import json
+from copy import deepcopy
 from pathlib import Path
 
 from .assemble import TurnTiming
@@ -11,6 +12,41 @@ from .engine_capabilities import (
     ignored_requested_controls,
     requested_acoustic_spec,
 )
+from .tts_engine import resolve_higgs_turn_controls
+
+
+def _control_resolution(timing: TurnTiming, engine: str | None) -> dict | None:
+    if engine == "cosyvoice":
+        return resolve_cosyvoice_controls(
+            timing.rate, timing.arousal, timing.coarse_affect
+        )
+    if engine == "higgs":
+        # TurnTiming preserves every resolver input from the normalized turn. The
+        # deterministic helper is shared with synthesis so metadata cannot drift
+        # to a separately implemented mapping.
+        resolution = deepcopy(resolve_higgs_turn_controls(timing))
+        rate = resolution["postprocess"]["rate"]
+        execution_status = "executed" if rate["enabled"] else "not_required"
+        rate["execution_status"] = execution_status
+        resolution["realization"]["speaking_rate"]["execution_status"] = (
+            execution_status
+        )
+        resolution["caveats"] = [
+            caveat
+            for caveat in resolution["caveats"]
+            if not ("rate postprocessing" in caveat and "not been executed" in caveat)
+        ]
+        return resolution
+    return None
+
+
+def _higgs_speaker_reference(timing: TurnTiming, engine_info: dict) -> dict:
+    reference = engine_info["references"][timing.speaker]
+    return {
+        "speaker_id": timing.speaker,
+        "reference_wav": reference["reference_wav"],
+        "sha256": reference["sha256"],
+    }
 
 
 def build_metadata(
@@ -64,12 +100,13 @@ def build_metadata(
                     else None
                 ),
                 **(
-                    {
-                        "control_resolution": resolve_cosyvoice_controls(
-                            timing.rate, timing.arousal, timing.coarse_affect
-                        )
-                    }
-                    if engine == "cosyvoice"
+                    {"control_resolution": _control_resolution(timing, engine)}
+                    if engine in {"cosyvoice", "higgs"}
+                    else {}
+                ),
+                **(
+                    {"speaker_reference": _higgs_speaker_reference(timing, engine_info)}
+                    if engine == "higgs"
                     else {}
                 ),
                 "start_time": timing.start_sec,

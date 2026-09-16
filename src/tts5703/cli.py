@@ -12,14 +12,9 @@ from pathlib import Path
 from typing import Any
 
 from .config import load_config
-from .cosyvoice_controls import (
-    COSYVOICE_CONTROL_MAPPING_NAME,
-    COSYVOICE_CONTROL_MAPPING_STATUS,
-    COSYVOICE_CONTROL_MAPPING_VERSION,
-)
 from .pipeline import PipelineResult, run_dialogue
 from .qc import run_qc
-from .tts_engine import describe_engine
+from .tts_engine import backend_identity
 from .validate import ValidationError, load_and_validate
 
 _RENDERED = "rendered"
@@ -136,17 +131,13 @@ def _sha256(path: Path) -> str:
 
 
 def _backend_identity(config: dict[str, Any]) -> dict[str, Any]:
-    engine = describe_engine(config)
-    identity = {"backend": engine["engine"]}
-    if model := engine.get("model"):
-        identity["model"] = model
-    if engine["engine"] == "cosyvoice":
-        identity["control_mapping"] = {
-            "name": COSYVOICE_CONTROL_MAPPING_NAME,
-            "version": COSYVOICE_CONTROL_MAPPING_VERSION,
-            "status": COSYVOICE_CONTROL_MAPPING_STATUS,
-        }
-    return identity
+    return backend_identity(config)
+
+
+def _identity_allows_resume(identity: Any) -> bool:
+    return isinstance(identity, dict) and (
+        identity.get("backend") != "higgs" or identity.get("identity_complete") is True
+    )
 
 
 def _load_previous_batch_result(path: Path) -> dict[str, Any] | None:
@@ -236,6 +227,7 @@ def _verified_completed_result(
     """Return a successful result only when existing production QC still passes."""
     try:
         dialogue = load_and_validate(input_path, config)
+        current_backend_identity = backend_identity(config)
         out_dir = output_root / dialogue.dialogue_id
         if (
             previous.get("dialogue_id") != dialogue.dialogue_id
@@ -245,12 +237,23 @@ def _verified_completed_result(
             return None
         metadata_path = out_dir / f"{dialogue.dialogue_id}_metadata.json"
         metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+        metadata_tts = metadata.get("tts") if isinstance(metadata, dict) else None
+        metadata_backend_identity = (
+            metadata_tts.get("backend_identity")
+            if isinstance(metadata_tts, dict)
+            else None
+        )
         if (
             not isinstance(metadata, dict)
             or metadata.get("dialogue_id") != dialogue.dialogue_id
             or metadata.get("clean_audio") != f"{dialogue.dialogue_id}_clean.wav"
             or metadata.get("telephone_audio")
             != f"{dialogue.dialogue_id}_telephone.wav"
+            or not isinstance(metadata_tts, dict)
+            or metadata_tts.get("engine") != current_backend_identity["backend"]
+            or metadata_backend_identity != current_backend_identity
+            or not _identity_allows_resume(current_backend_identity)
+            or not _identity_allows_resume(metadata_backend_identity)
         ):
             return None
         qc = run_qc(
@@ -341,6 +344,8 @@ async def main() -> int:
         previous_manifest
         and previous_manifest.get("config_sha256") == config_sha256
         and previous_manifest.get("backend_identity") == backend_identity
+        and _identity_allows_resume(backend_identity)
+        and _identity_allows_resume(previous_manifest.get("backend_identity"))
     )
     json_files = sorted(args.input.glob("*.json"))
     if not json_files:

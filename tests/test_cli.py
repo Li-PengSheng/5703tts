@@ -1,6 +1,7 @@
 """Offline batch-result and process-status tests for the production CLI."""
 
 import asyncio
+import copy
 import hashlib
 import json
 import sys
@@ -9,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from tts5703 import cli
+from tts5703 import cli, tts_engine
 from tts5703.config import ConfigError
 from tts5703.pipeline import PipelineResult
 from tts5703.validate import NormalizedDialogue, NormalizedTurn, ValidationError
@@ -55,7 +56,13 @@ def _write_silent_wav(path: Path, duration_ms: int = 200) -> None:
         output.writeframes(b"\x00\x00" * frame_count)
 
 
-def _complete_dialogue_output(output_root: Path, dialogue_id: str) -> Path:
+def _complete_dialogue_output(
+    output_root: Path,
+    dialogue_id: str,
+    *,
+    engine: str = "edge_tts",
+    backend_identity: dict | None = None,
+) -> Path:
     out_dir = output_root / dialogue_id
     out_dir.mkdir(parents=True, exist_ok=True)
     _write_silent_wav(out_dir / f"{dialogue_id}_clean.wav")
@@ -65,6 +72,10 @@ def _complete_dialogue_output(output_root: Path, dialogue_id: str) -> Path:
         "dialogue_id": dialogue_id,
         "clean_audio": f"{dialogue_id}_clean.wav",
         "telephone_audio": f"{dialogue_id}_telephone.wav",
+        "tts": {
+            "engine": engine,
+            "backend_identity": backend_identity or {"backend": engine},
+        },
         "turns": [
             {
                 "turn_id": 1,
@@ -96,6 +107,7 @@ def _run_batch(
     previous_manifest: dict | None = None,
     attempted: list[str] | None = None,
     validate=None,
+    config: dict | None = None,
 ) -> tuple[int, dict, list[str]]:
     input_root = tmp_path / "input"
     output_root = tmp_path / "output"
@@ -115,6 +127,8 @@ def _run_batch(
 
     if attempted is None:
         attempted = []
+    runtime_config = config or _CONFIG
+    runtime_backend_identity = cli.backend_identity(runtime_config)
 
     async def fake_run_dialogue(
         path: Path, config: dict, output: Path
@@ -127,7 +141,12 @@ def _run_batch(
                 "complete\n", encoding="utf-8"
             )
             if complete_outputs and result.dialogue_id:
-                _complete_dialogue_output(output, result.dialogue_id)
+                _complete_dialogue_output(
+                    output,
+                    result.dialogue_id,
+                    engine=runtime_backend_identity["backend"],
+                    backend_identity=runtime_backend_identity,
+                )
         return result
 
     def fake_load_and_validate(path: Path, config: dict) -> NormalizedDialogue:
@@ -136,7 +155,7 @@ def _run_batch(
         result = outcomes[path.name]
         return _one_turn_dialogue(result.dialogue_id or path.stem)
 
-    monkeypatch.setattr(cli, "load_config", lambda _: _CONFIG)
+    monkeypatch.setattr(cli, "load_config", lambda _: runtime_config)
     monkeypatch.setattr(cli, "run_dialogue", fake_run_dialogue)
     monkeypatch.setattr(cli, "load_and_validate", fake_load_and_validate)
     monkeypatch.setattr(cli, "configure_logging", lambda *_: None)
@@ -175,6 +194,40 @@ def _failed(dialogue_id: str | None, message: str, error_type: str) -> PipelineR
     return PipelineResult(dialogue_id, "failed", message, error_type=error_type)
 
 
+def _higgs_config(
+    model_dir: str = "models/higgs",
+    reference_wav: str = "refs/caller.wav",
+) -> dict:
+    return {
+        "tts": {
+            "engine": "higgs",
+            "higgs": {
+                "server_executable": "tools/sgl-omni",
+                "model_dir": model_dir,
+                "voice_map": {
+                    "caller": {"reference_wav": reference_wav},
+                },
+            },
+        }
+    }
+
+
+def _cosyvoice_config() -> dict:
+    return {
+        "tts": {
+            "engine": "cosyvoice",
+            "cosyvoice": {
+                "voice_map": {
+                    "caller": {
+                        "prompt_wav": "refs/caller.wav",
+                        "prompt_text": "hello",
+                    }
+                }
+            },
+        }
+    }
+
+
 def _previous_entry(
     tmp_path: Path,
     filename: str,
@@ -208,9 +261,10 @@ def _previous_manifest(
     backend_identity: dict | None = None,
 ) -> dict:
     succeeded = sum(item["status"] == "success" for item in results)
+    identity = backend_identity or {"backend": "edge_tts"}
     manifest = {
         "status": status,
-        "backend": "edge_tts",
+        "backend": identity["backend"],
         "config_path": str(tmp_path / "config.yaml"),
         "input_root": str(tmp_path / "input"),
         "output_root": str(tmp_path / "output"),
@@ -221,7 +275,7 @@ def _previous_manifest(
     }
     if include_fingerprints:
         manifest["config_sha256"] = config_sha256 or _sha256_text(_CONFIG_TEXT)
-        manifest["backend_identity"] = backend_identity or {"backend": "edge_tts"}
+        manifest["backend_identity"] = identity
         manifest["resume_requested"] = False
     return manifest
 
@@ -463,6 +517,489 @@ def test_resume_skips_all_verified_completed_dialogues(
         "success",
         "success",
     ]
+
+
+def test_same_higgs_identity_resumes_completed_dialogue(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    reference = tmp_path / "caller.wav"
+    reference.write_bytes(b"stable reference")
+    config = _higgs_config(reference_wav=str(reference))
+    identity = cli.backend_identity(config)
+    assert identity["model_id"] == "bosonai/higgs-tts-3-4b"
+    assert identity["identity_complete"] is True
+    assert identity["references"]["caller"]["sha256"] == _sha256_file(reference)
+    _complete_dialogue_output(
+        tmp_path / "output", "A", engine="higgs", backend_identity=identity
+    )
+    previous = _previous_manifest(
+        tmp_path,
+        [_previous_entry(tmp_path, "a.json", "A", "success")],
+        status="success",
+        backend_identity=identity,
+    )
+
+    _, manifest, attempted = _run_batch(
+        tmp_path,
+        monkeypatch,
+        {"a.json": _success(tmp_path, "A")},
+        extra_args=["--resume"],
+        previous_manifest=previous,
+        config=config,
+    )
+
+    assert attempted == []
+    assert manifest["results"][0]["action"] == "skipped_completed"
+    assert manifest["backend_identity"] == identity
+
+
+def test_same_cosyvoice_identity_still_resumes_completed_dialogue(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = _cosyvoice_config()
+    identity = cli.backend_identity(config)
+    _complete_dialogue_output(
+        tmp_path / "output", "A", engine="cosyvoice", backend_identity=identity
+    )
+    previous = _previous_manifest(
+        tmp_path,
+        [_previous_entry(tmp_path, "a.json", "A", "success")],
+        status="success",
+        backend_identity=identity,
+    )
+
+    _, manifest, attempted = _run_batch(
+        tmp_path,
+        monkeypatch,
+        {"a.json": _success(tmp_path, "A")},
+        extra_args=["--resume"],
+        previous_manifest=previous,
+        config=config,
+    )
+
+    assert attempted == []
+    assert manifest["results"][0]["action"] == "skipped_completed"
+
+
+def test_cosyvoice_output_does_not_resume_as_higgs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    reference = tmp_path / "caller.wav"
+    reference.write_bytes(b"stable reference")
+    previous_config = _cosyvoice_config()
+    previous_identity = cli.backend_identity(previous_config)
+    _complete_dialogue_output(
+        tmp_path / "output",
+        "A",
+        engine="cosyvoice",
+        backend_identity=previous_identity,
+    )
+    previous = _previous_manifest(
+        tmp_path,
+        [_previous_entry(tmp_path, "a.json", "A", "success")],
+        status="success",
+        backend_identity=previous_identity,
+    )
+
+    _, manifest, attempted = _run_batch(
+        tmp_path,
+        monkeypatch,
+        {"a.json": _success(tmp_path, "A")},
+        extra_args=["--resume"],
+        previous_manifest=previous,
+        complete_outputs=True,
+        config=_higgs_config(reference_wav=str(reference)),
+    )
+
+    assert attempted == ["a.json"]
+    assert manifest["results"][0]["action"] == "rendered"
+    assert manifest["backend"] == "higgs"
+
+
+def test_higgs_output_does_not_resume_as_cosyvoice(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    reference = tmp_path / "caller.wav"
+    reference.write_bytes(b"stable reference")
+    previous_config = _higgs_config(reference_wav=str(reference))
+    previous_identity = cli.backend_identity(previous_config)
+    _complete_dialogue_output(
+        tmp_path / "output", "A", engine="higgs", backend_identity=previous_identity
+    )
+    previous = _previous_manifest(
+        tmp_path,
+        [_previous_entry(tmp_path, "a.json", "A", "success")],
+        status="success",
+        backend_identity=previous_identity,
+    )
+
+    _, manifest, attempted = _run_batch(
+        tmp_path,
+        monkeypatch,
+        {"a.json": _success(tmp_path, "A")},
+        extra_args=["--resume"],
+        previous_manifest=previous,
+        complete_outputs=True,
+        config=_cosyvoice_config(),
+    )
+
+    assert attempted == ["a.json"]
+    assert manifest["results"][0]["action"] == "rendered"
+    assert manifest["backend"] == "cosyvoice"
+
+
+def test_changed_higgs_backend_identity_does_not_resume(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    reference = tmp_path / "caller.wav"
+    reference.write_bytes(b"stable reference")
+    previous_identity = cli.backend_identity(
+        _higgs_config("models/higgs-v1", str(reference))
+    )
+    assert previous_identity["identity_complete"] is True
+    _complete_dialogue_output(
+        tmp_path / "output", "A", engine="higgs", backend_identity=previous_identity
+    )
+    previous = _previous_manifest(
+        tmp_path,
+        [_previous_entry(tmp_path, "a.json", "A", "success")],
+        status="success",
+        backend_identity=previous_identity,
+    )
+
+    _, manifest, attempted = _run_batch(
+        tmp_path,
+        monkeypatch,
+        {"a.json": _success(tmp_path, "A")},
+        extra_args=["--resume"],
+        previous_manifest=previous,
+        complete_outputs=True,
+        config=_higgs_config("models/higgs-v2", str(reference)),
+    )
+
+    assert attempted == ["a.json"]
+    assert manifest["results"][0]["action"] == "rendered"
+    assert manifest["backend_identity"]["model_dir"] == "models/higgs-v2"
+
+
+def test_higgs_reference_replacement_at_same_path_does_not_resume(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    reference = tmp_path / "caller.wav"
+    reference.write_bytes(b"first reference")
+    config = _higgs_config(reference_wav=str(reference))
+    previous_identity = cli.backend_identity(config)
+    assert previous_identity["identity_complete"] is True
+    _complete_dialogue_output(
+        tmp_path / "output", "A", engine="higgs", backend_identity=previous_identity
+    )
+    previous = _previous_manifest(
+        tmp_path,
+        [_previous_entry(tmp_path, "a.json", "A", "success")],
+        status="success",
+        backend_identity=previous_identity,
+    )
+    reference.write_bytes(b"replacement reference")
+
+    _, manifest, attempted = _run_batch(
+        tmp_path,
+        monkeypatch,
+        {"a.json": _success(tmp_path, "A")},
+        extra_args=["--resume"],
+        previous_manifest=previous,
+        complete_outputs=True,
+        config=config,
+    )
+
+    assert attempted == ["a.json"]
+    assert manifest["results"][0]["action"] == "rendered"
+    assert manifest["backend_identity"]["references"] != previous_identity["references"]
+    assert manifest["backend_identity"]["identity_complete"] is True
+
+
+def test_current_higgs_reference_hash_failure_never_resumes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    reference = tmp_path / "caller.wav"
+    reference.write_bytes(b"stable reference")
+    config = _higgs_config(reference_wav=str(reference))
+    previous_identity = cli.backend_identity(config)
+    _complete_dialogue_output(
+        tmp_path / "output", "A", engine="higgs", backend_identity=previous_identity
+    )
+    previous = _previous_manifest(
+        tmp_path,
+        [_previous_entry(tmp_path, "a.json", "A", "success")],
+        status="success",
+        backend_identity=previous_identity,
+    )
+
+    def unreadable_reference(path: Path) -> str:
+        raise OSError(f"cannot read {path}")
+
+    monkeypatch.setattr(tts_engine, "_reference_sha256", unreadable_reference)
+
+    _, manifest, attempted = _run_batch(
+        tmp_path,
+        monkeypatch,
+        {"a.json": _success(tmp_path, "A")},
+        extra_args=["--resume"],
+        previous_manifest=previous,
+        complete_outputs=True,
+        config=config,
+    )
+
+    assert attempted == ["a.json"]
+    assert manifest["results"][0]["action"] == "rendered"
+    assert manifest["backend_identity"]["identity_complete"] is False
+    assert manifest["backend_identity"]["references"]["caller"]["sha256"] is None
+
+
+def test_persisted_incomplete_higgs_identity_never_resumes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    reference = tmp_path / "caller.wav"
+    reference.write_bytes(b"stable reference")
+    config = _higgs_config(reference_wav=str(reference))
+    current_identity = cli.backend_identity(config)
+    incomplete_identity = copy.deepcopy(current_identity)
+    incomplete_identity["identity_complete"] = False
+    incomplete_identity["references"]["caller"]["sha256"] = None
+    _complete_dialogue_output(
+        tmp_path / "output", "A", engine="higgs", backend_identity=incomplete_identity
+    )
+    previous = _previous_manifest(
+        tmp_path,
+        [_previous_entry(tmp_path, "a.json", "A", "success")],
+        status="success",
+        backend_identity=incomplete_identity,
+    )
+
+    _, manifest, attempted = _run_batch(
+        tmp_path,
+        monkeypatch,
+        {"a.json": _success(tmp_path, "A")},
+        extra_args=["--resume"],
+        previous_manifest=previous,
+        complete_outputs=True,
+        config=config,
+    )
+
+    assert attempted == ["a.json"]
+    assert manifest["results"][0]["action"] == "rendered"
+    assert manifest["backend_identity"] == current_identity
+
+
+def test_both_incomplete_higgs_identities_never_resume_on_null_hash_equality(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    reference = tmp_path / "caller.wav"
+    reference.write_bytes(b"stable reference")
+    config = _higgs_config(reference_wav=str(reference))
+
+    def unreadable_reference(path: Path) -> str:
+        raise OSError(f"cannot read {path}")
+
+    monkeypatch.setattr(tts_engine, "_reference_sha256", unreadable_reference)
+    incomplete_identity = cli.backend_identity(config)
+    assert incomplete_identity["identity_complete"] is False
+    _complete_dialogue_output(
+        tmp_path / "output", "A", engine="higgs", backend_identity=incomplete_identity
+    )
+    previous = _previous_manifest(
+        tmp_path,
+        [_previous_entry(tmp_path, "a.json", "A", "success")],
+        status="success",
+        backend_identity=incomplete_identity,
+    )
+
+    _, manifest, attempted = _run_batch(
+        tmp_path,
+        monkeypatch,
+        {"a.json": _success(tmp_path, "A")},
+        extra_args=["--resume"],
+        previous_manifest=previous,
+        complete_outputs=True,
+        config=config,
+    )
+
+    assert attempted == ["a.json"]
+    assert manifest["results"][0]["action"] == "rendered"
+    assert manifest["backend_identity"] == incomplete_identity
+
+
+def test_changed_higgs_mapping_identity_does_not_resume(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    reference = tmp_path / "caller.wav"
+    reference.write_bytes(b"stable reference")
+    config = _higgs_config(reference_wav=str(reference))
+    current_identity = cli.backend_identity(config)
+    assert current_identity["identity_complete"] is True
+    previous_identity = copy.deepcopy(current_identity)
+    previous_identity["control_mapping"]["provenance"]["contract_sha256"] = "0" * 64
+    _complete_dialogue_output(
+        tmp_path / "output", "A", engine="higgs", backend_identity=previous_identity
+    )
+    previous = _previous_manifest(
+        tmp_path,
+        [_previous_entry(tmp_path, "a.json", "A", "success")],
+        status="success",
+        backend_identity=previous_identity,
+    )
+
+    _, manifest, attempted = _run_batch(
+        tmp_path,
+        monkeypatch,
+        {"a.json": _success(tmp_path, "A")},
+        extra_args=["--resume"],
+        previous_manifest=previous,
+        complete_outputs=True,
+        config=config,
+    )
+
+    assert attempted == ["a.json"]
+    assert manifest["results"][0]["action"] == "rendered"
+    assert manifest["backend_identity"] == current_identity
+
+
+def test_mismatched_metadata_backend_identity_forces_higgs_retry(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    reference = tmp_path / "caller.wav"
+    reference.write_bytes(b"stable reference")
+    config = _higgs_config(reference_wav=str(reference))
+    identity = cli.backend_identity(config)
+    wrong_identity = copy.deepcopy(identity)
+    wrong_identity["model_dir"] = "models/other-higgs"
+    _complete_dialogue_output(
+        tmp_path / "output", "A", engine="higgs", backend_identity=wrong_identity
+    )
+    previous = _previous_manifest(
+        tmp_path,
+        [_previous_entry(tmp_path, "a.json", "A", "success")],
+        status="success",
+        backend_identity=identity,
+    )
+
+    _, manifest, attempted = _run_batch(
+        tmp_path,
+        monkeypatch,
+        {"a.json": _success(tmp_path, "A")},
+        extra_args=["--resume"],
+        previous_manifest=previous,
+        complete_outputs=True,
+        config=config,
+    )
+
+    assert attempted == ["a.json"]
+    assert manifest["results"][0]["action"] == "retried"
+
+
+def test_incomplete_metadata_higgs_identity_forces_retry(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    reference = tmp_path / "caller.wav"
+    reference.write_bytes(b"stable reference")
+    config = _higgs_config(reference_wav=str(reference))
+    identity = cli.backend_identity(config)
+    incomplete_identity = copy.deepcopy(identity)
+    incomplete_identity["identity_complete"] = False
+    incomplete_identity["references"]["caller"]["sha256"] = None
+    _complete_dialogue_output(
+        tmp_path / "output", "A", engine="higgs", backend_identity=incomplete_identity
+    )
+    previous = _previous_manifest(
+        tmp_path,
+        [_previous_entry(tmp_path, "a.json", "A", "success")],
+        status="success",
+        backend_identity=identity,
+    )
+
+    _, manifest, attempted = _run_batch(
+        tmp_path,
+        monkeypatch,
+        {"a.json": _success(tmp_path, "A")},
+        extra_args=["--resume"],
+        previous_manifest=previous,
+        complete_outputs=True,
+        config=config,
+    )
+
+    assert attempted == ["a.json"]
+    assert manifest["results"][0]["action"] == "retried"
+
+
+def test_mismatched_metadata_engine_forces_higgs_retry(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    reference = tmp_path / "caller.wav"
+    reference.write_bytes(b"stable reference")
+    config = _higgs_config(reference_wav=str(reference))
+    identity = cli.backend_identity(config)
+    _complete_dialogue_output(
+        tmp_path / "output", "A", engine="cosyvoice", backend_identity=identity
+    )
+    previous = _previous_manifest(
+        tmp_path,
+        [_previous_entry(tmp_path, "a.json", "A", "success")],
+        status="success",
+        backend_identity=identity,
+    )
+
+    _, manifest, attempted = _run_batch(
+        tmp_path,
+        monkeypatch,
+        {"a.json": _success(tmp_path, "A")},
+        extra_args=["--resume"],
+        previous_manifest=previous,
+        complete_outputs=True,
+        config=config,
+    )
+
+    assert attempted == ["a.json"]
+    assert manifest["results"][0]["action"] == "retried"
+
+
+@pytest.mark.parametrize(
+    "tts_metadata",
+    [None, {}, {"engine": "higgs"}, "corrupt"],
+)
+def test_missing_or_corrupt_metadata_identity_forces_higgs_retry(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    tts_metadata: object,
+) -> None:
+    reference = tmp_path / "caller.wav"
+    reference.write_bytes(b"stable reference")
+    config = _higgs_config(reference_wav=str(reference))
+    identity = cli.backend_identity(config)
+    out_dir = _complete_dialogue_output(
+        tmp_path / "output", "A", engine="higgs", backend_identity=identity
+    )
+    metadata_path = out_dir / "A_metadata.json"
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    metadata["tts"] = tts_metadata
+    metadata_path.write_text(json.dumps(metadata), encoding="utf-8")
+    previous = _previous_manifest(
+        tmp_path,
+        [_previous_entry(tmp_path, "a.json", "A", "success")],
+        status="success",
+        backend_identity=identity,
+    )
+
+    _, manifest, attempted = _run_batch(
+        tmp_path,
+        monkeypatch,
+        {"a.json": _success(tmp_path, "A")},
+        extra_args=["--resume"],
+        previous_manifest=previous,
+        complete_outputs=True,
+        config=config,
+    )
+
+    assert attempted == ["a.json"]
+    assert manifest["results"][0]["action"] == "retried"
 
 
 def test_resume_retries_previous_failure_and_skips_completed(

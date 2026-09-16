@@ -13,6 +13,7 @@ from tts5703.cosyvoice_controls import (
     COSYVOICE_CONTROL_MAPPING_VERSION,
     build_cosyvoice_instruction,
 )
+from tts5703.higgs_controls import resolve_higgs_controls
 from tts5703.metadata import build_metadata
 from tts5703.tts_engine import describe_engine
 
@@ -63,6 +64,197 @@ def _metadata(timing: TurnTiming, engine_info: dict) -> dict:
 def _turn_metadata(timing: TurnTiming, config_path: Path) -> dict:
     engine_info = describe_engine(load_config(config_path))
     return _metadata(timing, engine_info)["turns"][0]
+
+
+def _higgs_engine_info(reference_wav: str = "refs/caller.wav") -> dict:
+    return describe_engine(
+        {
+            "tts": {
+                "engine": "higgs",
+                "higgs": {
+                    "server_executable": "tools/sgl-omni",
+                    "model_dir": "models/higgs",
+                    "voice_map": {
+                        "caller": {"reference_wav": reference_wav},
+                    },
+                },
+            }
+        }
+    )
+
+
+def _nested_keys(value: object) -> set[str]:
+    keys: set[str] = set(value) if isinstance(value, dict) else set()
+    if isinstance(value, dict):
+        items = value.values()
+    elif isinstance(value, list):
+        items = value
+    else:
+        items = []
+    for item in items:
+        keys.update(_nested_keys(item))
+    return keys
+
+
+def test_higgs_engine_metadata_records_frozen_mapping_identity() -> None:
+    metadata = _metadata(_timing(), _higgs_engine_info())
+    mapping = metadata["tts"]["control_mapping"]
+
+    assert metadata["tts"]["engine"] == "higgs"
+    assert metadata["tts"]["model_id"] == "bosonai/higgs-tts-3-4b"
+    assert metadata["tts"]["backend_identity"]["model_id"] == ("bosonai/higgs-tts-3-4b")
+    assert mapping == {
+        "mapping_version": "controlled_tts_v1",
+        "release_status": "PROVISIONAL_PRODUCTION_MAPPING_WEEK6_FREEZE",
+        "provenance": {
+            "source_repository": "ginkgoyin/comp5703-tts-experiments",
+            "source_commit": "7b005135e148fad8a142f39dc8be3144c3e5adcc",
+            "contract_sha256": (
+                "4e787a5363d01e5454a8031c59bb1d4bb454ee37d44ccf262d471c7ce30ba799"
+            ),
+        },
+    }
+    assert metadata["tts"]["runtime_verification"] == "not_runtime_verified"
+
+
+def test_higgs_metadata_preserves_resolver_semantics_for_low_warm_override() -> None:
+    timing = _timing(arousal="low", coarse_affect="warm")
+    turn = _metadata(timing, _higgs_engine_info())["turns"][0]
+    expected = resolve_higgs_controls(
+        text=timing.text,
+        rate=timing.rate,
+        arousal=timing.arousal,
+        coarse_affect=timing.coarse_affect,
+        pause_before_ms=timing.pause_before_ms,
+        pause_after_ms=timing.pause_after_ms,
+        speaker_id=timing.speaker,
+    )
+
+    resolution = turn["control_resolution"]
+    assert resolution["backend"] == "higgs"
+    assert resolution["requested"] == {
+        "rate": "slow",
+        "arousal": "low",
+        "coarse_affect": "warm",
+        "pause_before_ms": 150,
+        "pause_after_ms": 700,
+    }
+    assert resolution["higgs"] == expected["higgs"]
+    assert resolution["higgs"]["prefix_tokens"] == ["<|emotion:contentment|>"]
+    assert resolution["higgs"]["model_input"] == (
+        "<|emotion:contentment|>Please stay with me."
+    )
+    assert resolution["combination_override"] == expected["combination_override"]
+    assert resolution["combination_override"]["id"] == "low_warm_contentment"
+    assert resolution["provenance"] == expected["provenance"]
+
+
+@pytest.mark.parametrize(
+    ("rate", "enabled", "factor", "execution_status"),
+    [
+        ("slow", True, 0.85, "executed"),
+        ("normal", False, None, "not_required"),
+        ("fast", True, 1.15, "executed"),
+    ],
+)
+def test_higgs_final_metadata_records_applied_rate_state(
+    rate: str, enabled: bool, factor: float | None, execution_status: str
+) -> None:
+    resolution = _metadata(_timing(rate=rate), _higgs_engine_info())["turns"][0][
+        "control_resolution"
+    ]
+
+    assert resolution["postprocess"]["rate"] == {
+        "processor": "ffmpeg_atempo",
+        "enabled": enabled,
+        "factor": factor,
+        "execution_status": execution_status,
+    }
+    assert resolution["realization"]["speaking_rate"]["native_token"] is None
+    assert (
+        resolution["realization"]["speaking_rate"]["execution_status"]
+        == execution_status
+    )
+    assert not any(
+        "rate postprocessing" in caveat and "not been executed" in caveat
+        for caveat in resolution["caveats"]
+    )
+
+
+@pytest.mark.parametrize("rate", ["slow", "normal", "fast"])
+def test_higgs_resolver_remains_a_pre_execution_plan(rate: str) -> None:
+    resolution = resolve_higgs_controls(
+        text="Please stay with me.",
+        rate=rate,
+        arousal=None,
+        coarse_affect=None,
+        pause_before_ms=150,
+        pause_after_ms=700,
+        speaker_id="caller",
+    )
+
+    assert resolution["postprocess"]["rate"]["execution_status"] == "not_executed"
+    assert (
+        resolution["realization"]["speaking_rate"]["execution_status"] == "not_executed"
+    )
+    assert any("not been executed" in caveat for caveat in resolution["caveats"])
+
+
+def test_higgs_metadata_keeps_pauses_pipeline_owned_and_unavailable_fields_explicit() -> (
+    None
+):
+    resolution = _metadata(_timing(), _higgs_engine_info())["turns"][0][
+        "control_resolution"
+    ]
+
+    assert resolution["postprocess"]["turn_boundary_pauses"] == {
+        "owner": "pipeline_assembly",
+        "pause_before_ms": 150,
+        "pause_after_ms": 700,
+        "audio_insertion_planned": False,
+    }
+    assert resolution["unrepresented_controls"] == {
+        field: {
+            "availability": "not_represented_by_current_canonical",
+            "realization": None,
+        }
+        for field in ("pause_within_count", "hesitation_count", "best_effort")
+    }
+
+
+def test_higgs_metadata_traces_speaker_reference_without_invented_inputs(
+    tmp_path: Path,
+) -> None:
+    reference = tmp_path / "caller-reference.wav"
+    reference.write_bytes(b"stable fake reference")
+    metadata = _metadata(_timing(), _higgs_engine_info(str(reference)))
+    turn = metadata["turns"][0]
+
+    assert turn["speaker_reference"] == {
+        "speaker_id": "caller",
+        "reference_wav": str(reference),
+        "sha256": "61f5fa5c6935fe571f420dad9446253b14fe2810b53890a95601302ca2994a2d",
+    }
+    assert metadata["tts"]["backend_identity"]["identity_complete"] is True
+    assert {"transcript", "reference_transcript", "seed", "embedding"}.isdisjoint(
+        _nested_keys(metadata)
+    )
+
+
+def test_higgs_absent_affect_controls_remain_not_requested() -> None:
+    resolution = _metadata(
+        _timing(arousal=None, coarse_affect=None), _higgs_engine_info()
+    )["turns"][0]["control_resolution"]
+    not_requested = {
+        "requested": None,
+        "method": "not_requested",
+        "status": None,
+        "token": None,
+    }
+
+    assert resolution["realization"]["arousal"] == not_requested
+    assert resolution["realization"]["coarse_affect"] == not_requested
+    assert resolution["combination_override"] is None
 
 
 def test_kokoro_marks_requested_arousal_as_ignored_but_preserves_it() -> None:
