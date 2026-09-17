@@ -110,3 +110,28 @@ def test_policy_hash_is_semantic_not_format_or_key_order_dependent(
 def test_no_production_corpus_id_is_embedded_in_policy_module() -> None:
     source = Path("src/tts5703/exclusion_policy.py").read_text(encoding="utf-8")
     assert "corpus_v1_" not in source
+
+
+def test_policy_json_rejects_duplicate_object_keys(tmp_path: Path) -> None:
+    path = tmp_path / "duplicate.json"
+    path.write_text(
+        '{"schema_version":"1.0","exclusions":[],"exclusions":[]}',
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ExclusionPolicyError, match="duplicate object key"):
+        load_exclusion_policy(path)
+
+
+@pytest.mark.parametrize("constant", ["NaN", "Infinity", "-Infinity"])
+def test_policy_json_rejects_non_json_numeric_constants(
+    tmp_path: Path, constant: str
+) -> None:
+    path = tmp_path / "constant.json"
+    path.write_text(
+        '{"schema_version":"1.0","exclusions":[],"extra":' + constant + "}",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ExclusionPolicyError, match="invalid JSON constant"):
+        load_exclusion_policy(path)

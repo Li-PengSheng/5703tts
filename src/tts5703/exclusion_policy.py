@@ -17,6 +17,10 @@ class ExclusionPolicyError(ValueError):
     """Raised when an exclusion policy is invalid."""
 
 
+class _DuplicateKeyError(ValueError):
+    pass
+
+
 @dataclass(frozen=True)
 class DialogueExclusion:
     dialogue_id: str
@@ -72,6 +76,19 @@ def _copy_exclusion(item: DialogueExclusion) -> DialogueExclusion:
     )
 
 
+def _object_without_duplicates(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise _DuplicateKeyError(f"duplicate object key {key!r}")
+        result[key] = value
+    return result
+
+
+def _reject_non_json_constant(value: str) -> None:
+    raise ValueError(f"invalid JSON constant {value}")
+
+
 def parse_exclusion_policy(raw: dict[str, Any]) -> ExclusionPolicy:
     if not isinstance(raw, dict):
         raise ExclusionPolicyError("Exclusion policy must be a JSON object")
@@ -118,9 +135,13 @@ def parse_exclusion_policy(raw: dict[str, Any]) -> ExclusionPolicy:
 
 def load_exclusion_policy(path: Path) -> ExclusionPolicy:
     try:
-        raw = json.loads(path.read_text(encoding="utf-8"))
+        raw = json.loads(
+            path.read_text(encoding="utf-8"),
+            object_pairs_hook=_object_without_duplicates,
+            parse_constant=_reject_non_json_constant,
+        )
     except FileNotFoundError as error:
         raise ExclusionPolicyError(f"Exclusion policy not found: {path}") from error
-    except json.JSONDecodeError as error:
+    except ValueError as error:
         raise ExclusionPolicyError(f"Invalid exclusion policy JSON: {error}") from error
     return parse_exclusion_policy(raw)
