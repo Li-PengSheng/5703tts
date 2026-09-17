@@ -1,0 +1,71 @@
+{
+  "mapping_version": "controlled_tts_v1",
+  "provenance": {
+    "source_repository": "ginkgoyin/comp5703-tts-experiments",
+    "source_commit": "7b005135e148fad8a142f39dc8be3144c3e5adcc",
+    "contract_sha256": "4e787a5363d01e5454a8031c59bb1d4bb454ee37d44ccf262d471c7ce30ba799"
+  },
+  "cases": [
+    {
+      "id": "baseline_missing_best_effort",
+      "turn": {"turn_id": "baseline_missing_best_effort", "speaker": "User", "text": "A complete sentence. Another sentence.", "acoustic": {"required": {"rate": "normal", "arousal": 2, "affect": "neutral", "pause_before": "none", "pause_within": 0, "hesitations": 0}}},
+      "plan_sha256": "fbc74162f1534efd60518603ab099b7a571d4705715160129275dc381d59497b"
+    },
+    {
+      "id": "slow_low_sad_joint",
+      "turn": {"turn_id": "slow_low_sad_joint", "speaker": "User", "text": "A complete sentence. Another sentence.", "acoustic": {"required": {"rate": "slow", "arousal": 1, "affect": "sad", "pause_before": "short", "pause_within": 0, "hesitations": 0}, "best_effort": {"affect_fine": "hopeless", "volume": "soft", "flattened_affect": false, "events": ["door"]}}},
+      "plan_sha256": "50da10f33c93d6b7edc1e1ad1a81c543ebe4c16a386f4a8a9a1442e647e82e4e"
+    },
+    {
+      "id": "fast_high_angry_long",
+      "turn": {"turn_id": "fast_high_angry_long", "speaker": "User", "text": "A complete sentence. Another sentence.", "acoustic": {"required": {"rate": "fast", "arousal": 3, "affect": "angry", "pause_before": "long", "pause_within": 0, "hesitations": 0}, "best_effort": {"affect_fine": null, "volume": null, "flattened_affect": null, "events": []}}},
+      "dialogue_context": {"dialogue_id": "dialogue-golden", "scenario": {"speakers": {"caller": {"speaker_id": "C000"}, "counsellor": {"speaker_id": "L000"}}}, "known_issue": {"id": "synthetic-known-issue"}},
+      "plan_sha256": "ae72e578819d1eebd487a7564fb59339b63de4fb70b1723920fc867120b83b49"
+    },
+    {
+      "id": "low_warm_override",
+      "turn": {"turn_id": "low_warm_override", "speaker": "User", "text": "A complete sentence. Another sentence.", "acoustic": {"required": {"rate": "normal", "arousal": 1, "affect": "warm", "pause_before": "none", "pause_within": 0, "hesitations": 0}, "best_effort": {"affect_fine": null, "volume": null, "flattened_affect": null, "events": []}}},
+      "plan_sha256": "4e423ffb6e3e80682729006432890d1c24a34df1c7a38a535758160585207134"
+    },
+    {
+      "id": "medium_anxious",
+      "turn": {"turn_id": "medium_anxious", "speaker": "User", "text": "A complete sentence. Another sentence.", "acoustic": {"required": {"rate": "normal", "arousal": 2, "affect": "anxious", "pause_before": "none", "pause_within": 0, "hesitations": 0}, "best_effort": {"affect_fine": "fearful", "volume": null, "flattened_affect": false, "events": []}}},
+      "plan_sha256": "67d7385cae0bff60f886883ca7605c43e32c59c06c3c87766462e4cebfc51384"
+    },
+    {
+      "id": "hesitation_one",
+      "turn": {"turn_id": "hesitation_one", "speaker": "User", "text": "First sentence. A second sentence.", "acoustic": {"required": {"rate": "normal", "arousal": 2, "affect": "neutral", "pause_before": "none", "pause_within": 0, "hesitations": 1}, "best_effort": {"affect_fine": null, "volume": null, "flattened_affect": null, "events": []}}},
+      "plan_sha256": "7e567a285a4a58d862858f5e8f6605814448b6e2ed97c80b41733394e56efc78"
+    },
+    {
+      "id": "hesitation_two",
+      "turn": {"turn_id": "hesitation_two", "speaker": "User", "text": "Earlier, perhaps this works. Later it ends.", "acoustic": {"required": {"rate": "normal", "arousal": 2, "affect": "neutral", "pause_before": "none", "pause_within": 0, "hesitations": 2}, "best_effort": {"affect_fine": null, "volume": null, "flattened_affect": null, "events": []}}},
+      "plan_sha256": "1f34b66469a3ab759913f9e5a8a38be32f24c17d6ef2259949f95167c7775ab5"
+    },
+    {
+      "id": "pause_one",
+      "turn": {"turn_id": "pause_one", "speaker": "User", "text": "alpha beta gamma", "acoustic": {"required": {"rate": "normal", "arousal": 2, "affect": "neutral", "pause_before": "none", "pause_within": 1, "hesitations": 0}, "best_effort": {"affect_fine": null, "volume": null, "flattened_affect": null, "events": []}}},
+      "plan_sha256": "68e786f599692ab3ca58f3833f952dd5387ff86b2135d5067a5c9c2930f4f3ae"
+    },
+    {
+      "id": "pause_multiple",
+      "turn": {"turn_id": "pause_multiple", "speaker": "User", "text": "First. Second. Third.", "acoustic": {"required": {"rate": "normal", "arousal": 2, "affect": "neutral", "pause_before": "none", "pause_within": 2, "hesitations": 0}, "best_effort": {"affect_fine": null, "volume": null, "flattened_affect": null, "events": []}}},
+      "plan_sha256": "83d57200e9e1f3a47771d16b3e775a375f41f345fe61814cab469aee89fd6a6f"
+    },
+    {
+      "id": "hesitation_pause_order",
+      "turn": {"turn_id": "hesitation_pause_order", "speaker": "User", "text": "First. Second", "acoustic": {"required": {"rate": "normal", "arousal": 2, "affect": "neutral", "pause_before": "none", "pause_within": 1, "hesitations": 2}, "best_effort": {"affect_fine": null, "volume": null, "flattened_affect": null, "events": []}}},
+      "plan_sha256": "6c744ddbf563877fd88eed787690f7f5b29265fd538126553e79b4708e6fcc58"
+    },
+    {
+      "id": "edge_fallback",
+      "turn": {"turn_id": "edge_fallback", "speaker": "User", "text": "Help", "acoustic": {"required": {"rate": "normal", "arousal": 2, "affect": "neutral", "pause_before": "none", "pause_within": 2, "hesitations": 2}, "best_effort": {"affect_fine": null, "volume": null, "flattened_affect": null, "events": []}}},
+      "plan_sha256": "ef3672f5cb9e4282deb57cde6d395e1c2eba2be71a98518ead52efb0542f62ea"
+    },
+    {
+      "id": "listener_neutral",
+      "turn": {"turn_id": "listener_neutral", "speaker": "Listener", "text": "A complete sentence. Another sentence.", "acoustic": {"required": {"rate": "normal", "arousal": 2, "affect": "neutral", "pause_before": "none", "pause_within": 0, "hesitations": 0}, "best_effort": {"affect_fine": null, "volume": null, "flattened_affect": null, "events": []}}},
+      "plan_sha256": "2e289307d63f93cd91371b19935e4471a3aedc2c6ba12239632dce4ca6085435"
+    }
+  ]
+}
