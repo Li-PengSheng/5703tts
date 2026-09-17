@@ -1,6 +1,7 @@
 """Backend identity and metadata descriptions without runtime side effects."""
 
 import hashlib
+from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
@@ -16,9 +17,12 @@ from .higgs_controls import (
     HIGGS_CONTROL_SOURCE_REPOSITORY,
     load_higgs_control_contract,
 )
+from .higgs_worker import FROZEN_GENERATION_FIELDS
+from .render_plan import PreparedDialogue
 
 _COSYVOICE3_EXPECTED_SAMPLE_RATE = 24_000
 _SAMPLE_RATE_NOT_RUNTIME_VERIFIED = "not_runtime_verified"
+CONTROLLED_TTS_V1_IMPLEMENTATION_ID = "controlled_tts_v1_prod_1"
 
 
 def _project_root() -> Path:
@@ -102,6 +106,71 @@ def backend_identity(config: dict[str, Any]) -> dict[str, Any]:
             }
         )
     return identity
+
+
+def final_controlled_tts_backend_identity(
+    config: dict[str, Any], dialogue: PreparedDialogue
+) -> dict[str, Any]:
+    """Describe final-plan Higgs execution without consulting ``voice_map``."""
+    engine = get_engine(config)
+    if engine != "higgs":
+        raise ValueError(
+            "Controlled TTS v1 backend identity requires tts.engine='higgs'"
+        )
+    higgs = config["tts"]["higgs"]
+    contract = load_higgs_control_contract()
+    references: dict[str, dict[str, str]] = {}
+    for turn in dialogue.turns:
+        reference = {
+            "reference_wav": turn.reference_wav,
+            "sha256": turn.reference_sha256,
+        }
+        existing = references.setdefault(turn.render_speaker_id, reference)
+        if existing != reference:
+            raise ValueError(
+                "Prepared dialogue assigns conflicting approved references to "
+                f"{turn.render_speaker_id!r}"
+            )
+    return {
+        "backend": "higgs",
+        "model_id": contract["model"]["model_id"],
+        "model_dir": higgs["model_dir"],
+        "server_executable": higgs["server_executable"],
+        "ffmpeg_bin": higgs.get("ffmpeg_bin", "ffmpeg"),
+        "control_mapping": {
+            **_higgs_mapping_identity(),
+            "implementation_id": CONTROLLED_TTS_V1_IMPLEMENTATION_ID,
+        },
+        "generation_profile": deepcopy(FROZEN_GENERATION_FIELDS),
+        "references": references,
+        "identity_complete": True,
+    }
+
+
+def describe_final_controlled_tts_engine(
+    config: dict[str, Any], dialogue: PreparedDialogue
+) -> dict[str, Any]:
+    """Return the final Controlled TTS v1 engine snapshot for metadata."""
+    identity = final_controlled_tts_backend_identity(config, dialogue)
+    higgs = config["tts"]["higgs"]
+    return {
+        "engine": "higgs",
+        "mode": "prepared_controlled_tts_v1",
+        "backend_identity": identity,
+        "model_id": identity["model_id"],
+        "control_mapping": identity["control_mapping"],
+        "generation_profile": deepcopy(identity["generation_profile"]),
+        "runtime": {
+            "server_executable": higgs["server_executable"],
+            "host": higgs.get("host", "127.0.0.1"),
+            "port": higgs.get("port", 18080),
+            "startup_timeout_seconds": higgs.get("startup_timeout_seconds", 900),
+            "inference_timeout_seconds": higgs.get("inference_timeout_seconds", 300),
+            "ffmpeg_bin": higgs.get("ffmpeg_bin", "ffmpeg"),
+        },
+        "runtime_verification": "not_runtime_verified",
+        "references": deepcopy(identity["references"]),
+    }
 
 
 def describe_engine(config: dict[str, Any]) -> dict[str, Any]:
