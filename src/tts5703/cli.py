@@ -12,14 +12,33 @@ from pathlib import Path
 from typing import Any
 
 from .backend_info import backend_identity
+from .batch_identity import (
+    FINAL_BATCH_MANIFEST_VERSION,
+    final_backend_identity,
+    render_fingerprint,
+    render_fingerprint_components,
+)
 from .config import load_config
-from .pipeline import PipelineResult, run_dialogue
+from .exclusion_policy import ExclusionPolicy, load_exclusion_policy
+from .final_input import (
+    FinalInputValidationError,
+    SchemaFamily,
+    SchemaFamilyError,
+    detect_schema_family,
+    validate_final_dialogue,
+)
+from .input_records import InputRecord, InputRecordFailure, read_input_records
+from .pipeline import PipelineResult, run_dialogue, run_final_dialogue
 from .qc import run_qc
 from .validate import ValidationError, load_and_validate
 
 _RENDERED = "rendered"
 _RETRIED = "retried"
 _SKIPPED_COMPLETED = "skipped_completed"
+_FINAL_RESUMED = "resumed"
+_FINAL_EXCLUDED = "excluded_known_issue"
+_FINAL_INPUT_ERROR = "input_error"
+_FINAL_RENDER_FAILED = "render_failed"
 _RESUME_MANIFEST_HINT = "Repair or remove this file, or run without --resume to ignore previous batch state."
 
 
@@ -151,6 +170,20 @@ def _load_previous_batch_result(path: Path) -> dict[str, Any] | None:
             f"{_RESUME_MANIFEST_HINT}"
         ) from error
     if (
+        isinstance(manifest, dict)
+        and manifest.get("manifest_version") == FINAL_BATCH_MANIFEST_VERSION
+    ):
+        if manifest.get("status") not in {
+            "success",
+            "partial_failure",
+            "failure",
+        } or not isinstance(manifest.get("results"), list):
+            raise RuntimeError(
+                f"Cannot resume from malformed batch result: {path}. "
+                f"{_RESUME_MANIFEST_HINT}"
+            )
+        return manifest
+    if (
         not isinstance(manifest, dict)
         or manifest.get("status") not in {"success", "partial_failure", "failure"}
         or not isinstance(manifest.get("results"), list)
@@ -270,8 +303,469 @@ def _verified_completed_result(
     return PipelineResult(dialogue.dialogue_id, "success", qc=qc, out_dir=out_dir)
 
 
+def _discover_cli_containers(input_path: Path) -> list[Path]:
+    """Discover the final-capable top-level JSON/JSONL candidate set."""
+    if input_path.is_file():
+        if input_path.suffix.lower() not in {".json", ".jsonl"}:
+            raise RuntimeError(f"Unsupported input file type: {input_path}")
+        return [input_path]
+    if not input_path.is_dir():
+        return []
+    return sorted(
+        (
+            path
+            for path in input_path.iterdir()
+            if path.is_file() and path.suffix.lower() in {".json", ".jsonl"}
+        ),
+        key=lambda path: path.as_posix(),
+    )
+
+
+def _discover_legacy_json_files(input_path: Path) -> list[Path]:
+    """Preserve the legacy renderer's explicit/top-level JSON-only input set."""
+    if input_path.is_file():
+        return [input_path] if input_path.suffix.lower() == ".json" else []
+    if not input_path.is_dir():
+        return []
+    return sorted(input_path.glob("*.json"))
+
+
+def _read_cli_records(
+    containers: list[Path],
+) -> list[InputRecord | InputRecordFailure]:
+    records: list[InputRecord | InputRecordFailure] = []
+    for path in containers:
+        records.extend(read_input_records(path))
+    return records
+
+
+def _require_unique_record_ids(records: list[InputRecord]) -> None:
+    locations: dict[str, list[str]] = {}
+    for record in records:
+        location = str(record.container_path)
+        if record.line_number is not None:
+            location += f":{record.line_number}"
+        locations.setdefault(record.dialogue_id, []).append(location)
+    duplicates = {
+        dialogue_id: values
+        for dialogue_id, values in locations.items()
+        if len(values) > 1
+    }
+    if duplicates:
+        lines = ["Duplicate dialogue_id values were found in this final batch."]
+        for dialogue_id in sorted(duplicates):
+            lines.append(f"Duplicate dialogue_id {dialogue_id!r} found in:")
+            lines.extend(f"- {location}" for location in duplicates[dialogue_id])
+        raise RuntimeError("\n".join(lines))
+
+
+def _is_final_batch(input_path: Path, records: list[InputRecord]) -> bool:
+    families: set[SchemaFamily] = set()
+    for record in records:
+        try:
+            families.add(detect_schema_family(record.raw))
+        except SchemaFamilyError:
+            continue
+    if SchemaFamily.FINAL_NESTED in families and len(families) > 1:
+        raise RuntimeError(
+            "Cannot mix final nested and legacy/v0.2 records in one batch"
+        )
+    if SchemaFamily.FINAL_NESTED in families:
+        return True
+    return input_path.is_file() and input_path.suffix.lower() == ".jsonl"
+
+
+def _safe_dialogue_output_path(output_root: Path, dialogue_id: str) -> Path:
+    """Return one direct child output path or reject unsafe dialogue IDs."""
+    if (
+        not isinstance(dialogue_id, str)
+        or not dialogue_id.strip()
+        or dialogue_id in {".", ".."}
+        or "/" in dialogue_id
+        or "\\" in dialogue_id
+        or Path(dialogue_id).is_absolute()
+    ):
+        raise RuntimeError(f"Unsafe final dialogue_id for output path: {dialogue_id!r}")
+    root = output_root.resolve()
+    candidate = (root / dialogue_id).resolve()
+    if candidate.parent != root or not candidate.is_relative_to(root):
+        raise RuntimeError(f"Final dialogue_id escapes output root: {dialogue_id!r}")
+    return candidate
+
+
+class _DuplicateJsonKeyError(ValueError):
+    pass
+
+
+def _strict_json_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise _DuplicateJsonKeyError(f"duplicate object key {key!r}")
+        result[key] = value
+    return result
+
+
+def _reject_json_constant(value: str) -> None:
+    raise ValueError(f"invalid JSON constant {value}")
+
+
+def _load_final_sidecar(path: Path) -> tuple[dict[str, Any], dict[str, dict[str, Any]]]:
+    try:
+        sidecar = json.loads(
+            path.read_text(encoding="utf-8"),
+            object_pairs_hook=_strict_json_object,
+            parse_constant=_reject_json_constant,
+        )
+    except (OSError, ValueError) as error:
+        raise RuntimeError(
+            f"Cannot load final speaker sidecar {path}: {error}"
+        ) from error
+    if not isinstance(sidecar, dict) or not isinstance(sidecar.get("dialogues"), list):
+        raise TypeError("Final speaker sidecar must contain a dialogues list")
+    indexed: dict[str, dict[str, Any]] = {}
+    for entry in sidecar["dialogues"]:
+        dialogue_id = entry.get("dialogue_id") if isinstance(entry, dict) else None
+        if not isinstance(dialogue_id, str) or not dialogue_id.strip():
+            raise RuntimeError("Final speaker sidecar has a blank dialogue_id")
+        if dialogue_id in indexed:
+            raise RuntimeError(
+                f"Final speaker sidecar has duplicate dialogue_id {dialogue_id!r}"
+            )
+        indexed[dialogue_id] = entry
+    return sidecar, indexed
+
+
+def _index_previous_final_results(
+    manifest: dict[str, Any] | None,
+) -> dict[str, dict[str, Any]]:
+    indexed: dict[str, dict[str, Any]] = {}
+    invalid: set[str] = set()
+    for entry in manifest.get("results", []) if manifest else []:
+        dialogue_id = entry.get("dialogue_id") if isinstance(entry, dict) else None
+        if (
+            not isinstance(dialogue_id, str)
+            or not dialogue_id
+            or dialogue_id in invalid
+        ):
+            continue
+        if dialogue_id in indexed:
+            indexed.pop(dialogue_id)
+            invalid.add(dialogue_id)
+        else:
+            indexed[dialogue_id] = entry
+    return indexed
+
+
+def _final_artifacts_exist(output_root: Path, dialogue_id: str) -> bool:
+    out_dir = _safe_dialogue_output_path(output_root, dialogue_id)
+    return all(
+        (out_dir / filename).is_file()
+        for filename in (
+            f"{dialogue_id}_clean.wav",
+            f"{dialogue_id}_telephone.wav",
+            f"{dialogue_id}_metadata.json",
+        )
+    )
+
+
+def _final_entry_is_resumable(
+    previous: dict[str, Any] | None,
+    *,
+    dialogue_id: str,
+    fingerprint: str,
+    output_root: Path,
+) -> bool:
+    return bool(
+        previous
+        and previous.get("dialogue_id") == dialogue_id
+        and previous.get("status") == "success"
+        and previous.get("action") in {_RENDERED, _FINAL_RESUMED}
+        and previous.get("render_fingerprint") == fingerprint
+        and _final_artifacts_exist(output_root, dialogue_id)
+    )
+
+
+def _record_source(record: InputRecord | InputRecordFailure) -> dict[str, Any]:
+    source = {
+        "container_path": str(record.container_path),
+        "format": record.source_format,
+        "line_number": record.line_number,
+    }
+    if isinstance(record, InputRecord):
+        source["record_sha256"] = record.record_sha256
+    return source
+
+
+def _final_status(results: list[dict[str, Any]]) -> str:
+    failures = sum(item["status"] == "failed" for item in results)
+    if not results or failures == len(results):
+        return "failure"
+    return "partial_failure" if failures else "success"
+
+
+async def _run_final_batch(
+    *,
+    args: argparse.Namespace,
+    config: dict[str, Any],
+    config_sha256: str,
+    containers: list[Path],
+    loaded: list[InputRecord | InputRecordFailure],
+    run_started: datetime.datetime,
+    batch_started: float,
+    logger: logging.Logger,
+) -> int:
+    """Orchestrate final records without preparing controls before rendering."""
+    if config.get("tts", {}).get("engine") != "higgs":
+        raise RuntimeError("Final Controlled TTS v1 batches require tts.engine='higgs'")
+    if args.speaker_sidecar is None:
+        raise RuntimeError("Final batches require --speaker-sidecar")
+
+    records = [item for item in loaded if isinstance(item, InputRecord)]
+    output_paths = {
+        record.dialogue_id: _safe_dialogue_output_path(args.output, record.dialogue_id)
+        for record in records
+    }
+    sidecar, sidecar_by_id = _load_final_sidecar(args.speaker_sidecar)
+    policy: ExclusionPolicy | None = (
+        load_exclusion_policy(args.exclusion_policy)
+        if args.exclusion_policy is not None
+        else None
+    )
+    policy_identity = {
+        "schema_version": policy.schema_version if policy else None,
+        "policy_sha256": policy.policy_sha256 if policy else None,
+    }
+
+    invalid_records: dict[int, Exception] = {}
+    final_records: list[InputRecord] = []
+    for record in records:
+        try:
+            if detect_schema_family(record.raw) is not SchemaFamily.FINAL_NESTED:
+                raise SchemaFamilyError("record is not final nested")
+            validate_final_dialogue(record.raw)
+        except (SchemaFamilyError, FinalInputValidationError) as error:
+            invalid_records[id(record)] = error
+        else:
+            final_records.append(record)
+
+    exclusion_by_id = {
+        record.dialogue_id: policy.exclusion_for(record.dialogue_id) if policy else None
+        for record in final_records
+    }
+    eligible = [
+        record
+        for record in final_records
+        if exclusion_by_id[record.dialogue_id] is None
+    ]
+    missing_sidecar = [
+        record.dialogue_id
+        for record in eligible
+        if record.dialogue_id not in sidecar_by_id
+    ]
+    if missing_sidecar:
+        raise RuntimeError(
+            "Final speaker sidecar is missing dialogue_id entries: "
+            + ", ".join(sorted(missing_sidecar))
+        )
+
+    registry_sha256 = sidecar.get("registry_sha256")
+    active_speakers_sha256 = sidecar.get("active_speakers_sha256")
+    fingerprints: dict[str, str] = {}
+    for record in eligible:
+        components = render_fingerprint_components(
+            record,
+            config_sha256=config_sha256,
+            config=config,
+            sidecar_entry=sidecar_by_id[record.dialogue_id],
+            registry_sha256=registry_sha256,
+            active_speakers_sha256=active_speakers_sha256,
+        )
+        fingerprints[record.dialogue_id] = render_fingerprint(components)
+
+    manifest_path = args.output / "batch_result.json"
+    previous_manifest = (
+        _load_previous_batch_result(manifest_path) if args.resume else None
+    )
+    previous_results = _index_previous_final_results(previous_manifest)
+    batch_backend_identity = final_backend_identity(config)
+    batch_backend_hash = render_fingerprint(batch_backend_identity)
+
+    results: list[dict[str, Any]] = []
+    for item in loaded:
+        if isinstance(item, InputRecordFailure):
+            results.append(
+                {
+                    "dialogue_id": None,
+                    "schema_family": None,
+                    "source": _record_source(item),
+                    "action": _FINAL_INPUT_ERROR,
+                    "status": "failed",
+                    "render_fingerprint": None,
+                    "output_dir": None,
+                    "error": {
+                        "type": "InputRecordFailure",
+                        "message": item.message,
+                    },
+                    "exclusion": None,
+                }
+            )
+            continue
+        if item_id_error := invalid_records.get(id(item)):
+            results.append(
+                {
+                    "dialogue_id": item.dialogue_id,
+                    "schema_family": None,
+                    "source": _record_source(item),
+                    "action": _FINAL_INPUT_ERROR,
+                    "status": "failed",
+                    "render_fingerprint": None,
+                    "output_dir": None,
+                    "error": {
+                        "type": type(item_id_error).__name__,
+                        "message": str(item_id_error),
+                    },
+                    "exclusion": None,
+                }
+            )
+            continue
+
+        exclusion = exclusion_by_id[item.dialogue_id]
+        if exclusion is not None:
+            results.append(
+                {
+                    "dialogue_id": item.dialogue_id,
+                    "schema_family": SchemaFamily.FINAL_NESTED.value,
+                    "source": _record_source(item),
+                    "action": _FINAL_EXCLUDED,
+                    "status": "excluded",
+                    "render_fingerprint": None,
+                    "output_dir": None,
+                    "error": None,
+                    "exclusion": {
+                        "reason": exclusion.reason,
+                        "provenance": exclusion.provenance,
+                        "policy_sha256": policy.policy_sha256,
+                    },
+                }
+            )
+            continue
+
+        fingerprint = fingerprints[item.dialogue_id]
+        expected_out_dir = output_paths[item.dialogue_id]
+        previous = previous_results.get(item.dialogue_id)
+        if args.resume and _final_entry_is_resumable(
+            previous,
+            dialogue_id=item.dialogue_id,
+            fingerprint=fingerprint,
+            output_root=args.output,
+        ):
+            action, status, error = _FINAL_RESUMED, "success", None
+        else:
+            pipeline_result = await run_final_dialogue(
+                item,
+                sidecar,
+                config,
+                args.output,
+                project_root=Path.cwd(),
+            )
+            if pipeline_result.status == "success":
+                action, status, error = _RENDERED, "success", None
+            else:
+                action, status = _FINAL_RENDER_FAILED, "failed"
+                error = {
+                    "type": pipeline_result.error_type or "PipelineFailure",
+                    "message": pipeline_result.error or "Unknown dialogue failure",
+                }
+        results.append(
+            {
+                "dialogue_id": item.dialogue_id,
+                "schema_family": SchemaFamily.FINAL_NESTED.value,
+                "source": _record_source(item),
+                "action": action,
+                "status": status,
+                "render_fingerprint": fingerprint,
+                "output_dir": str(expected_out_dir),
+                "error": error,
+                "exclusion": None,
+            }
+        )
+
+    finished_at = datetime.datetime.now().astimezone()
+    status = _final_status(results)
+    rendered = sum(item["action"] == _RENDERED for item in results)
+    resumed = sum(item["action"] == _FINAL_RESUMED for item in results)
+    excluded = sum(item["action"] == _FINAL_EXCLUDED for item in results)
+    failed = sum(item["status"] == "failed" for item in results)
+    input_failures = sum(item["action"] == _FINAL_INPUT_ERROR for item in results)
+    mapping = batch_backend_identity["control_mapping"]
+    batch_result = {
+        "manifest_version": FINAL_BATCH_MANIFEST_VERSION,
+        "batch_schema_family": SchemaFamily.FINAL_NESTED.value,
+        "status": status,
+        "started_at": run_started.isoformat(timespec="seconds"),
+        "finished_at": finished_at.isoformat(timespec="seconds"),
+        "duration_seconds": round((finished_at - run_started).total_seconds(), 3),
+        "backend": "higgs",
+        "backend_identity": batch_backend_identity,
+        "backend_identity_sha256": batch_backend_hash,
+        "config_path": str(args.config),
+        "config_sha256": config_sha256,
+        "input_root": str(args.input),
+        "output_root": str(args.output),
+        "resume_requested": args.resume,
+        "batch_provenance": {
+            "controlled_tts": {
+                "mapping_version": mapping["mapping_version"],
+                "release_status": mapping["release_status"],
+                "contract_sha256": mapping["provenance"]["contract_sha256"],
+                "implementation_id": mapping["implementation_id"],
+            },
+            "exclusion_policy": policy_identity,
+            "speaker_sidecar": {
+                "path": str(args.speaker_sidecar),
+                "assignment_sha256": sidecar.get("assignment_sha256"),
+                "registry_sha256": registry_sha256,
+                "active_speakers_sha256": active_speakers_sha256,
+            },
+            "input_containers": [str(path) for path in containers],
+        },
+        "records_total": len(results),
+        "dialogues_total": len(records),
+        "dialogues_succeeded": rendered + resumed,
+        "dialogues_failed": failed,
+        "dialogues_rendered": rendered,
+        "dialogues_resumed": resumed,
+        "dialogues_excluded": excluded,
+        "input_failures": input_failures,
+        "dialogues_skipped": resumed,
+        "summary": {
+            "total_valid_records": len(records),
+            "rendered": rendered,
+            "resumed": resumed,
+            "excluded": excluded,
+            "failed": failed,
+            "input_failures": input_failures,
+        },
+        "results": results,
+    }
+    written = _write_batch_result(batch_result, args.output)
+    logger.info(
+        "event=final_batch_complete status=%s rendered=%d resumed=%d excluded=%d "
+        "failed=%d elapsed_sec=%.2f manifest=%s",
+        status,
+        rendered,
+        resumed,
+        excluded,
+        failed,
+        time.perf_counter() - batch_started,
+        written,
+    )
+    return 0 if status == "success" else 1
+
+
 async def main() -> int:
-    """Discover input JSON files and render them sequentially as one batch.
+    """Discover supported input records and render them sequentially as one batch.
 
     ``run_dialogue`` converts per-dialogue failures into ``PipelineResult`` values,
     which lets this loop continue with later files. Configuration failures, malformed
@@ -279,7 +773,7 @@ async def main() -> int:
     dialogue is rendered and do not write ``batch_result.json``.
     """
     parser = argparse.ArgumentParser(
-        description="Render crisis dialogue JSON files with a configured TTS engine."
+        description="Render crisis dialogue JSON/JSONL with a configured TTS engine."
     )
     parser.add_argument("--input", type=Path, default=Path("data/input"))
     parser.add_argument("--output", type=Path, default=Path("data/output"))
@@ -297,6 +791,16 @@ async def main() -> int:
         "--resume",
         action="store_true",
         help="Skip compatible completed dialogues and retry incomplete ones",
+    )
+    parser.add_argument(
+        "--speaker-sidecar",
+        type=Path,
+        help="Final-schema speaker materialization manifest",
+    )
+    parser.add_argument(
+        "--exclusion-policy",
+        type=Path,
+        help="Optional final-schema dialogue exclusion policy",
     )
     args = parser.parse_args()
     run_started = datetime.datetime.now().astimezone()
@@ -326,13 +830,42 @@ async def main() -> int:
         config["tts"]["engine"],
     )
     config_sha256 = _sha256(args.config)
+    containers = _discover_cli_containers(args.input)
+    loaded_records = _read_cli_records(containers)
+    parsed_records = [item for item in loaded_records if isinstance(item, InputRecord)]
+    try:
+        final_batch = _is_final_batch(args.input, parsed_records)
+        if final_batch:
+            _require_unique_record_ids(parsed_records)
+    except RuntimeError:
+        logger.exception("event=batch_failed stage=final_batch_validation")
+        raise
+    if final_batch:
+        return await _run_final_batch(
+            args=args,
+            config=config,
+            config_sha256=config_sha256,
+            containers=containers,
+            loaded=loaded_records,
+            run_started=run_started,
+            batch_started=batch_started,
+            logger=logger,
+        )
+
     backend_identity = _backend_identity(config)
     manifest_path = args.output / "batch_result.json"
     try:
         previous_manifest = (
             _load_previous_batch_result(manifest_path) if args.resume else None
         )
-        previous_results = _index_previous_results(previous_manifest)
+        legacy_previous_manifest = (
+            None
+            if previous_manifest
+            and previous_manifest.get("manifest_version")
+            == FINAL_BATCH_MANIFEST_VERSION
+            else previous_manifest
+        )
+        previous_results = _index_previous_results(legacy_previous_manifest)
     except RuntimeError:
         logger.exception(
             "event=batch_failed stage=resume_manifest path=%s", manifest_path
@@ -341,13 +874,13 @@ async def main() -> int:
     if args.resume and previous_manifest is None:
         logger.info("event=resume_no_previous_manifest path=%s", manifest_path)
     previous_batch_compatible = bool(
-        previous_manifest
-        and previous_manifest.get("config_sha256") == config_sha256
-        and previous_manifest.get("backend_identity") == backend_identity
+        legacy_previous_manifest
+        and legacy_previous_manifest.get("config_sha256") == config_sha256
+        and legacy_previous_manifest.get("backend_identity") == backend_identity
         and _identity_allows_resume(backend_identity)
-        and _identity_allows_resume(previous_manifest.get("backend_identity"))
+        and _identity_allows_resume(legacy_previous_manifest.get("backend_identity"))
     )
-    json_files = sorted(args.input.glob("*.json"))
+    json_files = _discover_legacy_json_files(args.input)
     if not json_files:
         logger.warning("event=batch_no_input input=%s", args.input)
     else:

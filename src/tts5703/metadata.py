@@ -3,16 +3,20 @@
 import json
 from copy import deepcopy
 from pathlib import Path
+from typing import Any
 
 from .assemble import TurnTiming
 from .cosyvoice_controls import resolve_cosyvoice_controls
 from .engine_capabilities import (
     control_support,
+    final_controlled_tts_v1_capabilities,
     has_declared_capabilities,
     ignored_requested_controls,
     requested_acoustic_spec,
 )
 from .higgs_controls import resolve_higgs_turn_controls
+from .input_records import InputRecord
+from .render_plan import PreparedDialogue, TurnRenderResult
 
 
 def _control_resolution(timing: TurnTiming, engine: str | None) -> dict | None:
@@ -113,6 +117,108 @@ def build_metadata(
             }
             for timing in timings
         ],
+    }
+
+
+def build_final_metadata(
+    input_record: InputRecord,
+    dialogue: PreparedDialogue,
+    clean_path: Path,
+    telephone_path: Path,
+    timings: list[dict[str, Any]],
+    turn_results: tuple[TurnRenderResult, ...] | list[TurnRenderResult],
+    engine_info: dict[str, Any],
+) -> dict[str, Any]:
+    """Build final metadata only from source, cached plans, and execution results."""
+    raw = input_record.raw
+    if raw.get("dialogue_id") != dialogue.dialogue_id:
+        raise ValueError("InputRecord and PreparedDialogue dialogue_id mismatch")
+    if input_record.record_sha256 != dialogue.record_sha256:
+        raise ValueError("InputRecord and PreparedDialogue record SHA mismatch")
+    if not (
+        len(raw.get("turns", []))
+        == len(dialogue.turns)
+        == len(timings)
+        == len(turn_results)
+    ):
+        raise ValueError("Final metadata inputs have inconsistent turn counts")
+
+    results = {result.ordinal: result for result in turn_results}
+    timing_by_ordinal = {timing.get("ordinal"): timing for timing in timings}
+    expected_ordinals = {turn.ordinal for turn in dialogue.turns}
+    if set(results) != expected_ordinals or set(timing_by_ordinal) != expected_ordinals:
+        raise ValueError("Final metadata inputs have inconsistent turn ordinals")
+
+    mapping = engine_info["control_mapping"]
+    mapping_provenance = mapping["provenance"]
+    turns: list[dict[str, Any]] = []
+    for source, prepared in zip(raw["turns"], dialogue.turns, strict=True):
+        result = results[prepared.ordinal]
+        timing = timing_by_ordinal[prepared.ordinal]
+        if (
+            source.get("turn_id") != prepared.source_turn_id
+            or result.source_turn_id != prepared.source_turn_id
+            or timing.get("source_turn_id") != prepared.source_turn_id
+        ):
+            raise ValueError(
+                f"Final metadata turn identity mismatch at ordinal {prepared.ordinal}"
+            )
+        acoustic = source["acoustic"]
+        turns.append(
+            {
+                "source_identity": {
+                    "ordinal": prepared.ordinal,
+                    "source_turn_id": prepared.source_turn_id,
+                    "upstream_role": prepared.upstream_role,
+                    "logical_role": prepared.logical_role,
+                    "upstream_scenario_speaker_id": (
+                        prepared.upstream_scenario_speaker_id
+                    ),
+                    "render_speaker_id": prepared.render_speaker_id,
+                },
+                "labels": deepcopy(source["labels"]),
+                "requested": {
+                    "acoustic": {
+                        "required": deepcopy(acoustic["required"]),
+                        "best_effort": deepcopy(acoustic.get("best_effort")),
+                    }
+                },
+                "planned": prepared.plan,
+                "approved_speaker_reference": {
+                    "render_speaker_id": prepared.render_speaker_id,
+                    "reference_wav": prepared.reference_wav,
+                    "resolved_reference_wav": str(prepared.resolved_reference_wav),
+                    "sha256": prepared.reference_sha256,
+                },
+                "execution": {
+                    "synthesis_status": result.synthesis_status,
+                    "rate_status": result.rate_status,
+                    "turn_audio": result.output_path.name,
+                },
+                "timing": deepcopy(timing),
+            }
+        )
+
+    return {
+        "schema_family": "final_nested",
+        "dialogue_id": dialogue.dialogue_id,
+        "clean_audio": clean_path.name,
+        "telephone_audio": telephone_path.name,
+        "tts": {
+            **deepcopy(engine_info),
+            "control_support": final_controlled_tts_v1_capabilities(),
+        },
+        "provenance": {
+            "record_sha256": dialogue.record_sha256,
+            "assignment_sha256": dialogue.assignment_sha256,
+            "registry_sha256": dialogue.registry_sha256,
+            "active_speakers_sha256": dialogue.active_speakers_sha256,
+            "mapping_version": mapping["mapping_version"],
+            "release_status": mapping["release_status"],
+            "contract_sha256": mapping_provenance["contract_sha256"],
+            "implementation_id": mapping["implementation_id"],
+        },
+        "turns": turns,
     }
 
 

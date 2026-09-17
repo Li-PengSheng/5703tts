@@ -21,6 +21,8 @@ from typing import Any
 
 import yaml
 
+from tts5703.final_input import SchemaFamily
+
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SPEAKER_POOL_DIR = PROJECT_ROOT / "data" / "speaker_pool" / "vctk_v0.1"
 DEFAULT_ACTIVE_SPEAKERS = SPEAKER_POOL_DIR / "active_speakers.json"
@@ -322,13 +324,21 @@ def materialize_speaker_assignments(
     project_root: Path = PROJECT_ROOT,
     higgs_ready: bool = False,
 ) -> dict[str, Any]:
-    """Rewrite roles and emit explicitly requested backend speaker maps."""
+    """Rewrite old inputs or emit a non-rewriting final-schema sidecar."""
     try:
         pool = assign.load_and_validate_active_pool(active_speakers_path, registry_path)
         dialogues = assign.load_dialogues(input_path)
         registry = assign.load_registry(registry_path)
     except assign.SpeakerAssignmentError as error:
         raise SpeakerMaterializationError(str(error)) from error
+
+    families = {dialogue.schema_family for dialogue in dialogues}
+    has_final = SchemaFamily.FINAL_NESTED in families
+    if has_final and len(families) != 1:
+        raise SpeakerMaterializationError(
+            "Cannot materialize final nested and legacy/v0.2 records together; "
+            "their sidecar and rewrite behaviors differ"
+        )
 
     assignments = load_assignments(assignments_path)
     registry_entries = _registry_by_id(registry)
@@ -343,8 +353,46 @@ def materialize_speaker_assignments(
             + ", ".join(extra_assignments)
         )
 
-    used_speakers: dict[str, dict[str, str]] = {}
+    try:
+        base_config = yaml.safe_load(base_config_path.read_text(encoding="utf-8"))
+    except FileNotFoundError as error:
+        raise SpeakerMaterializationError(
+            f"Base config not found: {base_config_path}"
+        ) from error
+    except yaml.YAMLError as error:
+        raise SpeakerMaterializationError(
+            f"Base config is not valid YAML ({base_config_path}): {error}"
+        ) from error
+    if not isinstance(base_config, dict):
+        raise SpeakerMaterializationError(
+            f"Base config must contain a YAML mapping: {base_config_path}"
+        )
+    tts = base_config.get("tts")
+    if not isinstance(tts, dict):
+        raise SpeakerMaterializationError("Base config must contain a tts mapping")
+    cosyvoice = tts.get("cosyvoice")
+    if cosyvoice is not None and not isinstance(cosyvoice, dict):
+        raise SpeakerMaterializationError("tts.cosyvoice must be a mapping")
+    needs_cosyvoice = isinstance(cosyvoice, dict)
+    if not has_final and not needs_cosyvoice:
+        raise SpeakerMaterializationError(
+            "Base config must contain tts.cosyvoice so speaker references can "
+            "be materialized without inventing renderer settings"
+        )
+    if has_final and not needs_cosyvoice and not higgs_ready:
+        raise SpeakerMaterializationError(
+            "Final sidecar materialization requires tts.cosyvoice or --higgs-ready"
+        )
+    higgs = tts.get("higgs")
+    if higgs_ready and has_final and not isinstance(higgs, dict):
+        raise SpeakerMaterializationError(
+            "--higgs-ready requires an existing tts.higgs runtime mapping "
+            "in the base config"
+        )
+
+    cosyvoice_references: dict[str, dict[str, str]] = {}
     higgs_references: dict[str, dict[str, str]] = {}
+    used_speaker_ids: set[str] = set()
     dialogue_rows: list[dict[str, Any]] = []
     output_names: dict[str, str] = {}
 
@@ -391,19 +439,56 @@ def materialize_speaker_assignments(
                     f"Speaker {speaker_id} assigned to {dialogue.dialogue_id!r} "
                     f"role {role!r} is not in the active speaker pool"
                 )
-            if speaker_id not in used_speakers:
-                used_speakers[speaker_id] = _resolve_reference(
+            used_speaker_ids.add(speaker_id)
+            if needs_cosyvoice and speaker_id not in cosyvoice_references:
+                cosyvoice_references[speaker_id] = _resolve_reference(
                     speaker_id,
                     registry_entries[speaker_id],
                     project_root=project_root,
                 )
+            if higgs_ready and speaker_id not in higgs_references:
+                higgs_references[speaker_id] = _resolve_higgs_reference(
+                    speaker_id,
+                    registry_entries[speaker_id],
+                    project_root=project_root,
+                )
+
+        if has_final:
+            roles: dict[str, Any] = {}
+            scenario_speakers = dialogue.raw["scenario"]["speakers"]
+            for role, speaker_id in role_assignments.items():
+                role_row: dict[str, Any] = {
+                    "upstream_role": dialogue.upstream_roles_by_logical[role],
+                    "upstream_scenario_speaker_id": scenario_speakers[role][
+                        "speaker_id"
+                    ],
+                    "render_speaker_id": speaker_id,
+                }
                 if higgs_ready:
-                    higgs_references[speaker_id] = _resolve_higgs_reference(
-                        speaker_id,
-                        registry_entries[speaker_id],
-                        project_root=project_root,
-                    )
-        output_name = dialogue.source_path.name
+                    role_row["higgs_reference"] = {
+                        "reference_wav": higgs_references[speaker_id]["reference_wav"],
+                        "sha256": higgs_references[speaker_id]["sha256"],
+                    }
+                roles[role] = role_row
+            dialogue_rows.append(
+                {
+                    "source": {
+                        "container_path": str(dialogue.source_path),
+                        "format": dialogue.source_format,
+                        "line_number": dialogue.line_number,
+                        "record_sha256": dialogue.record_sha256,
+                    },
+                    "dialogue_id": dialogue.dialogue_id,
+                    "roles": roles,
+                }
+            )
+            continue
+
+        output_name = (
+            dialogue.source_path.name
+            if dialogue.source_format == "json"
+            else f"{dialogue.record_sha256}.json"
+        )
         previous = output_names.get(output_name)
         if previous is not None:
             raise SpeakerMaterializationError(
@@ -421,59 +506,33 @@ def materialize_speaker_assignments(
                 "speakers": {
                     role: {
                         "speaker_id": speaker_id,
-                        "source_speaker_id": used_speakers[speaker_id][
+                        "source_speaker_id": cosyvoice_references[speaker_id][
                             "source_speaker_id"
                         ],
-                        "prompt_wav": used_speakers[speaker_id]["prompt_wav"],
-                        "raw_prompt_text": used_speakers[speaker_id]["raw_prompt_text"],
+                        "prompt_wav": cosyvoice_references[speaker_id]["prompt_wav"],
+                        "raw_prompt_text": cosyvoice_references[speaker_id][
+                            "raw_prompt_text"
+                        ],
                     }
                     for role, speaker_id in role_assignments.items()
                 },
             }
         )
 
-    try:
-        base_config = yaml.safe_load(base_config_path.read_text(encoding="utf-8"))
-    except FileNotFoundError as error:
-        raise SpeakerMaterializationError(
-            f"Base config not found: {base_config_path}"
-        ) from error
-    except yaml.YAMLError as error:
-        raise SpeakerMaterializationError(
-            f"Base config is not valid YAML ({base_config_path}): {error}"
-        ) from error
-    if not isinstance(base_config, dict):
-        raise SpeakerMaterializationError(
-            f"Base config must contain a YAML mapping: {base_config_path}"
-        )
-    try:
-        cosyvoice = base_config["tts"]["cosyvoice"]
-    except (KeyError, TypeError) as error:
-        raise SpeakerMaterializationError(
-            "Base config must contain tts.cosyvoice so speaker references can "
-            "be materialized without inventing renderer settings"
-        ) from error
-    if not isinstance(cosyvoice, dict):
-        raise SpeakerMaterializationError("tts.cosyvoice must be a mapping")
-
-    voice_map = {
-        speaker_id: {
-            "prompt_wav": used_speakers[speaker_id]["prompt_wav"],
-            "prompt_text": used_speakers[speaker_id]["prompt_text"],
+    if needs_cosyvoice:
+        cosyvoice["voice_map"] = {
+            speaker_id: {
+                "prompt_wav": cosyvoice_references[speaker_id]["prompt_wav"],
+                "prompt_text": cosyvoice_references[speaker_id]["prompt_text"],
+            }
+            for speaker_id in sorted(cosyvoice_references)
         }
-        for speaker_id in sorted(used_speakers)
-    }
-    cosyvoice["voice_map"] = voice_map
     if higgs_ready:
-        try:
-            higgs = base_config["tts"]["higgs"]
-        except (KeyError, TypeError) as error:
+        if not isinstance(higgs, dict):
             raise SpeakerMaterializationError(
                 "--higgs-ready requires an existing tts.higgs runtime mapping "
                 "in the base config"
-            ) from error
-        if not isinstance(higgs, dict):
-            raise SpeakerMaterializationError("tts.higgs must be a mapping")
+            )
         higgs["voice_map"] = {
             speaker_id: {"reference_wav": higgs_references[speaker_id]["reference_wav"]}
             for speaker_id in sorted(higgs_references)
@@ -486,14 +545,47 @@ def materialize_speaker_assignments(
     config_out.parent.mkdir(parents=True, exist_ok=True)
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
 
-    for dialogue, row in zip(dialogues, dialogue_rows, strict=True):
-        raw = _load_json_object(dialogue.source_path, "Dialogue")
-        rewritten = _rewrite_dialogue(raw, row["role_assignments"])
-        dest = output_dir / dialogue.source_path.name
-        _write_json(dest, rewritten)
-        row["materialized_input_path"] = str(dest)
+    if not has_final:
+        for dialogue, row in zip(dialogues, dialogue_rows, strict=True):
+            rewritten = _rewrite_dialogue(dialogue.raw, row["role_assignments"])
+            dest = Path(row["materialized_input_path"])
+            _write_json(dest, rewritten)
 
     _write_yaml(config_out, base_config)
+    if has_final:
+        speaker_manifest = {
+            speaker_id: {
+                **(
+                    {
+                        "primary_reference": {
+                            "prompt_wav": cosyvoice_references[speaker_id][
+                                "prompt_wav"
+                            ],
+                            "sha256": cosyvoice_references[speaker_id]["sha256"],
+                        }
+                    }
+                    if speaker_id in cosyvoice_references
+                    else {}
+                ),
+                **(
+                    {"higgs_reference": dict(higgs_references[speaker_id])}
+                    if speaker_id in higgs_references
+                    else {}
+                ),
+            }
+            for speaker_id in sorted(used_speaker_ids)
+        }
+    else:
+        speaker_manifest = {
+            speaker_id: {
+                "source_speaker_id": cosyvoice_references[speaker_id][
+                    "source_speaker_id"
+                ],
+                "prompt_wav": cosyvoice_references[speaker_id]["prompt_wav"],
+                "sha256": cosyvoice_references[speaker_id]["sha256"],
+            }
+            for speaker_id in sorted(cosyvoice_references)
+        }
     manifest = {
         "assignment_file": str(assignments_path),
         "assignment_sha256": _sha256_file(assignments_path),
@@ -505,16 +597,14 @@ def materialize_speaker_assignments(
         "input_count": len(dialogues),
         "output_dir": str(output_dir),
         "config_out": str(config_out),
-        "speakers": {
-            speaker_id: {
-                "source_speaker_id": used_speakers[speaker_id]["source_speaker_id"],
-                "prompt_wav": used_speakers[speaker_id]["prompt_wav"],
-                "sha256": used_speakers[speaker_id]["sha256"],
-            }
-            for speaker_id in sorted(used_speakers)
-        },
+        "speakers": speaker_manifest,
         "dialogues": dialogue_rows,
     }
+    if has_final:
+        manifest["materialization_mode"] = "final_speaker_sidecar"
+        manifest["source_records_rewritten"] = False
+        manifest["registry_sha256"] = _sha256_file(registry_path)
+        manifest["active_speakers_sha256"] = _sha256_file(active_speakers_path)
     _write_json(manifest_path, manifest)
     manifest["manifest_path"] = str(manifest_path)
     return manifest
@@ -531,7 +621,7 @@ def _parser() -> argparse.ArgumentParser:
         "--input",
         type=Path,
         required=True,
-        help="Canonical dialogue JSON file or directory (role names in speaker)",
+        help="Canonical dialogue JSON/JSONL file or directory",
     )
     parser.add_argument(
         "--assignments",

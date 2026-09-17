@@ -23,6 +23,7 @@ Support vocabulary:
 """
 
 from collections.abc import Mapping
+from copy import deepcopy
 from typing import Any
 
 MODEL_CONTROL = "model_control"
@@ -82,6 +83,51 @@ ENGINE_CAPABILITIES: dict[str, dict[str, dict[str, str]]] = {
     },
 }
 
+# Final-schema controls intentionally live outside the v0.2 field vocabulary.
+# These declarations describe ownership/support only; an individual turn's
+# realized plan remains the cached output of controlled_tts.map_turn_to_higgs.
+FINAL_CONTROLLED_TTS_V1_CAPABILITIES: dict[str, Any] = {
+    "required": {
+        "rate": {"support": PIPELINE_POSTPROCESS, "realization": "ffmpeg_atempo"},
+        "arousal": {"support": MODEL_CONTROL, "realization": "higgs_model_control"},
+        "affect": {"support": MODEL_CONTROL, "realization": "higgs_model_control"},
+        "pause_before": {
+            "support": PIPELINE_TIMING,
+            "realization": "prepared_dialogue_assembly",
+        },
+        "pause_within": {
+            "support": MODEL_CONTROL,
+            "realization": "native_higgs_pause_token_planner",
+        },
+        "hesitations": {
+            "support": MODEL_CONTROL,
+            "realization": "lexical_planner",
+        },
+    },
+    "best_effort": {
+        "affect_fine": {
+            "support": "conditional_joint_realization",
+            "possible_statuses": [
+                "jointly_realized",
+                "not_realized",
+                "unsupported",
+            ],
+        },
+        "volume": {
+            "support": UNSUPPORTED,
+            "possible_statuses": ["not_realized", "unsupported"],
+        },
+        "flattened_affect": {
+            "support": UNSUPPORTED,
+            "possible_statuses": ["not_realized", "unsupported"],
+        },
+        "events": {
+            "support": UNSUPPORTED,
+            "possible_statuses": ["not_realized", "unsupported"],
+        },
+    },
+}
+
 
 class UnknownEngineCapabilityError(KeyError):
     """Raised when no capability declaration exists for the requested engine."""
@@ -113,6 +159,11 @@ def control_support(engine: str) -> dict[str, str]:
         field: description["support"]
         for field, description in engine_capabilities(engine).items()
     }
+
+
+def final_controlled_tts_v1_capabilities() -> dict[str, Any]:
+    """Return an isolated final-schema capability declaration."""
+    return deepcopy(FINAL_CONTROLLED_TTS_V1_CAPABILITIES)
 
 
 def requested_acoustic_spec(turn: Any) -> dict[str, Any]:

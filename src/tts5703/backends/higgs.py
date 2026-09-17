@@ -1,6 +1,7 @@
 """Parent-side Higgs worker lifecycle, request validation, and rate processing."""
 
 import atexit
+import hashlib
 import json
 import logging
 import os
@@ -13,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from ..higgs_controls import resolve_higgs_turn_controls
+from ..render_plan import PreparedTurn
 from ..validate import NormalizedTurn
 
 logger = logging.getLogger("tts5703.tts_engine")
@@ -351,6 +353,8 @@ def _apply_rate(
         str(raw_path),
         "-af",
         f"atempo={factor}",
+        "-c:a",
+        "pcm_s16le",
         str(processed),
     ]
     try:
@@ -449,6 +453,137 @@ def synthesize_turn(
     logger.debug(
         "event=turn_tts_complete engine=higgs turn=%d output=%s bytes=%d",
         turn.turn_id,
+        final_path.name,
+        final_path.stat().st_size,
+    )
+    return final_path
+
+
+def _prepared_runtime(
+    config: dict[str, Any],
+) -> tuple[dict[str, Any], Path, Path, str]:
+    try:
+        tts = config["tts"]
+        higgs = tts["higgs"]
+    except (KeyError, TypeError) as error:
+        raise RuntimeError("Prepared Higgs execution requires tts.higgs") from error
+    if tts.get("engine") != "higgs":
+        raise RuntimeError("Prepared Controlled TTS v1 execution requires Higgs")
+    if not isinstance(higgs, dict):
+        raise RuntimeError(  # noqa: TRY004 - execution boundary failure
+            "Prepared Higgs execution requires tts.higgs mapping"
+        )
+    root = _project_root()
+    for field in ("server_executable", "model_dir"):
+        value = higgs.get(field)
+        if not isinstance(value, str) or not value.strip():
+            raise RuntimeError(f"Prepared Higgs execution requires tts.higgs.{field}")
+    host = higgs.get("host", "127.0.0.1")
+    port = higgs.get("port", 18080)
+    if host != "127.0.0.1":
+        raise RuntimeError("tts.higgs.host must be 127.0.0.1")
+    if isinstance(port, bool) or not isinstance(port, int) or not 1 <= port <= 65535:
+        raise RuntimeError("tts.higgs.port must be an integer from 1 to 65535")
+    for field, default in (
+        ("startup_timeout_seconds", 900),
+        ("inference_timeout_seconds", 300),
+    ):
+        value = higgs.get(field, default)
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or value <= 0:
+            raise RuntimeError(f"tts.higgs.{field} must be a positive number")
+    server_executable = _resolve_path(root, higgs["server_executable"]).resolve()
+    model_dir = _resolve_path(root, higgs["model_dir"]).resolve()
+    missing = []
+    if not _WORKER_SCRIPT.is_file():
+        missing.append(f"Higgs worker: {_WORKER_SCRIPT}")
+    if not server_executable.is_file() or not os.access(server_executable, os.X_OK):
+        missing.append(f"Higgs server executable: {server_executable}")
+    if not model_dir.is_dir():
+        missing.append(f"Higgs model directory: {model_dir}")
+    if missing:
+        raise RuntimeError(
+            "Higgs cannot start because required runtime paths are missing: "
+            + "; ".join(missing)
+        )
+    ffmpeg_bin = higgs.get("ffmpeg_bin", "ffmpeg")
+    if not isinstance(ffmpeg_bin, str) or not ffmpeg_bin.strip():
+        raise RuntimeError("tts.higgs.ffmpeg_bin must be a nonblank string")
+    return higgs, server_executable, model_dir, _resolve_command(root, ffmpeg_bin)
+
+
+def preflight_prepared_turn(
+    turn: PreparedTurn, config: dict[str, Any]
+) -> tuple[dict[str, Any], Path, Path, str]:
+    """Fail closed on prepared execution inputs without starting the worker."""
+    runtime = _prepared_runtime(config)
+    if not turn.model_input.strip():
+        raise RuntimeError(f"Prepared turn {turn.ordinal} has empty model_input")
+    if turn.synthesis_call_count != 1:
+        raise RuntimeError(
+            f"Prepared turn {turn.ordinal} synthesis_call_count must equal 1"
+        )
+    if turn.rate not in {"slow", "normal", "fast"}:
+        raise RuntimeError(f"Prepared turn {turn.ordinal} has unsupported rate")
+    expected_factor = {"slow": 0.85, "normal": None, "fast": 1.15}[turn.rate]
+    rate_plan = turn.rate_plan
+    if rate_plan.get("factor") != expected_factor or rate_plan.get("enabled") is not (
+        expected_factor is not None
+    ):
+        raise RuntimeError(f"Prepared turn {turn.ordinal} has invalid rate plan")
+    reference = turn.resolved_reference_wav
+    if not reference.is_file():
+        raise RuntimeError(
+            f"Prepared Higgs reference audio is missing or not a file: {reference}"
+        )
+    with reference.open("rb") as handle:
+        actual_hash = hashlib.file_digest(handle, "sha256").hexdigest()
+    if actual_hash != turn.reference_sha256:
+        raise RuntimeError(f"Prepared Higgs reference SHA-256 mismatch: {reference}")
+    return runtime
+
+
+def synthesize_prepared_turn(
+    turn: PreparedTurn, out_dir: Path, config: dict[str, Any]
+) -> Path:
+    """Execute one cached final plan with one unchanged worker request."""
+    higgs, server_executable, model_dir, ffmpeg_bin = preflight_prepared_turn(
+        turn, config
+    )
+    final_path = out_dir / f"turn_{turn.ordinal:03d}.wav"
+    raw_path = out_dir / f"turn_{turn.ordinal:03d}.higgs_raw.wav"
+    processed_path = final_path.with_name(f"{final_path.stem}.higgs_processed.part.wav")
+    raw_path.unlink(missing_ok=True)
+    processed_path.unlink(missing_ok=True)
+    worker = _get_worker(
+        str(server_executable),
+        str(model_dir),
+        higgs.get("host", "127.0.0.1"),
+        higgs.get("port", 18080),
+        higgs.get("startup_timeout_seconds", 900),
+        higgs.get("inference_timeout_seconds", 300),
+    )
+    request = {
+        "model_input": turn.model_input,
+        "reference_wav": str(turn.resolved_reference_wav),
+        "output_path": str(raw_path.resolve()),
+    }
+    logger.debug(
+        "event=prepared_turn_tts_start engine=higgs ordinal=%d speaker=%s rate=%s",
+        turn.ordinal,
+        turn.render_speaker_id,
+        turn.rate,
+    )
+    try:
+        response = _request(worker, request)
+        _validate_success(worker, response, raw_path)
+    except Exception:
+        raw_path.unlink(missing_ok=True)
+        processed_path.unlink(missing_ok=True)
+        raise
+    _apply_rate(raw_path, final_path, turn.rate_plan, ffmpeg_bin)
+    logger.debug(
+        "event=prepared_turn_tts_complete engine=higgs ordinal=%d output=%s bytes=%d",
+        turn.ordinal,
         final_path.name,
         final_path.stat().st_size,
     )

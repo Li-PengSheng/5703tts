@@ -188,6 +188,51 @@ def _two_role_dialogue(
     )
 
 
+def _final_dialogue(
+    dialogue_id: str,
+    *,
+    caller_scenario_id: str = "C123",
+    counsellor_scenario_id: str = "L456",
+    rate: str = "normal",
+    arousal: int = 2,
+    affect: str = "neutral",
+) -> dict[str, Any]:
+    required = {
+        "rate": rate,
+        "arousal": arousal,
+        "affect": affect,
+        "pause_before": "none",
+        "pause_within": 1,
+        "hesitations": 1,
+    }
+    return {
+        "schema_version": "1.0",
+        "dialogue_id": dialogue_id,
+        "scenario": {
+            "speakers": {
+                "caller": {"speaker_id": caller_scenario_id},
+                "counsellor": {"speaker_id": counsellor_scenario_id},
+            }
+        },
+        "turns": [
+            {
+                "turn_id": 1,
+                "speaker": "User",
+                "text": "I need to talk.",
+                "labels": {"upstream": ["opaque"]},
+                "acoustic": {"required": required, "best_effort": {}},
+            },
+            {
+                "turn_id": 2,
+                "speaker": "Listener",
+                "text": "I am listening.",
+                "labels": ["plural", "opaque"],
+                "acoustic": {"required": {**required, "pause_within": 0}},
+            },
+        ],
+    }
+
+
 def _run(
     tmp_path: Path,
     dialogues_dir: Path,
@@ -352,6 +397,70 @@ def test_caller_and_counsellor_receive_distinct_speakers(tmp_path: Path) -> None
     for record in assignments:
         mapping = record["role_assignments"]
         assert mapping["caller"] != mapping["counsellor"]
+
+
+def test_final_jsonl_maps_roles_without_using_scenario_ids_for_assignment(
+    tmp_path: Path,
+) -> None:
+    dialogues = tmp_path / "in"
+    dialogues.mkdir()
+    payloads = [
+        _final_dialogue("F001", rate="slow", arousal=1, affect="sad"),
+        _final_dialogue(
+            "F002",
+            caller_scenario_id="C999",
+            counsellor_scenario_id="L999",
+            rate="fast",
+            arousal=3,
+            affect="angry",
+        ),
+    ]
+    source = dialogues / "corpus.jsonl"
+    source.write_text(
+        "\n".join(json.dumps(payload, ensure_ascii=False) for payload in payloads)
+        + "\n",
+        encoding="utf-8",
+    )
+
+    assignments, summary, output, _ = _run(tmp_path / "out", dialogues)
+
+    assert [record["dialogue_id"] for record in assignments] == ["F001", "F002"]
+    for record in assignments:
+        mapping = record["role_assignments"]
+        assert set(mapping) == {"caller", "counsellor"}
+        assert mapping["caller"] != mapping["counsellor"]
+    encoded = output.read_text(encoding="utf-8")
+    assert all(value not in encoded for value in ("C123", "L456", "C999", "L999"))
+    assert all(
+        set(counts) == {"unspecified"} for counts in summary["label_exposure"].values()
+    )
+    rates = summary["acoustic_exposure"]
+    assert any(exposure["rate"].get("slow") == 1 for exposure in rates.values())
+    assert any(exposure["rate"].get("fast") == 1 for exposure in rates.values())
+    assert any(exposure["arousal"].get("1") == 1 for exposure in rates.values())
+    assert any(exposure["arousal"].get("3") == 1 for exposure in rates.values())
+    assert any(exposure["coarse_affect"].get("sad") == 1 for exposure in rates.values())
+    assert any(
+        exposure["coarse_affect"].get("angry") == 1 for exposure in rates.values()
+    )
+    loaded = assign.load_dialogues(source)
+    assert loaded[0].roles == ("caller", "counsellor")
+    assert [turn.speaker for turn in loaded[0].turns] == ["caller", "counsellor"]
+    assert loaded[0].raw["turns"][0]["speaker"] == "User"
+
+
+def test_final_acoustics_and_labels_do_not_change_assignment(tmp_path: Path) -> None:
+    left = tmp_path / "left"
+    right = tmp_path / "right"
+    _write_json(left / "final.json", _final_dialogue("F001"))
+    _write_json(
+        right / "final.json",
+        _final_dialogue("F001", rate="fast", arousal=3, affect="angry"),
+    )
+
+    left_assignments = _run(tmp_path / "out_left", left)[0]
+    right_assignments = _run(tmp_path / "out_right", right)[0]
+    assert left_assignments == right_assignments
 
 
 def test_arbitrary_role_names_are_supported(tmp_path: Path) -> None:
