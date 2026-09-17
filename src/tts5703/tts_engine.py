@@ -8,6 +8,7 @@ from .backend_errors import BackendControlError
 from .backends import cosyvoice, higgs, kokoro
 from .config import get_engine as _get_engine
 from .higgs_controls import HiggsControlError, resolve_higgs_turn_controls
+from .render_plan import PreparedDialogue, TurnRenderResult
 from .validate import NormalizedTurn
 
 # Stable project-level helper imports retained for scripts and tests.
@@ -83,3 +84,46 @@ async def synthesize_all_turns(
     return {
         turn.turn_id: await synthesize_turn(turn, out_dir, config) for turn in turns
     }
+
+
+def preflight_prepared_dialogue(
+    dialogue: PreparedDialogue, config: dict[str, Any]
+) -> None:
+    """Validate every final prepared turn before starting any worker request."""
+    engine = get_engine(config)
+    if engine != "higgs":
+        raise RuntimeError(
+            "Controlled TTS v1 prepared execution requires tts.engine='higgs'; "
+            f"got {engine!r}"
+        )
+    if not dialogue.turns:
+        raise RuntimeError("Prepared dialogue has no turns")
+    ordinals = [turn.ordinal for turn in dialogue.turns]
+    if ordinals != list(range(1, len(dialogue.turns) + 1)):
+        raise RuntimeError(
+            "Prepared dialogue ordinals must be unique, ordered, and 1-based"
+        )
+    for turn in dialogue.turns:
+        higgs.preflight_prepared_turn(turn, config)
+
+
+async def synthesize_prepared_turns(
+    dialogue: PreparedDialogue, out_dir: Path, config: dict[str, Any]
+) -> tuple[TurnRenderResult, ...]:
+    """Preflight the whole final dialogue, then render sequentially."""
+    preflight_prepared_dialogue(dialogue, config)
+    results: list[TurnRenderResult] = []
+    for turn in dialogue.turns:
+        output_path = higgs.synthesize_prepared_turn(turn, out_dir, config)
+        results.append(
+            TurnRenderResult(
+                ordinal=turn.ordinal,
+                source_turn_id=turn.source_turn_id,
+                output_path=output_path,
+                synthesis_status="synthesized",
+                rate_status=(
+                    "executed" if turn.rate_plan["enabled"] else "not_required"
+                ),
+            )
+        )
+    return tuple(results)

@@ -633,6 +633,8 @@ def test_rate_postprocess_uses_exact_resolver_factor(
             str(tmp_path / "turn_001.higgs_raw.wav"),
             "-af",
             f"atempo={factor}",
+            "-c:a",
+            "pcm_s16le",
             str(tmp_path / "turn_001.higgs_processed.part.wav"),
         ]
     ]
