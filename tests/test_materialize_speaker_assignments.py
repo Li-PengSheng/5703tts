@@ -117,6 +117,43 @@ def _dialogue(
     }
 
 
+def _final_dialogue(dialogue_id: str = "final_a") -> dict[str, Any]:
+    required = {
+        "rate": "normal",
+        "arousal": 2,
+        "affect": "neutral",
+        "pause_before": "none",
+        "pause_within": 1,
+        "hesitations": 1,
+    }
+    return {
+        "schema_version": "1.0",
+        "dialogue_id": dialogue_id,
+        "scenario": {
+            "speakers": {
+                "caller": {"speaker_id": "C123"},
+                "counsellor": {"speaker_id": "L456"},
+            }
+        },
+        "turns": [
+            {
+                "turn_id": 1,
+                "speaker": "User",
+                "text": "I need help.",
+                "labels": {"upstream": ["opaque"]},
+                "acoustic": {"required": required, "best_effort": {}},
+            },
+            {
+                "turn_id": 2,
+                "speaker": "Listener",
+                "text": "I am here.",
+                "labels": ["opaque", "plural"],
+                "acoustic": {"required": {**required, "pause_within": 0}},
+            },
+        ],
+    }
+
+
 def _wav(path: Path, payload: bytes) -> str:
     _write(path, payload)
     return _sha256_bytes(payload)
@@ -363,6 +400,217 @@ def test_higgs_ready_never_reuses_primary_reference_implicitly(tmp_path: Path) -
             ],
             higgs_ready=True,
         )
+
+
+def test_final_higgs_only_materialization_writes_sidecar_without_rewriting_source(
+    tmp_path: Path,
+) -> None:
+    pool = _pool(tmp_path)
+    _approve_higgs(pool, ("spk_001", "spk_003"))
+    registry = json.loads(pool["registry"].read_text(encoding="utf-8"))
+    for entry in registry["speakers"]:
+        if entry["speaker_id"] in {"spk_001", "spk_003"}:
+            entry.pop("primary_reference")
+    _write(pool["registry"], registry)
+    base_config = yaml.safe_load(pool["base_config"].read_text(encoding="utf-8"))
+    base_config["tts"].pop("cosyvoice")
+    base_config["tts"]["engine"] = "higgs"
+    _write(pool["base_config"], yaml.safe_dump(base_config, sort_keys=False))
+
+    source = tmp_path / "corpus.jsonl"
+    source.write_text("\n" + json.dumps(_final_dialogue()) + "\n", encoding="utf-8")
+    source_before = source.read_bytes()
+    assignments = _assignments(
+        tmp_path / "speaker_assignments.jsonl",
+        [
+            {
+                "dialogue_id": "final_a",
+                "role_assignments": {
+                    "caller": "spk_001",
+                    "counsellor": "spk_003",
+                },
+            }
+        ],
+    )
+
+    manifest = materialize.materialize_speaker_assignments(
+        input_path=source,
+        assignments_path=assignments,
+        registry_path=pool["registry"],
+        active_speakers_path=pool["active"],
+        output_dir=tmp_path / "render_input",
+        config_out=tmp_path / "higgs_config.yaml",
+        base_config_path=pool["base_config"],
+        project_root=pool["root"],
+        higgs_ready=True,
+    )
+
+    assert source.read_bytes() == source_before
+    parsed_source = json.loads(source.read_text(encoding="utf-8").strip())
+    assert [turn["speaker"] for turn in parsed_source["turns"]] == [
+        "User",
+        "Listener",
+    ]
+    assert not any((tmp_path / "render_input").iterdir())
+    assert manifest["materialization_mode"] == "final_speaker_sidecar"
+    assert manifest["source_records_rewritten"] is False
+    assert manifest["registry_sha256"] == _sha256_bytes(pool["registry"].read_bytes())
+    assert manifest["active_speakers_sha256"] == _sha256_bytes(
+        pool["active"].read_bytes()
+    )
+    row = manifest["dialogues"][0]
+    assert row["source"]["container_path"] == str(source)
+    assert row["source"]["format"] == "jsonl"
+    assert row["source"]["line_number"] == 2
+    assert len(row["source"]["record_sha256"]) == 64
+    assert row["roles"] == {
+        "caller": {
+            "upstream_role": "User",
+            "upstream_scenario_speaker_id": "C123",
+            "render_speaker_id": "spk_001",
+            "higgs_reference": {
+                "reference_wav": "higgs_refs/spk_001.wav",
+                "sha256": _sha256_bytes(b"HIGGS-spk_001"),
+            },
+        },
+        "counsellor": {
+            "upstream_role": "Listener",
+            "upstream_scenario_speaker_id": "L456",
+            "render_speaker_id": "spk_003",
+            "higgs_reference": {
+                "reference_wav": "higgs_refs/spk_003.wav",
+                "sha256": _sha256_bytes(b"HIGGS-spk_003"),
+            },
+        },
+    }
+    config = yaml.safe_load((tmp_path / "higgs_config.yaml").read_text())
+    assert "cosyvoice" not in config["tts"]
+    assert config["tts"]["higgs"]["voice_map"] == {
+        "spk_001": {"reference_wav": "higgs_refs/spk_001.wav"},
+        "spk_003": {"reference_wav": "higgs_refs/spk_003.wav"},
+    }
+    assert "C123" not in config["tts"]["higgs"]["voice_map"]
+    assert "L456" not in config["tts"]["higgs"]["voice_map"]
+
+
+def test_final_sidecar_file_hashes_track_registry_and_active_pool_bytes(
+    tmp_path: Path,
+) -> None:
+    pool = _pool(tmp_path)
+    dialogues = {"final.json": _final_dialogue()}
+    rows = [
+        {
+            "dialogue_id": "final_a",
+            "role_assignments": {
+                "caller": "spk_001",
+                "counsellor": "spk_003",
+            },
+        }
+    ]
+
+    first = _run(tmp_path, pool, dialogues, rows, output_name="sidecar_one")
+    assert first["registry_sha256"] == _sha256_bytes(pool["registry"].read_bytes())
+    assert first["active_speakers_sha256"] == _sha256_bytes(pool["active"].read_bytes())
+
+    pool["registry"].write_text(
+        pool["registry"].read_text(encoding="utf-8") + " ", encoding="utf-8"
+    )
+    second = _run(tmp_path, pool, dialogues, rows, output_name="sidecar_two")
+    assert second["registry_sha256"] != first["registry_sha256"]
+    assert second["active_speakers_sha256"] == first["active_speakers_sha256"]
+
+    pool["active"].write_text(
+        pool["active"].read_text(encoding="utf-8") + " ", encoding="utf-8"
+    )
+    third = _run(tmp_path, pool, dialogues, rows, output_name="sidecar_three")
+    assert third["registry_sha256"] == second["registry_sha256"]
+    assert third["active_speakers_sha256"] != second["active_speakers_sha256"]
+
+
+def test_final_higgs_ready_requires_approved_reference_not_primary(
+    tmp_path: Path,
+) -> None:
+    pool = _pool(tmp_path)
+    _approve_higgs(pool, ())
+    base_config = yaml.safe_load(pool["base_config"].read_text(encoding="utf-8"))
+    base_config["tts"].pop("cosyvoice")
+    _write(pool["base_config"], yaml.safe_dump(base_config, sort_keys=False))
+    source = _write(tmp_path / "final.json", _final_dialogue())
+    assignments = _assignments(
+        tmp_path / "speaker_assignments.jsonl",
+        [
+            {
+                "dialogue_id": "final_a",
+                "role_assignments": {
+                    "caller": "spk_001",
+                    "counsellor": "spk_003",
+                },
+            }
+        ],
+    )
+
+    with pytest.raises(
+        materialize.SpeakerMaterializationError,
+        match="spk_001 has no approved higgs_reference",
+    ):
+        materialize.materialize_speaker_assignments(
+            input_path=source,
+            assignments_path=assignments,
+            registry_path=pool["registry"],
+            active_speakers_path=pool["active"],
+            output_dir=tmp_path / "render_input",
+            config_out=tmp_path / "config.yaml",
+            base_config_path=pool["base_config"],
+            project_root=pool["root"],
+            higgs_ready=True,
+        )
+    assert not (tmp_path / "render_input").exists()
+    assert not (tmp_path / "config.yaml").exists()
+
+
+def test_mixed_final_and_rewrite_families_fail_before_outputs(tmp_path: Path) -> None:
+    pool = _pool(tmp_path)
+    input_dir = tmp_path / "canonical"
+    _write(input_dir / "legacy.json", _dialogue("old"))
+    _write(input_dir / "final.json", _final_dialogue("new"))
+    assignments = _assignments(
+        tmp_path / "speaker_assignments.jsonl",
+        [
+            {
+                "dialogue_id": "old",
+                "role_assignments": {
+                    "caller": "spk_001",
+                    "counsellor": "spk_003",
+                },
+            },
+            {
+                "dialogue_id": "new",
+                "role_assignments": {
+                    "caller": "spk_006",
+                    "counsellor": "spk_009",
+                },
+            },
+        ],
+    )
+
+    with pytest.raises(
+        materialize.SpeakerMaterializationError,
+        match="Cannot materialize final nested and legacy/v0.2",
+    ):
+        materialize.materialize_speaker_assignments(
+            input_path=input_dir,
+            assignments_path=assignments,
+            registry_path=pool["registry"],
+            active_speakers_path=pool["active"],
+            output_dir=tmp_path / "render_input",
+            config_out=tmp_path / "config.yaml",
+            base_config_path=pool["base_config"],
+            manifest_path=tmp_path / "manifest.json",
+            project_root=pool["root"],
+        )
+    assert not (tmp_path / "render_input").exists()
+    assert not (tmp_path / "config.yaml").exists()
+    assert not (tmp_path / "manifest.json").exists()
 
 
 @pytest.mark.parametrize("invalid_hash", [None, "", "0" * 63, "g" * 64])

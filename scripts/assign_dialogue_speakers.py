@@ -17,6 +17,21 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from tts5703.final_input import (
+    FinalInputValidationError,
+    SchemaFamily,
+    SchemaFamilyError,
+    detect_schema_family,
+    validate_final_dialogue,
+)
+from tts5703.input_records import (
+    InputRecord,
+    InputRecordError,
+    InputRecordFailure,
+    discover_input_paths,
+    read_input_records,
+)
+
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SPEAKER_POOL_DIR = PROJECT_ROOT / "data" / "speaker_pool" / "vctk_v0.1"
 DEFAULT_ACTIVE_SPEAKERS = SPEAKER_POOL_DIR / "active_speakers.json"
@@ -66,6 +81,12 @@ class DialogueRecord:
     source_path: Path
     roles: tuple[str, ...]
     turns: tuple[TurnRecord, ...]
+    source_format: str
+    line_number: int | None
+    record_sha256: str
+    raw: dict[str, Any]
+    schema_family: SchemaFamily
+    upstream_roles_by_logical: dict[str, str]
 
 
 def _load_json_object(path: Path, label: str) -> dict[str, Any]:
@@ -219,29 +240,61 @@ def _acoustic_from_turn(turn: dict[str, Any]) -> tuple[Any, Any, Any]:
     return turn.get("rate"), turn.get("arousal"), turn.get("coarse_affect")
 
 
-def load_dialogue(path: Path) -> DialogueRecord:
-    """Read one dialogue JSON file without rewriting it or consulting TTS config."""
-    raw = _load_json_object(path, "Dialogue")
-    dialogue_id = _non_empty_string(raw.get("dialogue_id"), f"{path}: dialogue_id")
+def _dialogue_from_record(record: InputRecord) -> DialogueRecord:
+    raw = record.raw
+    dialogue_id = record.dialogue_id
+    try:
+        family = detect_schema_family(raw)
+        final = (
+            validate_final_dialogue(raw)
+            if family is SchemaFamily.FINAL_NESTED
+            else None
+        )
+    except (SchemaFamilyError, FinalInputValidationError) as error:
+        raise SpeakerAssignmentError(
+            f"{record.container_path}: dialogue {dialogue_id}: {error}"
+        ) from error
     turns_raw = raw.get("turns")
     if not isinstance(turns_raw, list) or not turns_raw:
-        raise SpeakerAssignmentError(f"{path}: dialogue {dialogue_id} has no turns")
+        raise SpeakerAssignmentError(
+            f"{record.container_path}: dialogue {dialogue_id} has no turns"
+        )
     turns: list[TurnRecord] = []
     roles: list[str] = []
     seen_roles: set[str] = set()
+    role_by_upstream = (
+        {
+            identity.upstream_role: identity.logical_role
+            for identity in final.speaker_identities.values()
+        }
+        if final is not None
+        else {}
+    )
     for position, turn in enumerate(turns_raw, start=1):
         if not isinstance(turn, dict):
             raise SpeakerAssignmentError(
-                f"{path}: {dialogue_id} turn {position} must be a JSON object"
+                f"{record.container_path}: {dialogue_id} turn {position} must be a JSON object"
             )
         speaker = _non_empty_string(
-            turn.get("speaker"), f"{path}: {dialogue_id} turn {position} speaker"
+            turn.get("speaker"),
+            f"{record.container_path}: {dialogue_id} turn {position} speaker",
         )
+        if final is not None:
+            speaker = role_by_upstream[speaker]
         if speaker not in seen_roles:
             seen_roles.add(speaker)
             roles.append(speaker)
-        rate, arousal, coarse_affect = _acoustic_from_turn(turn)
-        label = turn.get("label")
+        if final is not None:
+            required = turn["acoustic"]["required"]
+            rate, arousal, coarse_affect = (
+                required["rate"],
+                required["arousal"],
+                required["affect"],
+            )
+            label = UNSPECIFIED_COUNT_KEY
+        else:
+            rate, arousal, coarse_affect = _acoustic_from_turn(turn)
+            label = turn.get("label")
         turns.append(
             TurnRecord(
                 speaker=speaker,
@@ -253,40 +306,89 @@ def load_dialogue(path: Path) -> DialogueRecord:
         )
     return DialogueRecord(
         dialogue_id=dialogue_id,
-        source_path=path,
+        source_path=record.container_path,
         roles=tuple(roles),
         turns=tuple(turns),
+        source_format=record.source_format,
+        line_number=record.line_number,
+        record_sha256=record.record_sha256,
+        raw=raw,
+        schema_family=family,
+        upstream_roles_by_logical=(
+            {
+                identity.logical_role: identity.upstream_role
+                for identity in final.speaker_identities.values()
+            }
+            if final is not None
+            else {}
+        ),
     )
+
+
+def _failure_location(failure: InputRecordFailure) -> str:
+    suffix = f":{failure.line_number}" if failure.line_number is not None else ""
+    return f"{failure.container_path}{suffix}"
+
+
+def load_dialogue(path: Path) -> DialogueRecord:
+    """Read one dialogue record without rewriting it or consulting TTS config."""
+    try:
+        results = read_input_records(path)
+    except InputRecordError as error:
+        raise SpeakerAssignmentError(str(error)) from error
+    failures = [item for item in results if isinstance(item, InputRecordFailure)]
+    if failures:
+        failure = failures[0]
+        raise SpeakerAssignmentError(f"{_failure_location(failure)}: {failure.message}")
+    records = [item for item in results if isinstance(item, InputRecord)]
+    if len(records) != 1:
+        raise SpeakerAssignmentError(
+            f"Expected one dialogue record in {path}, found {len(records)}"
+        )
+    return _dialogue_from_record(records[0])
 
 
 def discover_dialogue_paths(input_path: Path) -> list[Path]:
-    """Discover dialogue JSON files with a path sort that ignores readdir order."""
-    if input_path.is_file():
-        return [input_path]
-    if not input_path.is_dir():
-        raise SpeakerAssignmentError(f"Input path does not exist: {input_path}")
-    paths = sorted(
-        (path for path in input_path.rglob("*.json") if path.is_file()),
-        key=lambda path: path.as_posix(),
-    )
-    if not paths:
-        raise SpeakerAssignmentError(f"No JSON files found under {input_path}")
-    return paths
+    """Discover JSON and JSONL containers in deterministic order."""
+    try:
+        return discover_input_paths(input_path)
+    except InputRecordError as error:
+        raise SpeakerAssignmentError(str(error)) from error
 
 
 def load_dialogues(input_path: Path) -> list[DialogueRecord]:
-    """Load dialogues and sort them by dialogue_id, then by stable path."""
-    dialogues = [load_dialogue(path) for path in discover_dialogue_paths(input_path)]
-    seen: dict[str, Path] = {}
+    """Load records and sort by dialogue_id and stable source location."""
+    try:
+        results = read_input_records(input_path)
+    except InputRecordError as error:
+        raise SpeakerAssignmentError(str(error)) from error
+    failures = [item for item in results if isinstance(item, InputRecordFailure)]
+    if failures:
+        details = "; ".join(
+            f"{_failure_location(item)}: {item.message}" for item in failures
+        )
+        raise SpeakerAssignmentError(f"Invalid input record(s): {details}")
+    dialogues = [
+        _dialogue_from_record(item) for item in results if isinstance(item, InputRecord)
+    ]
+    if not dialogues:
+        raise SpeakerAssignmentError(f"No dialogue records found in {input_path}")
+    seen: dict[str, DialogueRecord] = {}
     for dialogue in dialogues:
         previous = seen.get(dialogue.dialogue_id)
         if previous is not None:
             raise SpeakerAssignmentError(
                 f"Duplicate dialogue_id {dialogue.dialogue_id!r} in "
-                f"{previous} and {dialogue.source_path}"
+                f"{previous.source_path} and {dialogue.source_path}"
             )
-        seen[dialogue.dialogue_id] = dialogue.source_path
-    dialogues.sort(key=lambda item: (item.dialogue_id, item.source_path.as_posix()))
+        seen[dialogue.dialogue_id] = dialogue
+    dialogues.sort(
+        key=lambda item: (
+            item.dialogue_id,
+            item.source_path.as_posix(),
+            item.line_number or 0,
+        )
+    )
     return dialogues
 
 
@@ -561,7 +663,7 @@ def _parser() -> argparse.ArgumentParser:
         "--input",
         type=Path,
         required=True,
-        help="Dialogue JSON file or directory of dialogue JSON files",
+        help="Dialogue JSON/JSONL file or directory containing those formats",
     )
     parser.add_argument("--active-speakers", type=Path, default=DEFAULT_ACTIVE_SPEAKERS)
     parser.add_argument("--speaker-registry", type=Path, default=DEFAULT_REGISTRY)
