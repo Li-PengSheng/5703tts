@@ -27,7 +27,7 @@ Higgs 是 primary production backend；CosyVoice3 是 backup/secondary。切换�
 这两种 container。读取层拒绝 duplicate JSON keys、NaN/Infinity、非对象记录和空
 `dialogue_id`。JSONL 单行 parse 错误记录为 `input_error`，后续有效记录继续。
 
-所有成功 parse 的记录直接交给 `validate_final_dialogue()`；其他输入形状会得到清晰的
+所有成功 parse 的记录直接交给 `validate_dialogue()`；其他输入形状会得到清晰的
 production-contract 错误且不会被重新解释。跨 container 的重复 `dialogue_id` 与不安全
 输出 ID 会在 render 前失败。
 

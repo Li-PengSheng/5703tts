@@ -7,13 +7,13 @@ from pathlib import Path
 from typing import Any
 
 from .assemble import assemble_prepared_dialogue
-from .backend_info import describe_final_controlled_tts_engine
-from .final_input import validate_final_dialogue
+from .backend_info import describe_engine
+from .input_contract import validate_dialogue
 from .input_records import InputRecord
-from .metadata import build_final_metadata, write_metadata
+from .metadata import build_metadata, write_metadata
 from .postprocess import apply_telephone_effect
-from .qc import QCResult, run_final_qc
-from .render_plan import prepare_final_dialogue
+from .qc import QCResult, run_qc
+from .render_plan import prepare_dialogue
 from .tts_engine import preflight_prepared_dialogue, synthesize_prepared_turns
 
 logger = logging.getLogger(__name__)
@@ -41,8 +41,8 @@ async def run_dialogue(
     dialogue_id = input_record.dialogue_id
     started = time.perf_counter()
     try:
-        validate_final_dialogue(input_record.raw)
-        prepared = prepare_final_dialogue(
+        validate_dialogue(input_record.raw)
+        prepared = prepare_dialogue(
             input_record, sidecar, project_root=project_root, config=config
         )
         # This gate deliberately precedes even output-directory creation.
@@ -57,8 +57,8 @@ async def run_dialogue(
         telephone_path = out_dir / f"{dialogue_id}_telephone.wav"
         apply_telephone_effect(full_audio, config).export(telephone_path, format="wav")
 
-        engine_info = describe_final_controlled_tts_engine(config, prepared)
-        metadata = build_final_metadata(
+        engine_info = describe_engine(config, prepared)
+        metadata = build_metadata(
             input_record,
             prepared,
             clean_path,
@@ -68,7 +68,7 @@ async def run_dialogue(
             engine_info,
         )
         write_metadata(metadata, out_dir)
-        qc = run_final_qc(
+        qc = run_qc(
             input_record,
             prepared,
             turn_results,

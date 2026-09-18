@@ -16,10 +16,10 @@ from .higgs_controls import (
     load_higgs_control_contract,
 )
 from .higgs_worker import FROZEN_GENERATION_FIELDS
-from .render_plan import PreparedDialogue
+from .render_models import PreparedDialogue
 
 CONTROLLED_TTS_V1_IMPLEMENTATION_ID = "controlled_tts_v1_prod_1"
-COSYVOICE_FINAL_IMPLEMENTATION_ID = "cosyvoice3_final_1"
+COSYVOICE_IMPLEMENTATION_ID = "cosyvoice3_final_1"
 
 
 def _higgs_mapping_identity() -> dict[str, Any]:
@@ -35,10 +35,10 @@ def _higgs_mapping_identity() -> dict[str, Any]:
     }
 
 
-def final_controlled_tts_backend_identity(
+def backend_identity(
     config: dict[str, Any], dialogue: PreparedDialogue
 ) -> dict[str, Any]:
-    """Describe selected final execution without consulting backend voice maps."""
+    """Describe selected production execution without consulting backend voice maps."""
     engine = get_engine(config)
     if engine not in {"higgs", "cosyvoice"}:
         raise ValueError(f"Final backend identity is not implemented for {engine!r}")
@@ -89,18 +89,18 @@ def final_controlled_tts_backend_identity(
             "name": COSYVOICE_CONTROL_MAPPING_NAME,
             "version": COSYVOICE_CONTROL_MAPPING_VERSION,
             "status": COSYVOICE_CONTROL_MAPPING_STATUS,
-            "implementation_id": COSYVOICE_FINAL_IMPLEMENTATION_ID,
+            "implementation_id": COSYVOICE_IMPLEMENTATION_ID,
         },
         "references": references,
         "identity_complete": True,
     }
 
 
-def describe_final_controlled_tts_engine(
+def describe_engine(
     config: dict[str, Any], dialogue: PreparedDialogue
 ) -> dict[str, Any]:
     """Return the selected final engine snapshot for metadata."""
-    identity = final_controlled_tts_backend_identity(config, dialogue)
+    identity = backend_identity(config, dialogue)
     if identity["backend"] == "cosyvoice":
         cosy = config["tts"]["cosyvoice"]
         return {

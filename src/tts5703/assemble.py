@@ -4,7 +4,7 @@ from typing import Any
 
 from pydub import AudioSegment
 
-from .render_plan import PreparedDialogue, TurnRenderResult
+from .render_models import PreparedDialogue, TurnRenderResult
 
 
 def assemble_prepared_dialogue(

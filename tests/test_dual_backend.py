@@ -10,16 +10,14 @@ import pytest
 
 from tts5703 import render_plan, tts_engine
 from tts5703.assemble import assemble_prepared_dialogue
-from tts5703.backend_info import describe_final_controlled_tts_engine
-from tts5703.backends import cosyvoice_final, higgs
+from tts5703.backend_info import describe_engine
+from tts5703.backends import cosyvoice, higgs
 from tts5703.input_records import InputRecord
-from tts5703.metadata import build_final_metadata
-from tts5703.qc import run_final_qc
+from tts5703.metadata import build_metadata
+from tts5703.qc import run_qc
+from tts5703.render_models import CanonicalTurn, CosyVoicePreparedTurn, TurnRenderResult
 from tts5703.render_plan import (
-    CanonicalTurn,
-    CosyVoicePreparedTurn,
     RenderPlanError,
-    TurnRenderResult,
     canonicalize_dialogue,
     prepare_dialogue,
 )
@@ -282,10 +280,10 @@ def test_cosyvoice_pause_within_is_explicit_and_fails_closed_before_worker(
     plan = dialogue.turns[0].plan
     calls: list[str] = []
     monkeypatch.setattr(
-        cosyvoice_final, "_runtime", lambda _: ({}, tmp_path, tmp_path, tmp_path)
+        cosyvoice, "_runtime", lambda _: ({}, tmp_path, tmp_path, tmp_path)
     )
     monkeypatch.setattr(
-        cosyvoice_final.cosyvoice, "_get_worker", lambda *args: calls.append("worker")
+        cosyvoice.cosyvoice, "_get_worker", lambda *args: calls.append("worker")
     )
 
     assert plan["capabilities"]["pause_within"] == "fail_closed_when_requested"
@@ -309,7 +307,7 @@ def test_cosyvoice_preflight_rechecks_prompt_sha(
     )
     dialogue.turns[0].resolved_prompt_wav.write_bytes(b"changed")
     monkeypatch.setattr(
-        cosyvoice_final, "_runtime", lambda _: ({}, tmp_path, tmp_path, tmp_path)
+        cosyvoice, "_runtime", lambda _: ({}, tmp_path, tmp_path, tmp_path)
     )
 
     with pytest.raises(RuntimeError, match="prompt SHA-256 mismatch"):
@@ -325,20 +323,18 @@ def test_cosyvoice_execution_uses_cached_request_and_never_falls_back(
     )
     captured: list[dict[str, Any]] = []
     monkeypatch.setattr(
-        cosyvoice_final,
+        cosyvoice,
         "_runtime",
         lambda _: ({"fp16": False}, tmp_path, tmp_path, tmp_path),
     )
-    monkeypatch.setattr(
-        cosyvoice_final.cosyvoice, "_get_worker", lambda *args: object()
-    )
+    monkeypatch.setattr(cosyvoice.cosyvoice, "_get_worker", lambda *args: object())
 
     def request(_worker: object, payload: dict[str, Any]) -> dict[str, str]:
         captured.append(payload)
         _wav(Path(payload["output_path"]))
         return {"status": "ok", "output_path": payload["output_path"]}
 
-    monkeypatch.setattr(cosyvoice_final.cosyvoice, "_request", request)
+    monkeypatch.setattr(cosyvoice.cosyvoice, "_request", request)
     monkeypatch.setattr(
         higgs,
         "synthesize_prepared_turn",
@@ -369,15 +365,13 @@ def test_cosyvoice_failure_is_not_retried_with_higgs(
     )
     fallback_calls: list[str] = []
     monkeypatch.setattr(
-        cosyvoice_final,
+        cosyvoice,
         "_runtime",
         lambda _: ({}, tmp_path, tmp_path, tmp_path),
     )
+    monkeypatch.setattr(cosyvoice.cosyvoice, "_get_worker", lambda *args: object())
     monkeypatch.setattr(
-        cosyvoice_final.cosyvoice, "_get_worker", lambda *args: object()
-    )
-    monkeypatch.setattr(
-        cosyvoice_final.cosyvoice,
+        cosyvoice.cosyvoice,
         "_request",
         lambda *args: (_ for _ in ()).throw(RuntimeError("cosy failed")),
     )
@@ -411,14 +405,14 @@ def test_cosyvoice_metadata_and_qc_use_cached_plan_only(
     clean, telephone = tmp_path / "clean.wav", tmp_path / "telephone.wav"
     audio.export(clean, format="wav")
     audio.export(telephone, format="wav")
-    metadata = build_final_metadata(
+    metadata = build_metadata(
         record,
         dialogue,
         clean,
         telephone,
         timings,
         results,
-        describe_final_controlled_tts_engine(config, dialogue),
+        describe_engine(config, dialogue),
     )
     monkeypatch.setattr(
         render_plan,
@@ -435,16 +429,14 @@ def test_cosyvoice_metadata_and_qc_use_cached_plan_only(
     assert metadata["turns"][0]["planned"] == dialogue.turns[0].plan
     assert "higgs" not in str(metadata["turns"][0]["planned"])
     assert metadata["turns"][0]["approved_speaker_reference"]["prompt_text"]
-    assert run_final_qc(
-        record, dialogue, results, timings, clean, telephone, metadata
-    ).passed
+    assert run_qc(record, dialogue, results, timings, clean, telephone, metadata).passed
 
 
 def test_new_final_cosyvoice_backend_has_no_legacy_or_higgs_imports() -> None:
     source = "\n".join(
         (
-            Path(cosyvoice_final.__file__).read_text(encoding="utf-8"),
-            Path(cosyvoice_final.cosyvoice.__file__).read_text(encoding="utf-8"),
+            Path(cosyvoice.__file__).read_text(encoding="utf-8"),
+            Path(cosyvoice.cosyvoice.__file__).read_text(encoding="utf-8"),
             Path(render_plan.__file__).read_text(encoding="utf-8"),
         )
     )

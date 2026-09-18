@@ -8,7 +8,7 @@
 ```text
 JSON / JSONL containers
   -> InputRecord
-  -> validate_final_dialogue
+  -> validate_dialogue
   -> exclusion decision
   -> speaker sidecar lookup
   -> CanonicalDialogue / CanonicalTurn

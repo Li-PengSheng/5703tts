@@ -6,7 +6,7 @@ import hashlib
 from pathlib import Path
 from typing import Any
 
-from ..render_plan import CosyVoicePreparedTurn
+from ..render_models import CosyVoicePreparedTurn
 from . import cosyvoice_client as cosyvoice
 
 

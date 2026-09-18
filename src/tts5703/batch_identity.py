@@ -1,4 +1,4 @@
-"""Pure semantic identities for final-record batch resume."""
+"""Pure semantic identities for production batch resume."""
 
 from __future__ import annotations
 
@@ -6,15 +6,15 @@ from copy import deepcopy
 from types import SimpleNamespace
 from typing import Any
 
-from .backend_info import final_controlled_tts_backend_identity
-from .final_references import FinalReferenceError, selected_reference
+from .backend_info import backend_identity as _dialogue_backend_identity
 from .input_records import InputRecord, canonical_json_sha256
+from .speaker_references import FinalReferenceError, selected_reference
 
-FINAL_BATCH_MANIFEST_VERSION = "2.0"
+BATCH_MANIFEST_VERSION = "2.0"
 
 
 class BatchIdentityError(ValueError):
-    """Raised when a sidecar entry cannot identify one final render."""
+    """Raised when a sidecar entry cannot identify one production render."""
 
 
 def _nonblank(value: Any, path: str) -> str:
@@ -67,10 +67,10 @@ def materialization_component(
     return {"roles": normalized}
 
 
-def final_backend_identity(config: dict[str, Any]) -> dict[str, Any]:
-    """Reuse the Phase-4A identity helper without preparing or mapping a turn."""
+def backend_identity(config: dict[str, Any]) -> dict[str, Any]:
+    """Describe the selected backend without preparing or mapping a turn."""
     proxy = SimpleNamespace(turns=())
-    return final_controlled_tts_backend_identity(config, proxy)
+    return _dialogue_backend_identity(config, proxy)
 
 
 def render_affecting_config(config: dict[str, Any]) -> dict[str, Any]:
@@ -88,7 +88,7 @@ def render_fingerprint_components(
     config: dict[str, Any],
     sidecar_entry: dict[str, Any],
 ) -> dict[str, Any]:
-    """Build the explicit semantic component object hashed for final resume."""
+    """Build the explicit semantic component object hashed for resume."""
     materialization = materialization_component(
         sidecar_entry,
         engine=config["tts"]["engine"],
@@ -99,7 +99,7 @@ def render_fingerprint_components(
             "record_sha256": record.record_sha256,
         },
         "configuration": render_affecting_config(config),
-        "controlled_tts_backend": final_backend_identity(config),
+        "controlled_tts_backend": backend_identity(config),
         "materialization": materialization,
         "exclusion_decision": {"excluded": False},
     }

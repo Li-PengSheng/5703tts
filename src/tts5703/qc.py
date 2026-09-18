@@ -8,7 +8,7 @@ from typing import Any
 from pydub import AudioSegment
 
 from .input_records import InputRecord
-from .render_plan import PreparedDialogue, TurnRenderResult
+from .render_models import PreparedDialogue, TurnRenderResult
 
 
 @dataclass
@@ -19,7 +19,7 @@ class QCResult:
     issues: list[str] = field(default_factory=list)
 
 
-def run_final_qc(
+def run_qc(
     input_record: InputRecord,
     dialogue: PreparedDialogue,
     turn_results: tuple[TurnRenderResult, ...] | list[TurnRenderResult],

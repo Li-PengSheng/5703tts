@@ -18,17 +18,17 @@ class FinalInputValidationError(ValueError):
 
 
 @dataclass(frozen=True)
-class FinalSpeakerIdentity:
+class SpeakerIdentity:
     upstream_role: str
     logical_role: str
     upstream_scenario_speaker_id: str
 
 
 @dataclass(frozen=True)
-class FinalDialogue:
+class ValidatedDialogue:
     dialogue_id: str
     raw: dict[str, Any]
-    speaker_identities: dict[str, FinalSpeakerIdentity]
+    speaker_identities: dict[str, SpeakerIdentity]
 
 
 def _mapping(value: Any, path: str) -> dict[str, Any]:
@@ -43,13 +43,13 @@ def _nonblank(value: Any, path: str) -> str:
     return value
 
 
-def validate_final_dialogue(raw: dict[str, Any]) -> FinalDialogue:
+def validate_dialogue(raw: dict[str, Any]) -> ValidatedDialogue:
     """Validate final structure while retaining the untouched nested record."""
     raw = _mapping(raw, "dialogue")
     dialogue_id = _nonblank(raw.get("dialogue_id"), "dialogue_id")
     scenario = _mapping(raw.get("scenario"), "scenario")
     speakers = _mapping(scenario.get("speakers"), "scenario.speakers")
-    identities: dict[str, FinalSpeakerIdentity] = {}
+    identities: dict[str, SpeakerIdentity] = {}
     for upstream_role, logical_role in load_contract()["upstream_normalization"][
         "roles"
     ].items():
@@ -57,7 +57,7 @@ def validate_final_dialogue(raw: dict[str, Any]) -> FinalDialogue:
         speaker_id = _nonblank(
             role.get("speaker_id"), f"scenario.speakers.{logical_role}.speaker_id"
         )
-        identities[logical_role] = FinalSpeakerIdentity(
+        identities[logical_role] = SpeakerIdentity(
             upstream_role=upstream_role,
             logical_role=logical_role,
             upstream_scenario_speaker_id=speaker_id,
@@ -77,7 +77,7 @@ def validate_final_dialogue(raw: dict[str, Any]) -> FinalDialogue:
         except UpstreamValidationError as error:
             raise FinalInputValidationError(str(error)) from error
 
-    return FinalDialogue(
+    return ValidatedDialogue(
         dialogue_id=dialogue_id,
         raw=deepcopy(raw),
         speaker_identities=identities,

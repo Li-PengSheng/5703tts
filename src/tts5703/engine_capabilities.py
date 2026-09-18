@@ -21,7 +21,7 @@ CAPABILITY_VOCABULARY: frozenset[str] = frozenset(
 
 # These declarations describe ownership/support only; an individual turn's
 # realized plan remains the cached output of controlled_tts.map_turn_to_higgs.
-FINAL_CONTROLLED_TTS_V1_CAPABILITIES: dict[str, Any] = {
+CONTROLLED_TTS_V1_CAPABILITIES: dict[str, Any] = {
     "required": {
         "rate": {"support": PIPELINE_POSTPROCESS, "realization": "ffmpeg_atempo"},
         "arousal": {"support": MODEL_CONTROL, "realization": "higgs_model_control"},
@@ -63,7 +63,7 @@ FINAL_CONTROLLED_TTS_V1_CAPABILITIES: dict[str, Any] = {
     },
 }
 
-FINAL_COSYVOICE3_CAPABILITIES: dict[str, Any] = {
+COSYVOICE3_CAPABILITIES: dict[str, Any] = {
     "required": {
         "rate": {"support": MODEL_CONTROL, "realization": "numeric_speed"},
         "arousal": {
@@ -101,12 +101,12 @@ class UnknownEngineCapabilityError(KeyError):
     """Raised when no capability declaration exists for the requested engine."""
 
 
-def final_controlled_tts_v1_capabilities(engine: str = "higgs") -> dict[str, Any]:
+def controlled_tts_v1_capabilities(engine: str = "higgs") -> dict[str, Any]:
     """Return the selected backend's isolated final-schema capabilities."""
     if engine == "higgs":
-        return deepcopy(FINAL_CONTROLLED_TTS_V1_CAPABILITIES)
+        return deepcopy(CONTROLLED_TTS_V1_CAPABILITIES)
     if engine == "cosyvoice":
-        return deepcopy(FINAL_COSYVOICE3_CAPABILITIES)
+        return deepcopy(COSYVOICE3_CAPABILITIES)
     raise UnknownEngineCapabilityError(
         f"No final-schema capabilities are declared for engine {engine!r}"
     )

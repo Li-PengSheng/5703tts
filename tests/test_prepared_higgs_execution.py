@@ -12,7 +12,7 @@ import pytest
 from tts5703 import tts_engine
 from tts5703.backends import higgs
 from tts5703.controlled_tts import map_turn_to_higgs
-from tts5703.render_plan import PreparedDialogue, PreparedTurn
+from tts5703.render_models import HiggsPreparedTurn, PreparedDialogue
 
 
 def _write_wav(path: Path, duration_ms: int = 200) -> None:
@@ -40,7 +40,7 @@ def _prepared_turn(
     hesitations: int = 2,
     arousal: int = 1,
     affect: str = "warm",
-) -> PreparedTurn:
+) -> HiggsPreparedTurn:
     reference = tmp_path / "approved" / f"reference-{ordinal}.wav"
     _write_wav(reference, 50)
     turn = {
@@ -69,7 +69,7 @@ def _prepared_turn(
         },
     }
     plan = map_turn_to_higgs(turn, dialogue_context=context)
-    return PreparedTurn(
+    return HiggsPreparedTurn(
         ordinal=ordinal,
         source_turn_id=source_turn_id,
         upstream_role="User",
@@ -83,7 +83,7 @@ def _prepared_turn(
     )
 
 
-def _dialogue(*turns: PreparedTurn) -> PreparedDialogue:
+def _dialogue(*turns: HiggsPreparedTurn) -> PreparedDialogue:
     return PreparedDialogue(
         dialogue_id="prepared-dialogue",
         record_sha256="1" * 64,

@@ -3,9 +3,9 @@
 from pathlib import Path
 from typing import Any
 
-from .backends import cosyvoice_final, higgs
+from .backends import cosyvoice, higgs
 from .config import get_engine as _get_engine
-from .render_plan import PreparedDialogue, TurnRenderResult
+from .render_models import PreparedDialogue, TurnRenderResult
 
 
 def get_engine(config: dict[str, Any]) -> str:
@@ -42,7 +42,7 @@ def preflight_prepared_dialogue(
         if engine == "higgs":
             higgs.preflight_prepared_turn(turn, config)
         else:
-            cosyvoice_final.preflight_prepared_turn(turn, config)
+            cosyvoice.preflight_prepared_turn(turn, config)
 
 
 async def synthesize_prepared_turns(
@@ -57,9 +57,7 @@ async def synthesize_prepared_turns(
             output_path = higgs.synthesize_prepared_turn(turn, out_dir, config)
             rate_status = "executed" if turn.rate_plan["enabled"] else "not_required"
         else:
-            output_path = cosyvoice_final.synthesize_prepared_turn(
-                turn, out_dir, config
-            )
+            output_path = cosyvoice.synthesize_prepared_turn(turn, out_dir, config)
             rate_status = "executed"
         results.append(
             TurnRenderResult(

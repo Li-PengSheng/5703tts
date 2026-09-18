@@ -11,7 +11,7 @@ from typing import Any
 
 import pytest
 
-from tts5703 import batch_identity, cli
+from tts5703 import batch, batch_identity, cli
 from tts5703.pipeline import PipelineResult
 
 
@@ -199,7 +199,7 @@ def _invoke(
                     path.write_bytes(_reference_bytes(declared))
     attempted: list[str] = []
 
-    async def fake_run_final(
+    async def fake_run_dialogue(
         record: object,
         sidecar_manifest: dict,
         config: dict,
@@ -222,7 +222,7 @@ def _invoke(
 
     monkeypatch.setattr(cli, "configure_logging", lambda *_: None)
     monkeypatch.setattr(cli, "load_config", lambda _: deepcopy(loaded_config))
-    monkeypatch.setattr(cli, "run_dialogue", fake_run_final)
+    monkeypatch.setattr(batch, "run_dialogue", fake_run_dialogue)
     arguments = [
         "5703tts",
         "--input",
@@ -472,7 +472,7 @@ def test_safe_final_dialogue_id_is_one_direct_output_child(
 ) -> None:
     output_root = tmp_path / "output"
 
-    candidate = cli._safe_dialogue_output_path(output_root, dialogue_id)
+    candidate = batch._safe_dialogue_output_path(output_root, dialogue_id)
 
     assert candidate == output_root.resolve() / dialogue_id
     assert candidate.parent == output_root.resolve()
@@ -482,7 +482,7 @@ def test_resume_artifact_lookup_rejects_unsafe_dialogue_id(tmp_path: Path) -> No
     output_root = tmp_path / "output"
 
     with pytest.raises(RuntimeError, match="final dialogue_id"):
-        cli._final_artifacts_exist(output_root, "../escape")
+        batch._artifacts_exist(output_root, "../escape")
 
     assert not output_root.exists()
 
@@ -1097,7 +1097,7 @@ def test_final_sidecar_rejects_duplicate_json_keys(tmp_path: Path) -> None:
     sidecar_path.write_text('{"dialogues":[],"dialogues":[]}', encoding="utf-8")
 
     with pytest.raises(RuntimeError, match="duplicate object key"):
-        cli._load_final_sidecar(sidecar_path)
+        batch._load_sidecar(sidecar_path)
 
 
 @pytest.mark.parametrize("constant", ["NaN", "Infinity", "-Infinity"])
@@ -1110,7 +1110,7 @@ def test_final_sidecar_rejects_non_json_constants(
     )
 
     with pytest.raises(RuntimeError, match="invalid JSON constant"):
-        cli._load_final_sidecar(sidecar_path)
+        batch._load_sidecar(sidecar_path)
 
 
 def test_backend_semantic_identity_change_rerenders(
@@ -1120,16 +1120,14 @@ def test_backend_semantic_identity_change_rerenders(
     _write_jsonl(input_path, [_record("A")])
     sidecar = _sidecar(("A",))
     _invoke(tmp_path, monkeypatch, input_path=input_path, sidecar=sidecar)
-    original = batch_identity.final_controlled_tts_backend_identity
+    original = batch_identity._dialogue_backend_identity
 
     def changed(config: dict, dialogue: object) -> dict:
         identity = deepcopy(original(config, dialogue))
         identity["control_mapping"]["implementation_id"] = "changed-for-test"
         return identity
 
-    monkeypatch.setattr(
-        batch_identity, "final_controlled_tts_backend_identity", changed
-    )
+    monkeypatch.setattr(batch_identity, "_dialogue_backend_identity", changed)
     _, _, attempted = _invoke(
         tmp_path,
         monkeypatch,
@@ -1296,7 +1294,7 @@ def test_v02_json_is_rejected_before_render(
 
 
 def test_production_cli_has_no_legacy_dispatch_call_path() -> None:
-    source = inspect.getsource(cli.main) + inspect.getsource(cli._run_production_batch)
+    source = inspect.getsource(cli.main) + inspect.getsource(batch.run_batch)
 
     for forbidden in (
         "_is_final_batch",

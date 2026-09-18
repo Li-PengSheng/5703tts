@@ -5,12 +5,12 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
-from .engine_capabilities import final_controlled_tts_v1_capabilities
+from .engine_capabilities import controlled_tts_v1_capabilities
 from .input_records import InputRecord
-from .render_plan import PreparedDialogue, TurnRenderResult
+from .render_models import PreparedDialogue, TurnRenderResult
 
 
-def build_final_metadata(
+def build_metadata(
     input_record: InputRecord,
     dialogue: PreparedDialogue,
     clean_path: Path,
@@ -106,7 +106,7 @@ def build_final_metadata(
         "telephone_audio": telephone_path.name,
         "tts": {
             **deepcopy(engine_info),
-            "control_support": final_controlled_tts_v1_capabilities(engine),
+            "control_support": controlled_tts_v1_capabilities(engine),
         },
         "provenance": {
             "record_sha256": dialogue.record_sha256,

@@ -7,7 +7,7 @@ from tts5703 import engine_capabilities as capabilities
 
 @pytest.mark.parametrize("engine", ["higgs", "cosyvoice"])
 def test_capability_values_use_the_declared_vocabulary(engine: str) -> None:
-    declaration = capabilities.final_controlled_tts_v1_capabilities(engine)
+    declaration = capabilities.controlled_tts_v1_capabilities(engine)
 
     for section in declaration.values():
         for control in section.values():
@@ -17,8 +17,8 @@ def test_capability_values_use_the_declared_vocabulary(engine: str) -> None:
 
 
 def test_higgs_and_cosyvoice_declare_truthful_pause_within_support() -> None:
-    higgs = capabilities.final_controlled_tts_v1_capabilities("higgs")
-    cosyvoice = capabilities.final_controlled_tts_v1_capabilities("cosyvoice")
+    higgs = capabilities.controlled_tts_v1_capabilities("higgs")
+    cosyvoice = capabilities.controlled_tts_v1_capabilities("cosyvoice")
 
     assert higgs["required"]["pause_within"] == {
         "support": "model_control",
@@ -31,11 +31,11 @@ def test_higgs_and_cosyvoice_declare_truthful_pause_within_support() -> None:
 
 
 def test_capability_results_are_isolated_copies() -> None:
-    result = capabilities.final_controlled_tts_v1_capabilities("higgs")
+    result = capabilities.controlled_tts_v1_capabilities("higgs")
     result["required"]["rate"]["support"] = "unsupported"
 
     assert (
-        capabilities.final_controlled_tts_v1_capabilities("higgs")["required"]["rate"][
+        capabilities.controlled_tts_v1_capabilities("higgs")["required"]["rate"][
             "support"
         ]
         == "pipeline_postprocess"
@@ -44,4 +44,4 @@ def test_capability_results_are_isolated_copies() -> None:
 
 def test_unknown_engine_is_rejected() -> None:
     with pytest.raises(capabilities.UnknownEngineCapabilityError):
-        capabilities.final_controlled_tts_v1_capabilities("unknown")
+        capabilities.controlled_tts_v1_capabilities("unknown")

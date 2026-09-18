@@ -5,9 +5,9 @@ from typing import Any
 
 import pytest
 
-from tts5703.final_input import (
+from tts5703.input_contract import (
     FinalInputValidationError,
-    validate_final_dialogue,
+    validate_dialogue,
 )
 
 
@@ -69,14 +69,14 @@ def _final_dialogue() -> dict[str, Any]:
 )
 def test_non_final_contracts_fail_validation(raw: dict[str, Any]) -> None:
     with pytest.raises(FinalInputValidationError):
-        validate_final_dialogue(raw)
+        validate_dialogue(raw)
 
 
 def test_final_validation_preserves_nested_source_and_speaker_identities() -> None:
     source = _final_dialogue()
     before = deepcopy(source)
 
-    validated = validate_final_dialogue(source)
+    validated = validate_dialogue(source)
 
     assert source == before
     assert validated.raw == before
@@ -109,4 +109,4 @@ def test_invalid_final_required_control_fails_before_rendering(
     final["turns"][0]["acoustic"]["required"][field] = value
 
     with pytest.raises(FinalInputValidationError, match=field):
-        validate_final_dialogue(final)
+        validate_dialogue(final)

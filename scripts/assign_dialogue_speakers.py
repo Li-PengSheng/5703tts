@@ -16,9 +16,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from tts5703.final_input import (
+from tts5703.input_contract import (
     FinalInputValidationError,
-    validate_final_dialogue,
+    validate_dialogue,
 )
 from tts5703.input_records import (
     InputRecord,
@@ -232,7 +232,7 @@ def _dialogue_from_record(record: InputRecord) -> DialogueRecord:
     raw = record.raw
     dialogue_id = record.dialogue_id
     try:
-        final = validate_final_dialogue(raw)
+        final = validate_dialogue(raw)
     except FinalInputValidationError as error:
         raise SpeakerAssignmentError(
             f"{record.container_path}: dialogue {dialogue_id}: {error}"

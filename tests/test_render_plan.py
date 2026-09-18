@@ -9,7 +9,12 @@ import pytest
 
 from tts5703 import render_plan
 from tts5703.input_records import InputRecord
-from tts5703.render_plan import RenderPlanError, prepare_final_dialogue
+from tts5703.render_models import (
+    CanonicalTurn,
+    CosyVoicePreparedTurn,
+    HiggsPreparedTurn,
+)
+from tts5703.render_plan import RenderPlanError, prepare_dialogue
 
 
 def _required(
@@ -130,6 +135,107 @@ def _inputs(tmp_path: Path) -> tuple[InputRecord, dict[str, Any]]:
     return record, sidecar
 
 
+def _direct_higgs_turn(tmp_path: Path, plan: dict[str, Any]) -> HiggsPreparedTurn:
+    return HiggsPreparedTurn(
+        ordinal=1,
+        source_turn_id="caller-alpha",
+        upstream_role="User",
+        logical_role="caller",
+        upstream_scenario_speaker_id="C123",
+        render_speaker_id="spk_001",
+        reference_wav="refs/caller.wav",
+        resolved_reference_wav=tmp_path / "refs" / "caller.wav",
+        reference_sha256="a" * 64,
+        plan=plan,
+    )
+
+
+def _direct_cosyvoice_turn(
+    tmp_path: Path, turn: CanonicalTurn, plan: dict[str, Any]
+) -> CosyVoicePreparedTurn:
+    return CosyVoicePreparedTurn(
+        ordinal=turn.ordinal,
+        source_turn_id=turn.source_turn_id,
+        upstream_role=turn.upstream_role,
+        logical_role=turn.logical_role,
+        upstream_scenario_speaker_id=turn.upstream_scenario_speaker_id,
+        render_speaker_id=turn.render_speaker_id,
+        prompt_wav="refs/prompt.wav",
+        resolved_prompt_wav=tmp_path / "refs" / "prompt.wav",
+        prompt_text="Exact prompt",
+        reference_sha256="b" * 64,
+        plan=plan,
+    )
+
+
+def _cosyvoice_turn_and_plan() -> tuple[CanonicalTurn, dict[str, Any]]:
+    required = _required(rate="slow", arousal=3, affect="anxious")
+    turn = CanonicalTurn(
+        ordinal=1,
+        source_turn_id="caller-alpha",
+        text="Please stay with me.",
+        labels={},
+        upstream_role="User",
+        logical_role="caller",
+        upstream_scenario_speaker_id="C123",
+        render_speaker_id="spk_001",
+        required=required,
+        best_effort={},
+        rate="slow",
+        arousal="high",
+        affect="anxious",
+        pause_before="none",
+        pause_before_ms=0,
+        pause_within_count=0,
+        hesitation_count=0,
+    )
+    plan = render_plan._cosyvoice_plan(
+        turn,
+        {
+            "prompt_wav": "refs/prompt.wav",
+            "prompt_text": "Exact prompt",
+            "sha256": "b" * 64,
+        },
+    )
+    return turn, plan
+
+
+def test_direct_higgs_prepared_turn_accepts_valid_plan(tmp_path: Path) -> None:
+    raw = _raw()
+    plan = render_plan.map_turn_to_higgs(raw["turns"][0], dialogue_context=raw)
+
+    prepared = _direct_higgs_turn(tmp_path, plan)
+
+    assert prepared.plan == plan
+
+
+def test_direct_higgs_prepared_turn_rejects_invalid_plan(tmp_path: Path) -> None:
+    raw = _raw()
+    plan = render_plan.map_turn_to_higgs(raw["turns"][0], dialogue_context=raw)
+    plan["postprocess"]["atempo"]["processor"] = "not_ffmpeg"
+
+    with pytest.raises(RenderPlanError, match="rate plan is inconsistent"):
+        _direct_higgs_turn(tmp_path, plan)
+
+
+def test_direct_cosyvoice_prepared_turn_accepts_valid_plan(tmp_path: Path) -> None:
+    turn, plan = _cosyvoice_turn_and_plan()
+
+    prepared = _direct_cosyvoice_turn(tmp_path, turn, plan)
+
+    assert prepared.plan == plan
+
+
+def test_direct_cosyvoice_prepared_turn_rejects_invalid_plan(
+    tmp_path: Path,
+) -> None:
+    turn, plan = _cosyvoice_turn_and_plan()
+    plan["cosyvoice"]["speed"] = 1.2
+
+    with pytest.raises(RenderPlanError, match="rate and speed plan is inconsistent"):
+        _direct_cosyvoice_turn(tmp_path, turn, plan)
+
+
 def test_preparation_maps_once_per_turn_and_preserves_complete_plan(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -147,7 +253,7 @@ def test_preparation_maps_once_per_turn_and_preserves_complete_plan(
         return plan
 
     monkeypatch.setattr(render_plan, "map_turn_to_higgs", counting_mapper)
-    prepared = prepare_final_dialogue(record, sidecar, project_root=tmp_path)
+    prepared = prepare_dialogue(record, sidecar, project_root=tmp_path)
 
     assert len(mapped) == len(record.raw["turns"]) == 2
     assert [turn.plan for turn in prepared.turns] == mapped
@@ -160,7 +266,7 @@ def test_preparation_maps_once_per_turn_and_preserves_complete_plan(
 
 def test_prepared_plan_is_deeply_isolated_from_callers(tmp_path: Path) -> None:
     record, sidecar = _inputs(tmp_path)
-    turn = prepare_final_dialogue(record, sidecar, project_root=tmp_path).turns[0]
+    turn = prepare_dialogue(record, sidecar, project_root=tmp_path).turns[0]
     expected = turn.plan
 
     exposed = turn.plan
@@ -222,7 +328,7 @@ def test_stale_or_incomplete_sidecar_is_rejected(
     mutation(record, sidecar)
 
     with pytest.raises(RenderPlanError, match=message):
-        prepare_final_dialogue(record, sidecar, project_root=tmp_path)
+        prepare_dialogue(record, sidecar, project_root=tmp_path)
 
 
 def test_missing_reference_file_is_rejected(tmp_path: Path) -> None:
@@ -230,7 +336,7 @@ def test_missing_reference_file_is_rejected(tmp_path: Path) -> None:
     (tmp_path / "refs" / "caller.wav").unlink()
 
     with pytest.raises(RenderPlanError, match="reference file is missing"):
-        prepare_final_dialogue(record, sidecar, project_root=tmp_path)
+        prepare_dialogue(record, sidecar, project_root=tmp_path)
 
 
 def test_reference_sha_mismatch_is_rejected(tmp_path: Path) -> None:
@@ -238,12 +344,12 @@ def test_reference_sha_mismatch_is_rejected(tmp_path: Path) -> None:
     (tmp_path / "refs" / "caller.wav").write_bytes(b"changed")
 
     with pytest.raises(RenderPlanError, match="SHA-256 mismatch"):
-        prepare_final_dialogue(record, sidecar, project_root=tmp_path)
+        prepare_dialogue(record, sidecar, project_root=tmp_path)
 
 
 def test_speaker_identities_remain_distinct(tmp_path: Path) -> None:
     record, sidecar = _inputs(tmp_path)
-    prepared = prepare_final_dialogue(record, sidecar, project_root=tmp_path)
+    prepared = prepare_dialogue(record, sidecar, project_root=tmp_path)
 
     caller = prepared.turns[0]
     assert caller.upstream_role == "User"
@@ -266,7 +372,7 @@ def test_container_path_and_line_move_do_not_invalidate_record_identity(
         dialogue_id=record.dialogue_id,
     )
 
-    prepared = prepare_final_dialogue(moved, sidecar, project_root=tmp_path)
+    prepared = prepare_dialogue(moved, sidecar, project_root=tmp_path)
     assert moved.record_sha256 == record.record_sha256 == prepared.record_sha256
 
 
@@ -298,4 +404,4 @@ def test_impossible_frozen_execution_shape_fails_closed(
 
     monkeypatch.setattr(render_plan, "map_turn_to_higgs", broken_mapper)
     with pytest.raises(RenderPlanError):
-        prepare_final_dialogue(record, sidecar, project_root=tmp_path)
+        prepare_dialogue(record, sidecar, project_root=tmp_path)

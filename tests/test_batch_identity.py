@@ -241,7 +241,7 @@ def test_backend_semantic_identity_changes_invalidate_fingerprint(
 ) -> None:
     record = _record(tmp_path)
     baseline = _components(record)
-    original = batch_identity.final_controlled_tts_backend_identity
+    original = batch_identity._dialogue_backend_identity
 
     def changed_backend(config: dict, dialogue: object) -> dict:
         identity = deepcopy(original(config, dialogue))
@@ -253,9 +253,7 @@ def test_backend_semantic_identity_changes_invalidate_fingerprint(
             identity[field] = value
         return identity
 
-    monkeypatch.setattr(
-        batch_identity, "final_controlled_tts_backend_identity", changed_backend
-    )
+    monkeypatch.setattr(batch_identity, "_dialogue_backend_identity", changed_backend)
     changed = _components(record)
 
     assert batch_identity.render_fingerprint(

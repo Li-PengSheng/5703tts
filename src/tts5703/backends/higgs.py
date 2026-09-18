@@ -13,7 +13,7 @@ from collections import deque
 from pathlib import Path
 from typing import Any
 
-from ..render_plan import PreparedTurn
+from ..render_models import HiggsPreparedTurn
 
 logger = logging.getLogger("tts5703.tts_engine")
 
@@ -434,7 +434,7 @@ def _prepared_runtime(
 
 
 def preflight_prepared_turn(
-    turn: PreparedTurn, config: dict[str, Any]
+    turn: HiggsPreparedTurn, config: dict[str, Any]
 ) -> tuple[dict[str, Any], Path, Path, str]:
     """Fail closed on prepared execution inputs without starting the worker."""
     runtime = _prepared_runtime(config)
@@ -465,7 +465,7 @@ def preflight_prepared_turn(
 
 
 def synthesize_prepared_turn(
-    turn: PreparedTurn, out_dir: Path, config: dict[str, Any]
+    turn: HiggsPreparedTurn, out_dir: Path, config: dict[str, Any]
 ) -> Path:
     """Execute one cached final plan with one unchanged worker request."""
     higgs, server_executable, model_dir, ffmpeg_bin = preflight_prepared_turn(
