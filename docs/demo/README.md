@@ -1,9 +1,9 @@
 # Small TTS demo inputs
 
-Two canonical v0.2 dialogues (6 turns total) for the assign → materialize →
-render → `--resume` walkthrough.
+Archived schema-v0.2 dialogues retained for legacy/U3 cleanup tests. They are not
+accepted by the production `5703tts` command.
 
-Commands and what to inspect: [TTS Production Readiness — Reproducible demo](../TTS_PRODUCTION_READINESS.md#reproducible-demo).
+Use final upstream JSON/JSONL plus a speaker sidecar for production walkthroughs.
 
 Source text is from existing realistic `data/input` files, converted
 conservatively. No affect or arousal was invented.

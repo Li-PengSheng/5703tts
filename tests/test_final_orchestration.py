@@ -278,7 +278,7 @@ def test_final_pipeline_prepares_once_and_orders_preflight_before_output(
     monkeypatch.setattr(pipeline, "apply_telephone_effect", telephone)
 
     result = asyncio.run(
-        pipeline.run_final_dialogue(
+        pipeline.run_dialogue(
             record,
             sidecar,
             _config(),
@@ -309,7 +309,7 @@ def test_final_pipeline_pre_render_failures_leave_no_output(
         )
 
     result = asyncio.run(
-        pipeline.run_final_dialogue(
+        pipeline.run_dialogue(
             record,
             sidecar,
             _config(),
@@ -330,7 +330,7 @@ def test_final_pipeline_non_higgs_fails_before_output(
     output_root = tmp_path / "output"
 
     result = asyncio.run(
-        pipeline.run_final_dialogue(
+        pipeline.run_dialogue(
             record,
             sidecar,
             _config(engine=engine),

@@ -40,7 +40,9 @@ def test_backend_modules_keep_package_worker_and_project_root_paths() -> None:
 def cosyvoice_config() -> dict:
     from tts5703.config import load_config
 
-    return load_config(CONFIG_PATH)
+    config = copy.deepcopy(load_config(CONFIG_PATH))
+    config["tts"]["engine"] = "cosyvoice"
+    return config
 
 
 @pytest.fixture(scope="module")

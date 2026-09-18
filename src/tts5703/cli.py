@@ -19,7 +19,7 @@ from .batch_identity import (
     render_fingerprint,
     render_fingerprint_components,
 )
-from .config import load_config
+from .config import VALID_PRODUCTION_ENGINES, load_config
 from .exclusion_policy import ExclusionPolicy, load_exclusion_policy
 from .final_input import (
     FinalInputValidationError,
@@ -30,7 +30,7 @@ from .final_input import (
 )
 from .final_references import FinalReferenceError, selected_reference
 from .input_records import InputRecord, InputRecordFailure, read_input_records
-from .pipeline import PipelineResult, run_dialogue, run_final_dialogue
+from .pipeline import PipelineResult, legacy_run_dialogue, run_dialogue
 from .qc import run_qc
 from .validate import ValidationError, load_and_validate
 
@@ -361,7 +361,7 @@ def _require_unique_record_ids(records: list[InputRecord]) -> None:
         raise RuntimeError("\n".join(lines))
 
 
-def _is_final_batch(input_path: Path, records: list[InputRecord]) -> bool:
+def _legacy_is_final_batch(input_path: Path, records: list[InputRecord]) -> bool:
     families: set[SchemaFamily] = set()
     for record in records:
         try:
@@ -526,7 +526,7 @@ def _final_status(results: list[dict[str, Any]]) -> str:
     return "partial_failure" if failures else "success"
 
 
-async def _run_final_batch(
+async def _run_production_batch(
     *,
     args: argparse.Namespace,
     config: dict[str, Any],
@@ -537,21 +537,18 @@ async def _run_final_batch(
     batch_started: float,
     logger: logging.Logger,
 ) -> int:
-    """Orchestrate final records without preparing controls before rendering."""
+    """Orchestrate production records without preparing controls before render."""
     engine = config.get("tts", {}).get("engine")
-    if engine not in {"higgs", "cosyvoice"}:
+    if engine not in VALID_PRODUCTION_ENGINES:
         raise RuntimeError(
-            "Final batches require tts.engine='higgs' or tts.engine='cosyvoice'"
+            "Production batches require tts.engine='higgs' or tts.engine='cosyvoice'"
         )
-    if args.speaker_sidecar is None:
-        raise RuntimeError("Final batches require --speaker-sidecar")
 
     records = [item for item in loaded if isinstance(item, InputRecord)]
     output_paths = {
         record.dialogue_id: _safe_dialogue_output_path(args.output, record.dialogue_id)
         for record in records
     }
-    sidecar, sidecar_by_id = _load_final_sidecar(args.speaker_sidecar)
     policy: ExclusionPolicy | None = (
         load_exclusion_policy(args.exclusion_policy)
         if args.exclusion_policy is not None
@@ -566,11 +563,13 @@ async def _run_final_batch(
     final_records: list[InputRecord] = []
     for record in records:
         try:
-            if detect_schema_family(record.raw) is not SchemaFamily.FINAL_NESTED:
-                raise SchemaFamilyError("record is not final nested")
             validate_final_dialogue(record.raw)
         except (SchemaFamilyError, FinalInputValidationError) as error:
-            invalid_records[id(record)] = error
+            invalid_records[id(record)] = FinalInputValidationError(
+                "Production input must use the final upstream dialogue contract; "
+                "legacy/v0.2 input is no longer supported by the 5703tts CLI. "
+                f"{error}"
+            )
         else:
             final_records.append(record)
 
@@ -583,6 +582,12 @@ async def _run_final_batch(
         for record in final_records
         if exclusion_by_id[record.dialogue_id] is None
     ]
+    if eligible and args.speaker_sidecar is None:
+        raise RuntimeError("Production batches require --speaker-sidecar")
+    if args.speaker_sidecar is None:
+        sidecar, sidecar_by_id = {}, {}
+    else:
+        sidecar, sidecar_by_id = _load_final_sidecar(args.speaker_sidecar)
     missing_sidecar = [
         record.dialogue_id
         for record in eligible
@@ -695,7 +700,7 @@ async def _run_final_batch(
         ):
             action, status, error = _FINAL_RESUMED, "success", None
         else:
-            pipeline_result = await run_final_dialogue(
+            pipeline_result = await run_dialogue(
                 item,
                 sidecar,
                 config,
@@ -804,13 +809,10 @@ async def _run_final_batch(
     return 0 if status == "success" else 1
 
 
-async def main() -> int:
-    """Discover supported input records and render them sequentially as one batch.
+async def legacy_main() -> int:
+    """Retain the unreachable pre-U2 CLI only for compatibility tests until U3.
 
-    ``run_dialogue`` converts per-dialogue failures into ``PipelineResult`` values,
-    which lets this loop continue with later files. Configuration failures, malformed
-    resume manifests, and duplicate current ``dialogue_id`` values abort before any
-    dialogue is rendered and do not write ``batch_result.json``.
+    The console entry point calls ``main()``, never this function.
     """
     parser = argparse.ArgumentParser(
         description="Render crisis dialogue JSON/JSONL with a configured TTS engine."
@@ -874,14 +876,14 @@ async def main() -> int:
     loaded_records = _read_cli_records(containers)
     parsed_records = [item for item in loaded_records if isinstance(item, InputRecord)]
     try:
-        final_batch = _is_final_batch(args.input, parsed_records)
+        final_batch = _legacy_is_final_batch(args.input, parsed_records)
         if final_batch:
             _require_unique_record_ids(parsed_records)
     except RuntimeError:
         logger.exception("event=batch_failed stage=final_batch_validation")
         raise
     if final_batch:
-        return await _run_final_batch(
+        return await _run_production_batch(
             args=args,
             config=config,
             config_sha256=config_sha256,
@@ -958,7 +960,7 @@ async def main() -> int:
         )
         started = time.perf_counter()
         if result is None:
-            result = await run_dialogue(path, config, args.output)
+            result = await legacy_run_dialogue(path, config, args.output)
         elapsed = time.perf_counter() - started
         results.append(DialogueBatchResult(path, input_sha256, action, result))
         if result.status == "success":
@@ -1005,6 +1007,67 @@ async def main() -> int:
         log_path,
     )
     return 0 if batch_result["status"] == "success" else 1
+
+
+async def main() -> int:
+    """Run the one production JSON/JSONL pipeline."""
+    parser = argparse.ArgumentParser(
+        description="Render final upstream dialogue JSON/JSONL."
+    )
+    parser.add_argument("--input", type=Path, default=Path("data/input"))
+    parser.add_argument("--output", type=Path, default=Path("data/output"))
+    parser.add_argument("--config", type=Path, default=Path("config/config.yaml"))
+    parser.add_argument("--log-dir", type=Path, default=Path("logs"))
+    parser.add_argument("--verbose", action="store_true")
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="Resume only dialogues with matching semantic fingerprints",
+    )
+    parser.add_argument(
+        "--speaker-sidecar",
+        type=Path,
+        help="Production speaker-assignment sidecar",
+    )
+    parser.add_argument(
+        "--exclusion-policy",
+        type=Path,
+        help="Optional production dialogue exclusion policy",
+    )
+    args = parser.parse_args()
+    run_started = datetime.datetime.now().astimezone()
+    log_path = args.log_dir / f"run_{run_started:%Y-%m-%d}.log"
+    configure_logging(log_path, args.verbose)
+    logger = logging.getLogger(__name__)
+    batch_started = time.perf_counter()
+
+    try:
+        config = load_config(args.config)
+    except Exception:
+        logger.exception("event=batch_failed stage=config_load")
+        raise
+    engine = config.get("tts", {}).get("engine")
+    if engine not in VALID_PRODUCTION_ENGINES:
+        raise RuntimeError(
+            "Production 5703tts supports only tts.engine='higgs' or "
+            "tts.engine='cosyvoice'"
+        )
+
+    config_sha256 = _sha256(args.config)
+    containers = _discover_cli_containers(args.input)
+    loaded = _read_cli_records(containers)
+    records = [item for item in loaded if isinstance(item, InputRecord)]
+    _require_unique_record_ids(records)
+    return await _run_production_batch(
+        args=args,
+        config=config,
+        config_sha256=config_sha256,
+        containers=containers,
+        loaded=loaded,
+        run_started=run_started,
+        batch_started=batch_started,
+        logger=logger,
+    )
 
 
 def run() -> None:

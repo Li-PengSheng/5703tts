@@ -1,7 +1,8 @@
 # Higgs Google Cloud validation gate
 
 Production integration is implemented and offline-validated. Real Higgs GPU
-runtime validation is still required. Do not make Higgs the default backend
+runtime validation is still required. Higgs is the configured primary backend,
+but the checked-in paths are placeholders and it must not be treated as deployable
 until every required checkbox below passes and its evidence is reviewed.
 
 ## Evidence boundary
@@ -125,7 +126,7 @@ quality.
 
 ## Phase E — two-speaker dialogue
 
-- [ ] Materialize with `--higgs-ready` using two explicitly approved registry
+- [ ] Materialize with `--backend higgs` using two explicitly approved registry
       entries and matching persistent speaker IDs.
 - [ ] Confirm each turn uses the correct reference and one server is reused.
 - [ ] Confirm all turn WAVs, clean assembly, timestamps, telephone output,
@@ -144,7 +145,7 @@ quality.
 
 ## Failure gates
 
-Higgs must not become the default backend while any of these remain unresolved:
+Higgs must not pass the real-runtime production gate while any of these remain unresolved:
 
 - unreliable model/server startup, OOM, or stderr deadlock;
 - failed reference-conditioned requests or wrong speaker/reference selection;

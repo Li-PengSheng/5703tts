@@ -5,7 +5,9 @@ from typing import Any
 
 import yaml
 
-VALID_ENGINES = {"cosyvoice", "higgs", "kokoro"}
+VALID_PRODUCTION_ENGINES = {"cosyvoice", "higgs"}
+# Compatibility-only until U3 removes the unreachable legacy renderer.
+VALID_ENGINES = VALID_PRODUCTION_ENGINES | {"kokoro"}
 
 
 class ConfigError(Exception):

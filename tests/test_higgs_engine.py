@@ -714,7 +714,9 @@ def test_pipeline_reports_failure_despite_stale_final_wav(
     final = out_dir / "turn_001.wav"
     final.write_bytes(b"historical-final")
 
-    result = asyncio.run(pipeline.run_dialogue(dialogue_path, config, output_root))
+    result = asyncio.run(
+        pipeline.legacy_run_dialogue(dialogue_path, config, output_root)
+    )
 
     assert result.status == "failed"
     assert result.error is not None and "new request failed" in result.error
@@ -781,7 +783,9 @@ def test_offline_higgs_pipeline_e2e_with_two_speaker_references(tmp_path: Path) 
     dialogue_path.write_text(json.dumps(dialogue), encoding="utf-8")
     output_root = tmp_path / "output"
 
-    result = asyncio.run(pipeline.run_dialogue(dialogue_path, config, output_root))
+    result = asyncio.run(
+        pipeline.legacy_run_dialogue(dialogue_path, config, output_root)
+    )
 
     server_pid = int((model_dir / "fake-sglang.pid").read_text())
     higgs_backend._shutdown_worker()

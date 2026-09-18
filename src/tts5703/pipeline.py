@@ -9,12 +9,12 @@ from typing import Any
 from .assemble import assemble_dialogue, assemble_prepared_dialogue
 from .backend_errors import BackendControlError
 from .backend_info import describe_engine, describe_final_controlled_tts_engine
-from .final_input import SchemaFamily, detect_schema_family
+from .final_input import validate_final_dialogue
 from .input_records import InputRecord
 from .metadata import build_final_metadata, build_metadata, write_metadata
 from .postprocess import apply_telephone_effect
 from .qc import QCResult, run_final_qc, run_qc
-from .render_plan import RenderPlanError, prepare_final_dialogue
+from .render_plan import prepare_final_dialogue
 from .tts_engine import (
     preflight_dialogue_controls,
     preflight_prepared_dialogue,
@@ -36,7 +36,7 @@ class PipelineResult:
     error_type: str | None = None
 
 
-async def run_dialogue(
+async def legacy_run_dialogue(
     json_path: Path, config: dict[str, Any], output_root: Path
 ) -> PipelineResult:
     """Run one dialogue through validation, synthesis, assembly, export, and QC.
@@ -171,7 +171,7 @@ async def run_dialogue(
         )
 
 
-async def run_final_dialogue(
+async def run_dialogue(
     input_record: InputRecord,
     sidecar: dict[str, Any],
     config: dict[str, Any],
@@ -179,12 +179,11 @@ async def run_final_dialogue(
     *,
     project_root: Path,
 ) -> PipelineResult:
-    """Render one already-loaded final record through the prepared-only path."""
+    """Render one production InputRecord through the canonical prepared path."""
     dialogue_id = input_record.dialogue_id
     started = time.perf_counter()
     try:
-        if detect_schema_family(input_record.raw) is not SchemaFamily.FINAL_NESTED:
-            raise RenderPlanError("InputRecord is not a final nested dialogue")
+        validate_final_dialogue(input_record.raw)
         prepared = prepare_final_dialogue(
             input_record, sidecar, project_root=project_root, config=config
         )

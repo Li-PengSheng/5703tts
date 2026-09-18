@@ -1,5 +1,5 @@
-# Controlled-benchmark configuration for the existing local Kokoro baseline.
-# The default config.yaml remains configured for CosyVoice3.
+# Compatibility-only controlled-benchmark configuration for the local Kokoro
+# baseline. Kokoro is not selectable through the production CLI.
 tts:
   engine: kokoro
   default_rate: "+0%"

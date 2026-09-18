@@ -1,6 +1,25 @@
 tts:
-  engine: cosyvoice
+  # Production default. Switch explicitly to cosyvoice for the backup backend;
+  # the renderer never falls back automatically.
+  engine: higgs
   default_rate: "+0%"
+  higgs:
+    # Production placeholders: provision these external assets before runtime.
+    server_executable: /path/to/sgl-omni
+    model_dir: /path/to/higgs
+    host: 127.0.0.1
+    port: 18080
+    startup_timeout_seconds: 900
+    inference_timeout_seconds: 300
+    ffmpeg_bin: ffmpeg
+    # Final production rendering uses hash-pinned references from the speaker
+    # sidecar. This map remains only for the U3-pending legacy implementation.
+    voice_map:
+      counsellor:
+        reference_wav: /path/to/approved-counsellor.wav
+      caller:
+        reference_wav: /path/to/approved-caller.wav
+  # Compatibility-only until U3; the production CLI rejects engine: kokoro.
   kokoro:
     lang_code: a
     sample_rate: 24000
@@ -10,6 +29,7 @@ tts:
       counsellor: af_heart
       caller: am_adam
   cosyvoice:
+    # Explicit backup/secondary production backend.
     # CosyVoice3's dependencies live in their own virtual environment,
     # separate from this project's .venv, so synthesis runs in a subprocess
     # started with this interpreter (paths below are relative to the repo

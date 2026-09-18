@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 BENCHMARK_DIR = ROOT / "data" / "benchmark"
 FIXTURE_PATH = BENCHMARK_DIR / "benchmark_fixture_v0.1.json"
 MANIFEST_PATH = BENCHMARK_DIR / "benchmark_manifest_v0.1.json"
-CONFIG_PATH = ROOT / "config" / "config.yaml"
+CONFIG_PATH = ROOT / "config" / "config_cosyvoice.yaml"
 TARGET_VARIABLES = {
     "rate": "rate",
     "pause_before": "pause_before_ms",

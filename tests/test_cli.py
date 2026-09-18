@@ -158,7 +158,7 @@ def _run_batch(
         return _one_turn_dialogue(result.dialogue_id or path.stem)
 
     monkeypatch.setattr(cli, "load_config", lambda _: runtime_config)
-    monkeypatch.setattr(cli, "run_dialogue", fake_run_dialogue)
+    monkeypatch.setattr(cli, "legacy_run_dialogue", fake_run_dialogue)
     monkeypatch.setattr(cli, "load_and_validate", fake_load_and_validate)
     monkeypatch.setattr(cli, "configure_logging", lambda *_: None)
     monkeypatch.setattr(
@@ -178,7 +178,7 @@ def _run_batch(
         ],
     )
 
-    exit_code = asyncio.run(cli.main())
+    exit_code = asyncio.run(cli.legacy_main())
     manifest = json.loads(
         (output_root / "batch_result.json").read_text(encoding="utf-8")
     )
@@ -412,7 +412,7 @@ def test_config_failure_remains_startup_failure_without_manifest(
     )
 
     with pytest.raises(ConfigError, match="invalid config"):
-        asyncio.run(cli.main())
+        asyncio.run(cli.legacy_main())
 
     assert not (output_root / "batch_result.json").exists()
 
@@ -1291,7 +1291,7 @@ def test_resume_malformed_manifest_fails_before_render_and_preserves_file(
         return _success(tmp_path, "A")
 
     monkeypatch.setattr(cli, "load_config", lambda _: _CONFIG)
-    monkeypatch.setattr(cli, "run_dialogue", fake_run_dialogue)
+    monkeypatch.setattr(cli, "legacy_run_dialogue", fake_run_dialogue)
     monkeypatch.setattr(cli, "configure_logging", lambda *_: None)
     monkeypatch.setattr(
         sys,
@@ -1311,7 +1311,7 @@ def test_resume_malformed_manifest_fails_before_render_and_preserves_file(
     )
 
     with pytest.raises(RuntimeError, match="unreadable batch result") as caught:
-        asyncio.run(cli.main())
+        asyncio.run(cli.legacy_main())
 
     assert "run without --resume" in str(caught.value)
     assert attempted == []

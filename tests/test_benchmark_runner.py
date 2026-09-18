@@ -27,12 +27,18 @@ benchmark = importlib.util.module_from_spec(RUNNER_SPEC)
 RUNNER_SPEC.loader.exec_module(benchmark)
 FIXTURE_PATH = ROOT / "data" / "benchmark" / "benchmark_fixture_v0.1.json"
 MANIFEST_PATH = ROOT / "data" / "benchmark" / "benchmark_manifest_v0.1.json"
-CONFIG_PATH = ROOT / "config" / "config.yaml"
+CONFIG_PATH = ROOT / "config" / "config_cosyvoice.yaml"
 KOKORO_CONFIG_PATH = ROOT / "config" / "config.kokoro.yaml"
 
 
 def _load(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _cosyvoice_config() -> dict[str, Any]:
+    config = copy.deepcopy(load_config(CONFIG_PATH))
+    config["tts"]["engine"] = "cosyvoice"
+    return config
 
 
 def _write_json(path: Path, value: dict[str, Any]) -> Path:
@@ -129,7 +135,7 @@ def _run_fake_benchmark(
 
 
 def test_cosyvoice_and_kokoro_are_supported_benchmark_engines() -> None:
-    assert benchmark.benchmark_engine(load_config(CONFIG_PATH)) == "cosyvoice"
+    assert benchmark.benchmark_engine(_cosyvoice_config()) == "cosyvoice"
     assert benchmark.benchmark_engine(load_config(KOKORO_CONFIG_PATH)) == "kokoro"
 
 
@@ -364,7 +370,7 @@ def test_missing_manifest_membership_is_rejected() -> None:
 
 
 def test_effective_trace_uses_existing_cosyvoice_mapping() -> None:
-    config = load_config(CONFIG_PATH)
+    config = _cosyvoice_config()
     dialogue = load_and_validate(FIXTURE_PATH, config)
     high_arousal_turn = next(turn for turn in dialogue.turns if turn.turn_id == 9)
 

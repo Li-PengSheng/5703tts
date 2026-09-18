@@ -1,6 +1,6 @@
-# Illustrative Google Cloud configuration only. The repository default remains
-# CosyVoice. Replace every path after approving real Higgs runtime/reference
-# assets; config loading validates structure but does not assert path existence.
+# Illustrative Google Cloud configuration for the primary Higgs backend.
+# Replace every path after approving real runtime/reference assets; config
+# loading validates structure but does not assert path existence.
 tts:
   engine: higgs
   default_rate: normal

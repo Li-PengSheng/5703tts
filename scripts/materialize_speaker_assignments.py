@@ -1,12 +1,8 @@
-"""Resolve assignment JSONL into render-ready dialogues and backend voice maps.
+"""Materialize assigned production speakers into a backend-aware sidecar.
 
-Canonical dialogues still use role names (``caller``, ``counsellor``, ...).
-Assignment maps those roles to persistent ``speaker_id`` values. This helper
-rewrites each turn's ``speaker`` field to that ID and builds a CosyVoice
-``voice_map`` keyed by ``speaker_id``. Optional Higgs materialization requires
-separate, explicitly approved ``higgs_reference`` registry entries.
-
-It does not assign speakers, synthesise audio, or change the renderer.
+Final upstream records are never rewritten. The explicit backend target controls
+which independent reference types are required and emitted. Legacy rewriting is
+retained only as U3-pending compatibility behavior.
 """
 
 from __future__ import annotations
@@ -16,6 +12,7 @@ import hashlib
 import importlib.util
 import json
 import sys
+import warnings
 from pathlib import Path
 from typing import Any
 
@@ -322,9 +319,27 @@ def materialize_speaker_assignments(
     base_config_path: Path,
     manifest_path: Path | None = None,
     project_root: Path = PROJECT_ROOT,
+    backend: str = "cosyvoice",
     higgs_ready: bool = False,
 ) -> dict[str, Any]:
     """Rewrite old inputs or emit a non-rewriting final-schema sidecar."""
+    if backend not in {"higgs", "cosyvoice", "both"}:
+        raise SpeakerMaterializationError(
+            "backend must be one of: higgs, cosyvoice, both"
+        )
+    if higgs_ready:
+        if backend != "cosyvoice":
+            raise SpeakerMaterializationError(
+                "higgs_ready cannot be combined with an explicit non-CosyVoice target"
+            )
+        warnings.warn(
+            "higgs_ready is compatibility-only; use backend='both'",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        backend = "both"
+    needs_cosyvoice = backend in {"cosyvoice", "both"}
+    needs_higgs = backend in {"higgs", "both"}
     try:
         pool = assign.load_and_validate_active_pool(active_speakers_path, registry_path)
         dialogues = assign.load_dialogues(input_path)
@@ -371,23 +386,18 @@ def materialize_speaker_assignments(
     if not isinstance(tts, dict):
         raise SpeakerMaterializationError("Base config must contain a tts mapping")
     cosyvoice = tts.get("cosyvoice")
-    if cosyvoice is not None and not isinstance(cosyvoice, dict):
-        raise SpeakerMaterializationError("tts.cosyvoice must be a mapping")
-    needs_cosyvoice = isinstance(cosyvoice, dict)
     if not has_final and not needs_cosyvoice:
         raise SpeakerMaterializationError(
-            "Base config must contain tts.cosyvoice so speaker references can "
-            "be materialized without inventing renderer settings"
+            "Legacy compatibility materialization requires backend cosyvoice or both"
         )
-    if has_final and not needs_cosyvoice and not higgs_ready:
+    if not has_final and needs_cosyvoice and not isinstance(cosyvoice, dict):
         raise SpeakerMaterializationError(
-            "Final sidecar materialization requires tts.cosyvoice or --higgs-ready"
+            "Base config must contain tts.cosyvoice for legacy materialization"
         )
     higgs = tts.get("higgs")
-    if higgs_ready and has_final and not isinstance(higgs, dict):
+    if not has_final and needs_higgs and not isinstance(higgs, dict):
         raise SpeakerMaterializationError(
-            "--higgs-ready requires an existing tts.higgs runtime mapping "
-            "in the base config"
+            "Base config must contain tts.higgs for legacy both-backend materialization"
         )
 
     cosyvoice_references: dict[str, dict[str, str]] = {}
@@ -446,7 +456,7 @@ def materialize_speaker_assignments(
                     registry_entries[speaker_id],
                     project_root=project_root,
                 )
-            if higgs_ready and speaker_id not in higgs_references:
+            if needs_higgs and speaker_id not in higgs_references:
                 higgs_references[speaker_id] = _resolve_higgs_reference(
                     speaker_id,
                     registry_entries[speaker_id],
@@ -470,7 +480,7 @@ def materialize_speaker_assignments(
                         "prompt_text": cosyvoice_references[speaker_id]["prompt_text"],
                         "sha256": cosyvoice_references[speaker_id]["sha256"],
                     }
-                if higgs_ready:
+                if needs_higgs:
                     role_row["higgs_reference"] = {
                         "reference_wav": higgs_references[speaker_id]["reference_wav"],
                         "sha256": higgs_references[speaker_id]["sha256"],
@@ -525,7 +535,8 @@ def materialize_speaker_assignments(
             }
         )
 
-    if needs_cosyvoice:
+    if not has_final and needs_cosyvoice:
+        assert isinstance(cosyvoice, dict)
         cosyvoice["voice_map"] = {
             speaker_id: {
                 "prompt_wav": cosyvoice_references[speaker_id]["prompt_wav"],
@@ -533,11 +544,10 @@ def materialize_speaker_assignments(
             }
             for speaker_id in sorted(cosyvoice_references)
         }
-    if higgs_ready:
+    if not has_final and needs_higgs:
         if not isinstance(higgs, dict):
             raise SpeakerMaterializationError(
-                "--higgs-ready requires an existing tts.higgs runtime mapping "
-                "in the base config"
+                "Base config must contain tts.higgs for legacy materialization"
             )
         higgs["voice_map"] = {
             speaker_id: {"reference_wav": higgs_references[speaker_id]["reference_wav"]}
@@ -603,6 +613,7 @@ def materialize_speaker_assignments(
         "input_count": len(dialogues),
         "output_dir": str(output_dir),
         "config_out": str(config_out),
+        "backend_target": backend,
         "speakers": speaker_manifest,
         "dialogues": dialogue_rows,
     }
@@ -668,12 +679,10 @@ def _parser() -> argparse.ArgumentParser:
         help="Root used to resolve registry prompt_wav paths",
     )
     parser.add_argument(
-        "--higgs-ready",
-        action="store_true",
-        help=(
-            "also emit tts.higgs.voice_map; every used speaker must have an "
-            "explicit hash-pinned higgs_reference"
-        ),
+        "--backend",
+        choices=("higgs", "cosyvoice", "both"),
+        required=True,
+        help="Reference type(s) to require and emit in the speaker sidecar",
     )
     return parser
 
@@ -691,7 +700,7 @@ def main(argv: list[str] | None = None) -> int:
             base_config_path=args.base_config,
             manifest_path=args.manifest,
             project_root=args.project_root,
-            higgs_ready=args.higgs_ready,
+            backend=args.backend,
         )
     except (SpeakerMaterializationError, OSError) as error:
         print(

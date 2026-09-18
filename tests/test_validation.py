@@ -323,6 +323,7 @@ def test_higgs_missing_speaker_fails_before_synthesis() -> None:
 
 def test_cosyvoice_requires_complete_voice_entries() -> None:
     config = copy.deepcopy(CONFIG)
+    config["tts"]["engine"] = "cosyvoice"
     del config["tts"]["cosyvoice"]["voice_map"]["caller"]["prompt_text"]
     with pytest.raises(ConfigError, match="caller.prompt_text"):
         validate_config(config)

@@ -14,8 +14,8 @@ CONFIG_PATH = Path("config/config.yaml")
 KOKORO_CONFIG_PATH = Path("config/config.kokoro.yaml")
 HIGGS_EXAMPLE_CONFIG_PATH = Path("config/config.higgs.example.yaml")
 
-# config.yaml selects CosyVoice and also configures Kokoro; config.kokoro.yaml
-# only carries what the Kokoro controlled-benchmark baseline needs. Everything
+# config.yaml selects Higgs and retains Kokoro only for legacy test coverage;
+# config.kokoro.yaml carries what the controlled-benchmark baseline needs. Everything
 # below must stay identical so a Kokoro run means the same thing under either file.
 SHARED_KOKORO_FIELDS = (
     ("tts", "kokoro"),
@@ -59,11 +59,11 @@ def test_higgs_is_a_valid_engine_with_minimal_runtime_config() -> None:
     assert _validate_config(_higgs_config()) is None
 
 
-def test_higgs_example_config_is_structurally_valid_and_non_default() -> None:
+def test_higgs_example_and_production_default_are_structurally_valid() -> None:
     example = load_config(HIGGS_EXAMPLE_CONFIG_PATH)
 
     assert example["tts"]["engine"] == "higgs"
-    assert load_config(CONFIG_PATH)["tts"]["engine"] == "cosyvoice"
+    assert load_config(CONFIG_PATH)["tts"]["engine"] == "higgs"
 
 
 @pytest.mark.parametrize("field", ["server_executable", "model_dir"])
@@ -394,7 +394,7 @@ def test_known_configuration_differences_are_still_the_only_ones() -> None:
     kokoro = yaml.safe_load(KOKORO_CONFIG_PATH.read_text(encoding="utf-8"))
 
     assert KNOWN_DIFFERENCES == (("tts", "engine"),)
-    assert _at(default, ("tts", "engine")) == "cosyvoice"
+    assert _at(default, ("tts", "engine")) == "higgs"
     assert _at(kokoro, ("tts", "engine")) == "kokoro"
     # config.kokoro.yaml intentionally omits the other backends' sections.
     assert set(kokoro["tts"]) - {"engine", "default_rate", "kokoro"} == set()

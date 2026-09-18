@@ -6,8 +6,8 @@ remain in the local-only source tree and are never modified. Reported source
 paths are relative to that source root.
 
 Speaker identity here is **rendering configuration**. It is not written into
-the dialogue schema or `acoustic_spec`, and it is not yet used for corpus-scale
-production rendering.
+the final upstream source; production `spk_*` identities live in the speaker
+sidecar.
 
 ## Backend-specific reference approval
 
@@ -26,9 +26,9 @@ The registry may optionally record an independently reviewed Higgs asset:
 
 This means the exact bytes were explicitly approved for Higgs
 reference-conditioned synthesis. It carries no transcript, embedding, seed, or
-named voice. `scripts/materialize_speaker_assignments.py --higgs-ready` requires
-this object for every used speaker and verifies the path and hash before emitting
-`tts.higgs.voice_map`.
+named voice. `scripts/materialize_speaker_assignments.py --backend higgs` (or
+`--backend both`) requires this object for every used speaker and verifies the
+path and hash before emitting the sidecar.
 
 **No production Higgs references are currently approved.** The existing VCTK
 primary WAVs may be tested as candidates in Google Cloud, but the registry must
@@ -112,7 +112,7 @@ directory of dialogue JSON files and writes:
 - `speaker_assignment_summary.json` - usage, role, label, and acoustic
   exposure counts for later QA
 
-Assignment is independent of `acoustic_spec`. Prompt WAV and transcript stay
+Assignment is independent of acoustic controls. Prompt WAV and transcript stay
 in `speaker_registry.json` and are resolved from `speaker_id` at render time.
 
 Rules:
@@ -135,10 +135,9 @@ uv run python scripts/assign_dialogue_speakers.py --input data/input
 This stage does not synthesise audio.
 
 Resolve assignment JSONL into renderer inputs with
-`scripts/materialize_speaker_assignments.py`. That helper rewrites role names to
-`speaker_id` values and builds a CosyVoice `voice_map` keyed by those IDs, so
-cross-dialogue role reuse does not collapse onto one global caller/counsellor
-reference. It does not assign speakers and does not run TTS.
+`scripts/materialize_speaker_assignments.py --backend higgs|cosyvoice|both`.
+For final input it writes a backend-aware sidecar and never rewrites source
+records. It does not assign speakers and does not run TTS.
 
 ## Candidate indexing method
 

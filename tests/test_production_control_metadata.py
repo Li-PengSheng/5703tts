@@ -62,8 +62,17 @@ def _metadata(timing: TurnTiming, engine_info: dict) -> dict:
 
 
 def _turn_metadata(timing: TurnTiming, config_path: Path) -> dict:
-    engine_info = describe_engine(load_config(config_path))
+    config = load_config(config_path)
+    if config_path == CONFIG_PATH:
+        config["tts"]["engine"] = "cosyvoice"
+    engine_info = describe_engine(config)
     return _metadata(timing, engine_info)["turns"][0]
+
+
+def _cosyvoice_config() -> dict:
+    config = copy.deepcopy(load_config(CONFIG_PATH))
+    config["tts"]["engine"] = "cosyvoice"
+    return config
 
 
 def _higgs_engine_info(reference_wav: str = "refs/caller.wav") -> dict:
@@ -310,7 +319,7 @@ def test_requested_pauses_are_not_reported_as_ignored() -> None:
 
 def test_cosyvoice_arousal_and_coarse_affect_are_not_reported_as_ignored() -> None:
     timing = _timing(arousal="high", coarse_affect="distressed")
-    metadata = _metadata(timing, describe_engine(load_config(CONFIG_PATH)))
+    metadata = _metadata(timing, describe_engine(_cosyvoice_config()))
     turn = metadata["turns"][0]
 
     assert turn["ignored_requested_controls"] == []
@@ -495,7 +504,7 @@ def test_engine_without_declared_capabilities_reports_null_not_empty() -> None:
 
 
 def test_cosyvoice_reproducibility_config_appears_in_metadata() -> None:
-    config = load_config(CONFIG_PATH)
+    config = _cosyvoice_config()
     metadata = _metadata(_timing(), describe_engine(config))
     cosyvoice = config["tts"]["cosyvoice"]
     tts_metadata = metadata["tts"]
@@ -514,21 +523,21 @@ def test_cosyvoice_reproducibility_config_appears_in_metadata() -> None:
 
 
 def test_cosyvoice_expected_sample_rate_defaults_to_the_model_rate() -> None:
-    engine_info = describe_engine(load_config(CONFIG_PATH))
+    engine_info = describe_engine(_cosyvoice_config())
 
     assert engine_info["expected_sample_rate"] == 24_000
     assert engine_info["expected_sample_rate_source"] == "model_default"
 
 
 def test_cosyvoice_runtime_sample_rate_stays_null_when_unavailable() -> None:
-    engine_info = describe_engine(load_config(CONFIG_PATH))
+    engine_info = describe_engine(_cosyvoice_config())
 
     assert engine_info["runtime_sample_rate"] is None
     assert engine_info["sample_rate_verification"] == "not_runtime_verified"
 
 
 def test_configured_cosyvoice_sample_rate_is_expected_not_verified() -> None:
-    config = copy.deepcopy(load_config(CONFIG_PATH))
+    config = _cosyvoice_config()
     config["tts"]["cosyvoice"]["sample_rate"] = 16_000
 
     engine_info = describe_engine(config)
@@ -540,7 +549,7 @@ def test_configured_cosyvoice_sample_rate_is_expected_not_verified() -> None:
 
 
 def test_cosyvoice_metadata_never_claims_an_actual_output_sample_rate() -> None:
-    config = copy.deepcopy(load_config(CONFIG_PATH))
+    config = _cosyvoice_config()
     config["tts"]["cosyvoice"]["sample_rate"] = 16_000
     metadata = _metadata(_timing(), describe_engine(config))
     tts_metadata = metadata["tts"]

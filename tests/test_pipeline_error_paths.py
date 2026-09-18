@@ -1,6 +1,7 @@
 """Expected versus unexpected failure reporting in run_dialogue; no synthesis."""
 
 import asyncio
+import copy
 import json
 import logging
 from pathlib import Path
@@ -16,7 +17,9 @@ CONFIG_PATH = Path("config/config.yaml")
 
 @pytest.fixture(scope="module")
 def config() -> dict:
-    return load_config(CONFIG_PATH)
+    config = copy.deepcopy(load_config(CONFIG_PATH))
+    config["tts"]["engine"] = "cosyvoice"
+    return config
 
 
 def _dialogue_file(tmp_path: Path, coarse_affect: str | None = None) -> Path:
@@ -43,7 +46,9 @@ def _dialogue_file(tmp_path: Path, coarse_affect: str | None = None) -> Path:
 
 
 def _run(json_path: Path, config: dict, tmp_path: Path) -> pipeline.PipelineResult:
-    return asyncio.run(pipeline.run_dialogue(json_path, config, tmp_path / "out"))
+    return asyncio.run(
+        pipeline.legacy_run_dialogue(json_path, config, tmp_path / "out")
+    )
 
 
 def test_backend_control_error_is_reported_as_an_expected_failure(

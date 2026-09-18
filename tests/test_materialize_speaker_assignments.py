@@ -277,6 +277,7 @@ def _run(
     rows: list[dict[str, Any]],
     *,
     output_name: str = "render_input",
+    backend: str = "cosyvoice",
     higgs_ready: bool = False,
 ) -> dict[str, Any]:
     input_dir = tmp_path / "canonical"
@@ -294,6 +295,7 @@ def _run(
         config_out=config_out,
         base_config_path=pool["base_config"],
         project_root=pool["root"],
+        backend=backend,
         higgs_ready=higgs_ready,
     )
 
@@ -364,7 +366,7 @@ def test_higgs_ready_materialization_uses_only_explicit_approved_references(
                 },
             }
         ],
-        higgs_ready=True,
+        backend="both",
     )
     config = yaml.safe_load((tmp_path / "materialized_config.yaml").read_text())
     cosyvoice_map = config["tts"]["cosyvoice"]["voice_map"]
@@ -388,7 +390,7 @@ def test_higgs_ready_never_reuses_primary_reference_implicitly(tmp_path: Path) -
         _run(
             tmp_path,
             pool,
-            {"a.json": _dialogue("dialogue_a")},
+            {"a.json": _final_dialogue("dialogue_a")},
             [
                 {
                     "dialogue_id": "dialogue_a",
@@ -398,7 +400,7 @@ def test_higgs_ready_never_reuses_primary_reference_implicitly(tmp_path: Path) -
                     },
                 }
             ],
-            higgs_ready=True,
+            backend="both",
         )
 
 
@@ -442,7 +444,7 @@ def test_final_higgs_only_materialization_writes_sidecar_without_rewriting_sourc
         config_out=tmp_path / "higgs_config.yaml",
         base_config_path=pool["base_config"],
         project_root=pool["root"],
-        higgs_ready=True,
+        backend="higgs",
     )
 
     assert source.read_bytes() == source_before
@@ -453,6 +455,7 @@ def test_final_higgs_only_materialization_writes_sidecar_without_rewriting_sourc
     ]
     assert not any((tmp_path / "render_input").iterdir())
     assert manifest["materialization_mode"] == "final_speaker_sidecar"
+    assert manifest["backend_target"] == "higgs"
     assert manifest["source_records_rewritten"] is False
     assert manifest["registry_sha256"] == _sha256_bytes(pool["registry"].read_bytes())
     assert manifest["active_speakers_sha256"] == _sha256_bytes(
@@ -486,11 +489,8 @@ def test_final_higgs_only_materialization_writes_sidecar_without_rewriting_sourc
     config = yaml.safe_load((tmp_path / "higgs_config.yaml").read_text())
     assert "cosyvoice" not in config["tts"]
     assert config["tts"]["higgs"]["voice_map"] == {
-        "spk_001": {"reference_wav": "higgs_refs/spk_001.wav"},
-        "spk_003": {"reference_wav": "higgs_refs/spk_003.wav"},
+        "placeholder": {"reference_wav": "unused.wav"}
     }
-    assert "C123" not in config["tts"]["higgs"]["voice_map"]
-    assert "L456" not in config["tts"]["higgs"]["voice_map"]
 
 
 def test_final_sidecar_file_hashes_track_registry_and_active_pool_bytes(
@@ -512,6 +512,7 @@ def test_final_sidecar_file_hashes_track_registry_and_active_pool_bytes(
     assert first["registry_sha256"] == _sha256_bytes(pool["registry"].read_bytes())
     assert first["active_speakers_sha256"] == _sha256_bytes(pool["active"].read_bytes())
     caller = first["dialogues"][0]["roles"]["caller"]
+    assert first["backend_target"] == "cosyvoice"
     assert caller["cosyvoice_reference"] == {
         "prompt_wav": "refs/spk_001.wav",
         "prompt_text": (
@@ -555,10 +556,11 @@ def test_final_sidecar_carries_separate_references_for_both_backends(
                 },
             }
         ],
-        higgs_ready=True,
+        backend="both",
     )
 
     caller = manifest["dialogues"][0]["roles"]["caller"]
+    assert manifest["backend_target"] == "both"
     assert caller["cosyvoice_reference"]["prompt_wav"] == "refs/spk_001.wav"
     assert caller["cosyvoice_reference"]["prompt_text"].endswith(
         "transcript for spk_001"
@@ -604,7 +606,7 @@ def test_final_higgs_ready_requires_approved_reference_not_primary(
             config_out=tmp_path / "config.yaml",
             base_config_path=pool["base_config"],
             project_root=pool["root"],
-            higgs_ready=True,
+            backend="higgs",
         )
     assert not (tmp_path / "render_input").exists()
     assert not (tmp_path / "config.yaml").exists()
@@ -682,7 +684,7 @@ def test_higgs_reference_requires_valid_sha256(
                     },
                 }
             ],
-            higgs_ready=True,
+            backend="both",
         )
 
 
@@ -713,7 +715,7 @@ def test_higgs_reference_requires_non_empty_wav_path(
                     },
                 }
             ],
-            higgs_ready=True,
+            backend="both",
         )
 
 
@@ -739,7 +741,7 @@ def test_higgs_reference_hash_mismatch_fails(tmp_path: Path) -> None:
                     },
                 }
             ],
-            higgs_ready=True,
+            backend="both",
         )
 
 
@@ -765,7 +767,7 @@ def test_missing_approved_higgs_reference_file_fails(tmp_path: Path) -> None:
                     },
                 }
             ],
-            higgs_ready=True,
+            backend="both",
         )
 
 
@@ -911,10 +913,10 @@ def test_reference_hash_mismatch_fails(tmp_path: Path) -> None:
         _run(tmp_path, pool, dialogues, rows)
 
 
-@pytest.mark.parametrize("higgs_ready", [False, True])
-def test_materialization_is_deterministic(tmp_path: Path, higgs_ready: bool) -> None:
+@pytest.mark.parametrize("backend", ["cosyvoice", "both"])
+def test_materialization_is_deterministic(tmp_path: Path, backend: str) -> None:
     pool = _pool(tmp_path)
-    if higgs_ready:
+    if backend == "both":
         _approve_higgs(pool, ACTIVE)
     dialogues = {
         "b.json": _dialogue("dialogue_b"),
@@ -936,7 +938,7 @@ def test_materialization_is_deterministic(tmp_path: Path, higgs_ready: bool) -> 
         dialogues,
         rows,
         output_name="out_a",
-        higgs_ready=higgs_ready,
+        backend=backend,
     )
     materialize.materialize_speaker_assignments(
         input_path=tmp_path / "canonical",
@@ -948,7 +950,7 @@ def test_materialization_is_deterministic(tmp_path: Path, higgs_ready: bool) -> 
         base_config_path=pool["base_config"],
         manifest_path=tmp_path / "manifest_b.json",
         project_root=pool["root"],
-        higgs_ready=higgs_ready,
+        backend=backend,
     )
     for name in ("a.json", "b.json"):
         assert (tmp_path / "out_a" / name).read_bytes() == (
@@ -1026,10 +1028,10 @@ def test_refuses_nonempty_output_directory(tmp_path: Path) -> None:
         )
 
 
-@pytest.mark.parametrize("higgs_ready", [False, True])
-def test_cli_wrapper_writes_outputs(tmp_path: Path, higgs_ready: bool) -> None:
+@pytest.mark.parametrize("backend", ["cosyvoice", "both"])
+def test_cli_wrapper_writes_outputs(tmp_path: Path, backend: str) -> None:
     pool = _pool(tmp_path)
-    if higgs_ready:
+    if backend == "both":
         _approve_higgs(pool, ("spk_001", "spk_003"))
     _write(tmp_path / "canonical" / "a.json", _dialogue("dialogue_a"))
     _assignments(
@@ -1058,13 +1060,69 @@ def test_cli_wrapper_writes_outputs(tmp_path: Path, higgs_ready: bool) -> None:
         str(pool["base_config"]),
         "--project-root",
         str(pool["root"]),
+        "--backend",
+        backend,
     ]
-    if higgs_ready:
-        arguments.append("--higgs-ready")
     exit_code = materialize.main(arguments)
     assert exit_code == 0
     assert (tmp_path / "render_input" / "a.json").is_file()
     assert (tmp_path / "config.yaml").is_file()
     assert (tmp_path / "materialization_manifest.json").is_file()
     config = yaml.safe_load((tmp_path / "config.yaml").read_text())
-    assert ("higgs" in config["tts"]) is higgs_ready
+    assert ("higgs" in config["tts"]) is (backend == "both")
+
+
+@pytest.mark.parametrize("backend", ["higgs", "cosyvoice", "both"])
+def test_final_cli_backend_target_emits_only_requested_references(
+    tmp_path: Path, backend: str
+) -> None:
+    pool = _pool(tmp_path)
+    if backend in {"higgs", "both"}:
+        _approve_higgs(pool, ("spk_001", "spk_003"))
+    source = _write(tmp_path / "final.json", _final_dialogue())
+    source_before = source.read_bytes()
+    _assignments(
+        tmp_path / "speaker_assignments.jsonl",
+        [
+            {
+                "dialogue_id": "final_a",
+                "role_assignments": {
+                    "caller": "spk_001",
+                    "counsellor": "spk_003",
+                },
+            }
+        ],
+    )
+
+    exit_code = materialize.main(
+        [
+            "--input",
+            str(source),
+            "--assignments",
+            str(tmp_path / "speaker_assignments.jsonl"),
+            "--registry",
+            str(pool["registry"]),
+            "--active-speakers",
+            str(pool["active"]),
+            "--output",
+            str(tmp_path / "render_input"),
+            "--config-out",
+            str(tmp_path / "config.yaml"),
+            "--base-config",
+            str(pool["base_config"]),
+            "--project-root",
+            str(pool["root"]),
+            "--backend",
+            backend,
+        ]
+    )
+
+    assert exit_code == 0
+    assert source.read_bytes() == source_before
+    manifest = json.loads(
+        (tmp_path / "materialization_manifest.json").read_text(encoding="utf-8")
+    )
+    assert manifest["backend_target"] == backend
+    role = manifest["dialogues"][0]["roles"]["caller"]
+    assert ("higgs_reference" in role) is (backend in {"higgs", "both"})
+    assert ("cosyvoice_reference" in role) is (backend in {"cosyvoice", "both"})
