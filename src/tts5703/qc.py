@@ -8,10 +8,7 @@ from typing import Any
 from pydub import AudioSegment
 
 from .input_records import InputRecord
-from .render_plan import PreparedDialogue, TurnRenderResult
-from .validate import NormalizedDialogue
-
-REQUIRED_TURN_FIELDS = {"turn_id", "speaker", "text", "label", "start_time", "end_time"}
+from .render_models import PreparedDialogue, TurnRenderResult
 
 
 @dataclass
@@ -23,82 +20,6 @@ class QCResult:
 
 
 def run_qc(
-    dialogue: NormalizedDialogue,
-    out_dir: Path,
-    clean_path: Path,
-    telephone_path: Path,
-    metadata: dict,
-) -> QCResult:
-    """Check basic output completeness and turn-timestamp consistency.
-
-    This is workstream-level structural QC, not perceptual speech evaluation or
-    formal downstream crisis-detection validation. The caller logs/returns this
-    result; no separate QC report file is written by the current pipeline.
-    """
-    checks: dict[str, bool] = {}
-    issues: list[str] = []
-    turn_audio_ok = True
-    metadata_by_turn_id = {turn["turn_id"]: turn for turn in metadata.get("turns", [])}
-    for turn in dialogue.turns:
-        metadata_turn = metadata_by_turn_id.get(turn.turn_id)
-        if metadata_turn is None:
-            turn_audio_ok = False
-            issues.append(f"turn {turn.turn_id} is missing from metadata")
-            continue
-        path = out_dir / metadata_turn["turn_audio"]
-        if not path.exists():
-            turn_audio_ok = False
-            issues.append(f"turn {turn.turn_id} audio file is missing: {path.name}")
-            continue
-        try:
-            if len(AudioSegment.from_file(path)) / 1000 < 0.1:
-                turn_audio_ok = False
-                issues.append(
-                    f"turn {turn.turn_id} audio duration is invalid (must exceed 0.1 seconds)"
-                )
-        except Exception as error:  # noqa: BLE001 - report any decoder/backend failure as QC
-            turn_audio_ok = False
-            issues.append(f"turn {turn.turn_id} audio cannot be read: {error}")
-    checks["turn_audio_files_exist"] = turn_audio_ok
-
-    checks["clean_audio_exists"] = clean_path.exists()
-    checks["telephone_audio_exists"] = telephone_path.exists()
-    if not clean_path.exists():
-        issues.append("Clean audio was not generated")
-    if not telephone_path.exists():
-        issues.append("Telephone audio was not generated")
-
-    duration_ok = clean_path.exists()
-    if duration_ok:
-        duration = len(AudioSegment.from_file(clean_path)) / 1000
-        turns = metadata.get("turns", [])
-        if duration <= 0 or (turns and turns[-1]["end_time"] > duration + 0.05):
-            duration_ok = False
-            issues.append("Clean audio duration or final-turn timestamp is invalid")
-    checks["duration_positive"] = duration_ok
-
-    turns = metadata.get("turns", [])
-    checks["turn_count_matches"] = len(turns) == len(dialogue.turns)
-    if not checks["turn_count_matches"]:
-        issues.append("Input and metadata turn counts do not match")
-
-    previous_end = -1.0
-    timestamps_ok = True
-    for turn in turns:
-        if turn["start_time"] < previous_end or turn["end_time"] <= turn["start_time"]:
-            timestamps_ok = False
-            issues.append(f"turn {turn['turn_id']} timestamps are invalid")
-        previous_end = turn["end_time"]
-    checks["timestamps_increasing"] = timestamps_ok
-
-    fields_ok = all(not (REQUIRED_TURN_FIELDS - set(turn)) for turn in turns)
-    checks["metadata_fields_complete"] = fields_ok
-    if not fields_ok:
-        issues.append("Metadata is missing required contract fields")
-    return QCResult(dialogue.dialogue_id, all(checks.values()), checks, issues)
-
-
-def run_final_qc(
     input_record: InputRecord,
     dialogue: PreparedDialogue,
     turn_results: tuple[TurnRenderResult, ...] | list[TurnRenderResult],
@@ -189,12 +110,9 @@ def run_final_qc(
 
             plan = prepared.plan
             metadata_plan = metadata_turn["planned"]
-            higgs = plan["higgs"]
             normalized = plan["normalized"]
             realization = plan["realization"]
             hesitation = plan["planner"]["hesitation"]
-            within = plan["planner"]["pause_within"]
-            rate_factor = expected_rate[normalized["rate"]]
             pause_ms = expected_pause[normalized["pause_before"]]
             source_required = source["acoustic"]["required"]
             plan_ok &= (
@@ -205,36 +123,54 @@ def run_final_qc(
                 and normalized["rate"] == source_required["rate"]
                 and normalized["pause_within_count"] == source_required["pause_within"]
                 and normalized["hesitation_count"] == source_required["hesitations"]
-                and higgs["model_input"]
-                == "".join(higgs["prefix_tokens"]) + higgs["text"]
-                and higgs["synthesis_call_count"] == 1
                 and hesitation["inserted_count"]
                 == normalized["hesitation_count"]
                 == realization["hesitation_count"]["inserted_events"]
-                and within["inserted_count"]
-                == normalized["pause_within_count"]
-                == higgs["native_pause_token_count"]
-                == realization["pause_within_count"]["inserted_native_pause_tokens"]
-                and plan["postprocess"]["atempo_factor"] == rate_factor
-                and plan["postprocess"]["atempo"]["factor"] == rate_factor
-                and plan["postprocess"]["atempo"]["enabled"]
-                is (rate_factor is not None)
                 and plan["postprocess"]["pause_before_ms"] == pause_ms
                 and realization["pause_before"]["milliseconds"] == pause_ms
             )
+            if dialogue.engine == "higgs":
+                higgs = plan["higgs"]
+                within = plan["planner"]["pause_within"]
+                rate_factor = expected_rate[normalized["rate"]]
+                plan_ok &= (
+                    higgs["model_input"]
+                    == "".join(higgs["prefix_tokens"]) + higgs["text"]
+                    and higgs["synthesis_call_count"] == 1
+                    and within["inserted_count"]
+                    == normalized["pause_within_count"]
+                    == higgs["native_pause_token_count"]
+                    == realization["pause_within_count"]["inserted_native_pause_tokens"]
+                    and plan["postprocess"]["atempo_factor"] == rate_factor
+                    and plan["postprocess"]["atempo"]["factor"] == rate_factor
+                    and plan["postprocess"]["atempo"]["enabled"]
+                    is (rate_factor is not None)
+                    and "cosyvoice" not in plan
+                )
+            else:
+                cosy = plan["cosyvoice"]
+                plan_ok &= (
+                    plan["backend"] == "cosyvoice"
+                    and "higgs" not in plan
+                    and cosy["speed"]
+                    == {"slow": 0.8, "normal": 1.0, "fast": 1.2}[normalized["rate"]]
+                    and cosy["prompt_wav"] == prepared.prompt_wav
+                    and cosy["prompt_text"] == prepared.prompt_text
+                    and cosy["reference_sha256"] == prepared.reference_sha256
+                    and realization["pause_within_count"]["status"] == "not_required"
+                )
 
             reference = metadata_turn["approved_speaker_reference"]
-            speaker_ok &= (
-                reference["render_speaker_id"] == prepared.render_speaker_id
-                and reference["reference_wav"] == prepared.reference_wav
-                and reference["sha256"] == prepared.reference_sha256
-                and prepared.upstream_scenario_speaker_id != prepared.render_speaker_id
+            speaker_ok &= reference == prepared.approved_reference and (
+                prepared.upstream_scenario_speaker_id != prepared.render_speaker_id
             )
 
             result = results[prepared.ordinal]
             execution = metadata_turn["execution"]
             expected_rate_status = (
-                "not_required" if prepared.rate == "normal" else "executed"
+                "not_required"
+                if dialogue.engine == "higgs" and prepared.rate == "normal"
+                else "executed"
             )
             execution_ok &= (
                 result.source_turn_id == prepared.source_turn_id

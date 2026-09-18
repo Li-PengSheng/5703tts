@@ -1,8 +1,7 @@
 """Deterministically assign dialogue roles to the frozen active speaker pool.
 
-This is rendering configuration only. It does not synthesise audio, rewrite
-dialogue JSON, or write ``speaker_id`` into ``acoustic_spec``. Crisis labels
-and acoustic conditions are recorded after assignment for descriptive QA;
+This is rendering configuration only. It does not synthesise audio or rewrite
+dialogue JSON. Labels and acoustic conditions are recorded after assignment for descriptive QA;
 they never participate in the assignment decision.
 """
 
@@ -17,12 +16,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from tts5703.final_input import (
+from tts5703.input_contract import (
     FinalInputValidationError,
-    SchemaFamily,
-    SchemaFamilyError,
-    detect_schema_family,
-    validate_final_dialogue,
+    validate_dialogue,
 )
 from tts5703.input_records import (
     InputRecord,
@@ -72,7 +68,7 @@ class TurnRecord:
     label: str | None
     rate: Any
     arousal: Any
-    coarse_affect: Any
+    affect: Any
 
 
 @dataclass(frozen=True)
@@ -85,7 +81,6 @@ class DialogueRecord:
     line_number: int | None
     record_sha256: str
     raw: dict[str, Any]
-    schema_family: SchemaFamily
     upstream_roles_by_logical: dict[str, str]
 
 
@@ -233,24 +228,12 @@ def _count_key(value: Any) -> str:
     return str(value)
 
 
-def _acoustic_from_turn(turn: dict[str, Any]) -> tuple[Any, Any, Any]:
-    spec = turn.get("acoustic_spec")
-    if isinstance(spec, dict):
-        return spec.get("rate"), spec.get("arousal"), spec.get("coarse_affect")
-    return turn.get("rate"), turn.get("arousal"), turn.get("coarse_affect")
-
-
 def _dialogue_from_record(record: InputRecord) -> DialogueRecord:
     raw = record.raw
     dialogue_id = record.dialogue_id
     try:
-        family = detect_schema_family(raw)
-        final = (
-            validate_final_dialogue(raw)
-            if family is SchemaFamily.FINAL_NESTED
-            else None
-        )
-    except (SchemaFamilyError, FinalInputValidationError) as error:
+        final = validate_dialogue(raw)
+    except FinalInputValidationError as error:
         raise SpeakerAssignmentError(
             f"{record.container_path}: dialogue {dialogue_id}: {error}"
         ) from error
@@ -262,14 +245,10 @@ def _dialogue_from_record(record: InputRecord) -> DialogueRecord:
     turns: list[TurnRecord] = []
     roles: list[str] = []
     seen_roles: set[str] = set()
-    role_by_upstream = (
-        {
-            identity.upstream_role: identity.logical_role
-            for identity in final.speaker_identities.values()
-        }
-        if final is not None
-        else {}
-    )
+    role_by_upstream = {
+        identity.upstream_role: identity.logical_role
+        for identity in final.speaker_identities.values()
+    }
     for position, turn in enumerate(turns_raw, start=1):
         if not isinstance(turn, dict):
             raise SpeakerAssignmentError(
@@ -279,29 +258,24 @@ def _dialogue_from_record(record: InputRecord) -> DialogueRecord:
             turn.get("speaker"),
             f"{record.container_path}: {dialogue_id} turn {position} speaker",
         )
-        if final is not None:
-            speaker = role_by_upstream[speaker]
+        speaker = role_by_upstream[speaker]
         if speaker not in seen_roles:
             seen_roles.add(speaker)
             roles.append(speaker)
-        if final is not None:
-            required = turn["acoustic"]["required"]
-            rate, arousal, coarse_affect = (
-                required["rate"],
-                required["arousal"],
-                required["affect"],
-            )
-            label = UNSPECIFIED_COUNT_KEY
-        else:
-            rate, arousal, coarse_affect = _acoustic_from_turn(turn)
-            label = turn.get("label")
+        required = turn["acoustic"]["required"]
+        rate, arousal, affect = (
+            required["rate"],
+            required["arousal"],
+            required["affect"],
+        )
+        label = UNSPECIFIED_COUNT_KEY
         turns.append(
             TurnRecord(
                 speaker=speaker,
                 label=label if isinstance(label, str) else None,
                 rate=rate,
                 arousal=arousal,
-                coarse_affect=coarse_affect,
+                affect=affect,
             )
         )
     return DialogueRecord(
@@ -313,15 +287,10 @@ def _dialogue_from_record(record: InputRecord) -> DialogueRecord:
         line_number=record.line_number,
         record_sha256=record.record_sha256,
         raw=raw,
-        schema_family=family,
-        upstream_roles_by_logical=(
-            {
-                identity.logical_role: identity.upstream_role
-                for identity in final.speaker_identities.values()
-            }
-            if final is not None
-            else {}
-        ),
+        upstream_roles_by_logical={
+            identity.logical_role: identity.upstream_role
+            for identity in final.speaker_identities.values()
+        },
     )
 
 
@@ -550,7 +519,7 @@ def build_assignment_summary(
             label_key = _count_key(turn.label)
             rate_key = _count_key(turn.rate)
             arousal_key = _count_key(turn.arousal)
-            affect_key = _count_key(turn.coarse_affect)
+            affect_key = _count_key(turn.affect)
             label_keys.add(label_key)
             rate_keys.add(rate_key)
             arousal_keys.add(arousal_key)
@@ -582,7 +551,7 @@ def build_assignment_summary(
         acoustic_exposure[speaker_id] = {
             "rate": rates,
             "arousal": arousals,
-            "coarse_affect": affects,
+            "affect": affects,
         }
 
     return {

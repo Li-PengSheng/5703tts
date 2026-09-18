@@ -5,7 +5,7 @@
   "notes": [
     "Speaker IDs are never renumbered. Rejected IDs remain in selected_speakers.json, speaker_registry.json, and historical smoke results.",
     "Demographic metadata is descriptive only and is not a validation rule.",
-    "Assignment maps dialogue roles to speaker_id values. It is independent of acoustic_spec and does not use crisis labels as an assignment signal."
+    "Assignment maps dialogue roles to speaker_id values. It is independent of final acoustic controls and does not use labels as an assignment signal."
   ],
   "active_speaker_ids": [
     "spk_001",

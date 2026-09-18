@@ -1,0 +1,20 @@
+# Explicit backup-backend configuration. There is no automatic fallback from Higgs.
+tts:
+  engine: cosyvoice
+  cosyvoice:
+    python_bin: third_party/CosyVoice/.venv/bin/python
+    repo_dir: third_party/CosyVoice
+    model_dir: models/Fun-CosyVoice3-0.5B
+    load_trt: false
+    load_vllm: false
+    fp16: true
+  # Prompt WAV/text and their SHA-256 identities come from --speaker-sidecar.
+
+fade_ms: 5
+
+telephone:
+  sample_rate: 8000
+  channels: 1
+  high_pass_hz: 300
+  low_pass_hz: 3400
+  volume_db_reduction: 3

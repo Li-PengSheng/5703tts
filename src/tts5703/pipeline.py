@@ -6,22 +6,15 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from .assemble import assemble_dialogue, assemble_prepared_dialogue
-from .backend_errors import BackendControlError
-from .backend_info import describe_engine, describe_final_controlled_tts_engine
-from .final_input import SchemaFamily, detect_schema_family
+from .assemble import assemble_prepared_dialogue
+from .backend_info import describe_engine
+from .input_contract import validate_dialogue
 from .input_records import InputRecord
-from .metadata import build_final_metadata, build_metadata, write_metadata
+from .metadata import build_metadata, write_metadata
 from .postprocess import apply_telephone_effect
-from .qc import QCResult, run_final_qc, run_qc
-from .render_plan import RenderPlanError, prepare_final_dialogue
-from .tts_engine import (
-    preflight_dialogue_controls,
-    preflight_prepared_dialogue,
-    synthesize_all_turns,
-    synthesize_prepared_turns,
-)
-from .validate import ValidationError, load_and_validate
+from .qc import QCResult, run_qc
+from .render_plan import prepare_dialogue
+from .tts_engine import preflight_prepared_dialogue, synthesize_prepared_turns
 
 logger = logging.getLogger(__name__)
 
@@ -37,141 +30,6 @@ class PipelineResult:
 
 
 async def run_dialogue(
-    json_path: Path, config: dict[str, Any], output_root: Path
-) -> PipelineResult:
-    """Run one dialogue through validation, synthesis, assembly, export, and QC.
-
-    Expected input/preflight failures are returned without creating an output
-    directory. Failures after that point leave completed per-turn or dialogue
-    files in place for diagnosis; the current pipeline has no transactional
-    cleanup, retry, or resume protocol.
-    """
-    dialogue_id: str | None = None
-    log_id = json_path.stem
-    started = time.perf_counter()
-    try:
-        logger.info("event=stage_start dialogue=%s stage=validate", log_id)
-        dialogue = load_and_validate(json_path, config)
-        dialogue_id = dialogue.dialogue_id
-        logger.info(
-            "event=stage_complete dialogue=%s stage=validate turns=%d",
-            dialogue_id,
-            len(dialogue.turns),
-        )
-        # Backend mappings are checked before any audio is rendered; canonical
-        # schema validation stays backend-independent.
-        preflight_dialogue_controls(dialogue.turns, config)
-        out_dir = output_root / dialogue_id
-        out_dir.mkdir(parents=True, exist_ok=True)
-        logger.info(
-            "event=stage_start dialogue=%s stage=tts engine=%s",
-            dialogue_id,
-            config["tts"]["engine"],
-        )
-        turn_paths = await synthesize_all_turns(dialogue.turns, out_dir, config)
-        logger.info(
-            "event=stage_complete dialogue=%s stage=tts turn_audio=%s",
-            dialogue_id,
-            [path.name for path in turn_paths.values()],
-        )
-        logger.info("event=stage_start dialogue=%s stage=assemble", dialogue_id)
-        full_audio, timings = assemble_dialogue(dialogue.turns, turn_paths, config)
-        logger.info(
-            "event=stage_complete dialogue=%s stage=assemble duration_sec=%.3f",
-            dialogue_id,
-            len(full_audio) / 1000,
-        )
-        clean_path = out_dir / f"{dialogue_id}_clean.wav"
-        logger.info("event=stage_start dialogue=%s stage=postprocess", dialogue_id)
-        full_audio.export(clean_path, format="wav")
-        telephone_path = out_dir / f"{dialogue_id}_telephone.wav"
-        apply_telephone_effect(full_audio, config).export(telephone_path, format="wav")
-        logger.info(
-            "event=stage_complete dialogue=%s stage=postprocess clean=%s telephone=%s",
-            dialogue_id,
-            clean_path.name,
-            telephone_path.name,
-        )
-        logger.info("event=stage_start dialogue=%s stage=metadata", dialogue_id)
-        metadata = build_metadata(
-            dialogue_id,
-            clean_path,
-            telephone_path,
-            timings,
-            turn_paths,
-            describe_engine(config),
-        )
-        metadata_path = write_metadata(metadata, out_dir)
-        logger.info(
-            "event=stage_complete dialogue=%s stage=metadata path=%s",
-            dialogue_id,
-            metadata_path.name,
-        )
-        logger.info("event=stage_start dialogue=%s stage=qc", dialogue_id)
-        qc = run_qc(dialogue, out_dir, clean_path, telephone_path, metadata)
-        logger.info(
-            "event=stage_complete dialogue=%s stage=qc passed=%s checks=%s issues=%s",
-            dialogue_id,
-            qc.passed,
-            qc.checks,
-            qc.issues,
-        )
-        logger.info(
-            "event=dialogue_pipeline_complete dialogue=%s elapsed_sec=%.2f",
-            dialogue_id,
-            time.perf_counter() - started,
-        )
-        return PipelineResult(
-            dialogue_id=dialogue_id,
-            status="success" if qc.passed else "failed",
-            error=None if qc.passed else f"QC failed: {qc.issues}",
-            qc=qc,
-            out_dir=out_dir,
-            error_type=None if qc.passed else "QCFailure",
-        )
-    except ValidationError as error:
-        logger.warning(
-            "event=dialogue_pipeline_failed dialogue=%s stage=validate error=%s",
-            log_id,
-            error,
-        )
-        return PipelineResult(
-            dialogue_id=None,
-            status="failed",
-            error=f"Input validation failed: {error}",
-            error_type=type(error).__name__,
-        )
-    except BackendControlError as error:
-        # Expected compatibility failure, not a defect: the requested control is
-        # schema-valid but the selected backend has no mapping for it, so the
-        # actionable message matters more than a traceback.
-        logger.warning(
-            "event=dialogue_pipeline_failed dialogue=%s stage=backend_preflight "
-            "error=%s",
-            dialogue_id,
-            error,
-        )
-        return PipelineResult(
-            dialogue_id=dialogue_id,
-            status="failed",
-            error=f"Backend control preflight failed: {error}",
-            error_type=type(error).__name__,
-        )
-    except Exception as error:
-        logger.exception(
-            "event=dialogue_pipeline_failed dialogue=%s elapsed_sec=%.2f",
-            dialogue_id,
-            time.perf_counter() - started,
-        )
-        return PipelineResult(
-            dialogue_id=dialogue_id,
-            status="failed",
-            error=f"Unexpected error: {error}",
-            error_type=type(error).__name__,
-        )
-
-
-async def run_final_dialogue(
     input_record: InputRecord,
     sidecar: dict[str, Any],
     config: dict[str, Any],
@@ -179,14 +37,13 @@ async def run_final_dialogue(
     *,
     project_root: Path,
 ) -> PipelineResult:
-    """Render one already-loaded final record through the prepared-only path."""
+    """Render one production InputRecord through the canonical prepared path."""
     dialogue_id = input_record.dialogue_id
     started = time.perf_counter()
     try:
-        if detect_schema_family(input_record.raw) is not SchemaFamily.FINAL_NESTED:
-            raise RenderPlanError("InputRecord is not a final nested dialogue")
-        prepared = prepare_final_dialogue(
-            input_record, sidecar, project_root=project_root
+        validate_dialogue(input_record.raw)
+        prepared = prepare_dialogue(
+            input_record, sidecar, project_root=project_root, config=config
         )
         # This gate deliberately precedes even output-directory creation.
         preflight_prepared_dialogue(prepared, config)
@@ -200,8 +57,8 @@ async def run_final_dialogue(
         telephone_path = out_dir / f"{dialogue_id}_telephone.wav"
         apply_telephone_effect(full_audio, config).export(telephone_path, format="wav")
 
-        engine_info = describe_final_controlled_tts_engine(config, prepared)
-        metadata = build_final_metadata(
+        engine_info = describe_engine(config, prepared)
+        metadata = build_metadata(
             input_record,
             prepared,
             clean_path,
@@ -211,7 +68,7 @@ async def run_final_dialogue(
             engine_info,
         )
         write_metadata(metadata, out_dir)
-        qc = run_final_qc(
+        qc = run_qc(
             input_record,
             prepared,
             turn_results,

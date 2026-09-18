@@ -9,7 +9,11 @@ from pydub import AudioSegment
 
 from tts5703.assemble import assemble_prepared_dialogue
 from tts5703.controlled_tts import map_turn_to_higgs
-from tts5703.render_plan import PreparedDialogue, PreparedTurn, TurnRenderResult
+from tts5703.render_models import (
+    HiggsPreparedTurn,
+    PreparedDialogue,
+    TurnRenderResult,
+)
 
 
 def _write_speech(path: Path, duration_ms: int = 100) -> None:
@@ -26,7 +30,7 @@ def _turn(
     ordinal: int,
     source_turn_id: str,
     pause_before: str,
-) -> PreparedTurn:
+) -> HiggsPreparedTurn:
     reference = tmp_path / "reference.wav"
     reference.write_bytes(b"reference")
     source = {
@@ -54,7 +58,7 @@ def _turn(
             }
         },
     }
-    return PreparedTurn(
+    return HiggsPreparedTurn(
         ordinal=ordinal,
         source_turn_id=source_turn_id,
         upstream_role="User",
@@ -68,7 +72,7 @@ def _turn(
     )
 
 
-def _dialogue(*turns: PreparedTurn) -> PreparedDialogue:
+def _dialogue(*turns: HiggsPreparedTurn) -> PreparedDialogue:
     return PreparedDialogue(
         dialogue_id="assembly-dialogue",
         record_sha256="1" * 64,
@@ -79,7 +83,7 @@ def _dialogue(*turns: PreparedTurn) -> PreparedDialogue:
     )
 
 
-def _result(turn: PreparedTurn, path: Path) -> TurnRenderResult:
+def _result(turn: HiggsPreparedTurn, path: Path) -> TurnRenderResult:
     return TurnRenderResult(
         ordinal=turn.ordinal,
         source_turn_id=turn.source_turn_id,

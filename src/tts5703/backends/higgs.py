@@ -13,9 +13,7 @@ from collections import deque
 from pathlib import Path
 from typing import Any
 
-from ..higgs_controls import resolve_higgs_turn_controls
-from ..render_plan import PreparedTurn
-from ..validate import NormalizedTurn
+from ..render_models import HiggsPreparedTurn
 
 logger = logging.getLogger("tts5703.tts_engine")
 
@@ -383,82 +381,6 @@ def _apply_rate(
         processed.unlink(missing_ok=True)
 
 
-def synthesize_turn(
-    turn: NormalizedTurn, out_dir: Path, config: dict[str, Any]
-) -> Path:
-    higgs = config["tts"]["higgs"]
-    root = _project_root()
-    reference_wav = _resolve_path(
-        root, higgs["voice_map"][turn.speaker]["reference_wav"]
-    ).resolve()
-    if not reference_wav.is_file():
-        raise RuntimeError(
-            f"Higgs reference audio is missing or not a file: {reference_wav}"
-        )
-
-    server_executable = _resolve_path(root, higgs["server_executable"]).resolve()
-    model_dir = _resolve_path(root, higgs["model_dir"]).resolve()
-    missing = []
-    if not _WORKER_SCRIPT.is_file():
-        missing.append(f"Higgs worker: {_WORKER_SCRIPT}")
-    if not server_executable.is_file() or not os.access(server_executable, os.X_OK):
-        missing.append(f"Higgs server executable: {server_executable}")
-    if not model_dir.is_dir():
-        missing.append(f"Higgs model directory: {model_dir}")
-    if missing:
-        raise RuntimeError(
-            "Higgs cannot start because required runtime paths are missing: "
-            + "; ".join(missing)
-        )
-
-    resolution = resolve_higgs_turn_controls(turn)
-    final_path = out_dir / f"turn_{turn.turn_id:03d}.wav"
-    raw_path = out_dir / f"turn_{turn.turn_id:03d}.higgs_raw.wav"
-    processed_path = final_path.with_name(f"{final_path.stem}.higgs_processed.part.wav")
-    raw_path.unlink(missing_ok=True)
-    processed_path.unlink(missing_ok=True)
-    worker = _get_worker(
-        str(server_executable),
-        str(model_dir),
-        higgs.get("host", "127.0.0.1"),
-        higgs.get("port", 18080),
-        higgs.get("startup_timeout_seconds", 900),
-        higgs.get("inference_timeout_seconds", 300),
-    )
-    request = {
-        "model_input": resolution["higgs"]["model_input"],
-        "reference_wav": str(reference_wav),
-        "output_path": str(raw_path.resolve()),
-    }
-    logger.debug(
-        "event=turn_tts_start engine=higgs turn=%d speaker=%s rate=%s",
-        turn.turn_id,
-        turn.speaker,
-        turn.rate,
-    )
-    try:
-        response = _request(worker, request)
-        _validate_success(worker, response, raw_path)
-    except Exception:
-        raw_path.unlink(missing_ok=True)
-        processed_path.unlink(missing_ok=True)
-        raise
-
-    _apply_rate(
-        raw_path,
-        final_path,
-        resolution["postprocess"]["rate"],
-        _resolve_command(root, higgs.get("ffmpeg_bin", "ffmpeg")),
-    )
-    logger.debug(
-        "event=turn_tts_complete engine=higgs turn=%d output=%s bytes=%d",
-        turn.turn_id,
-        final_path.name,
-        final_path.stat().st_size,
-    )
-    return final_path
-
-
 def _prepared_runtime(
     config: dict[str, Any],
 ) -> tuple[dict[str, Any], Path, Path, str]:
@@ -512,7 +434,7 @@ def _prepared_runtime(
 
 
 def preflight_prepared_turn(
-    turn: PreparedTurn, config: dict[str, Any]
+    turn: HiggsPreparedTurn, config: dict[str, Any]
 ) -> tuple[dict[str, Any], Path, Path, str]:
     """Fail closed on prepared execution inputs without starting the worker."""
     runtime = _prepared_runtime(config)
@@ -543,7 +465,7 @@ def preflight_prepared_turn(
 
 
 def synthesize_prepared_turn(
-    turn: PreparedTurn, out_dir: Path, config: dict[str, Any]
+    turn: HiggsPreparedTurn, out_dir: Path, config: dict[str, Any]
 ) -> Path:
     """Execute one cached final plan with one unchanged worker request."""
     higgs, server_executable, model_dir, ffmpeg_bin = preflight_prepared_turn(

@@ -1,7 +1,8 @@
 # Higgs Google Cloud validation gate
 
 Production integration is implemented and offline-validated. Real Higgs GPU
-runtime validation is still required. Do not make Higgs the default backend
+runtime validation is still required. Higgs is the configured primary backend,
+but the checked-in paths are placeholders and it must not be treated as deployable
 until every required checkbox below passes and its evidence is reviewed.
 
 ## Evidence boundary
@@ -13,7 +14,9 @@ Already proven by CPU/offline tests:
   QC, batch/resume identity, and explicit speaker-reference materialization;
 - no automatic Higgs-to-CosyVoice fallback;
 - `slow`/`fast` use FFmpeg `atempo=0.85`/`1.15`; SGLang speed remains `1.0`;
-- `pause_before_ms` and `pause_after_ms` remain assembly-owned.
+- `pause_before` is assembly-owned: `none`/`short`/`long` produce
+  `0`/`500`/`900 ms`; `pause_after` is fixed at `0`, and turn WAVs contain
+  speech only.
 
 Still requiring real GPU evidence:
 
@@ -45,9 +48,16 @@ requirements. A newer pinned stack is acceptable, but its exact versions,
 checkpoint identity, GPU, request result, and output metadata become a new
 evidence set. The old smoke did not verify reference-conditioned synthesis.
 
+## Evidence baseline
+
+Collect final Cloud validation evidence only after this work is merged to
+`main`. Check out the exact merged `main` commit and record its full SHA in the
+evidence package. Evidence collected from an unmerged feature branch is not the
+final production baseline.
+
 ## Phase A — environment identity
 
-- [ ] Record the exact `5703tts` Git commit and config SHA/backend identity.
+- [ ] Record the exact merged `main` SHA, config SHA, and backend identity.
 - [ ] Record model ID, local checkpoint path, revision if known, and available
       artifact hashes; do not commit model files.
 - [ ] Record Python, SGLang-Omni, SGLang, Torch, Torch CUDA-build marker, CUDA
@@ -58,17 +68,41 @@ evidence set. The old smoke did not verify reference-conditioned synthesis.
 
 ## Higgs reference approval — mandatory before production materialization
 
-For every production `speaker_id`:
+For every production `speaker_id`, use this workflow:
+
+```text
+candidate reference WAV
+  -> record exact path + SHA-256
+  -> review-only registry copy (candidate) or production registry (approved)
+  -> materialize speaker assignments with --backend higgs
+  -> generated speaker sidecar
+  -> 5703tts --speaker-sidecar ...
+  -> production Higgs synthesis
+  -> perceptual and technical review
+```
+
+The registry and materializer are preprocessing inputs. The renderer does not
+look up the registry at runtime: it reads the production speaker ID and exact
+Higgs reference path/SHA only from the generated sidecar. The `tts.higgs`
+configuration contains runtime/model settings only and never supplies speaker
+references.
+
+Checklist:
 
 - [ ] Choose a candidate reference WAV and record its exact path and SHA-256.
-- [ ] Use a temporary explicit Higgs config to run real reference-conditioned
-      synthesis through the production worker path.
+- [ ] For an unapproved candidate, put the exact object in a review-only copy
+      of the registry used solely to materialize validation input; do not
+      change the production registry or treat the candidate as approved.
+- [ ] Materialize the validation sidecar with `--backend higgs` and confirm it
+      contains the expected `spk_*`, reference path, and SHA-256.
+- [ ] Run `5703tts` with that generated `--speaker-sidecar` through the
+      production worker path.
 - [ ] Verify the intended voice identity and clear separation from other
       production speakers.
 - [ ] Review audible quality, clipping, noise, truncation, and other artifacts.
 - [ ] Record reviewer, date, result, and evidence paths.
-- [ ] Only after acceptance, add this exact object to that speaker's registry
-      entry:
+- [ ] Only after acceptance, add this exact object to the production registry
+      and regenerate any production sidecars that will use it:
 
 ```json
 "higgs_reference": {
@@ -77,18 +111,10 @@ For every production `speaker_id`:
 }
 ```
 
-The existing `primary_reference.prompt_wav` may be tested as a candidate:
-
-```text
-CosyVoice primary prompt
-  -> temporary explicit Higgs test config
-  -> real Higgs synthesis and review
-  -> accepted: pin the same path + SHA under higgs_reference
-  -> rejected: select or create a separate Higgs reference
-```
-
-Candidate does not mean approved. Never populate `higgs_reference` merely
-because the same physical WAV already works with CosyVoice.
+An existing `primary_reference.prompt_wav` may be evaluated as a candidate, but
+candidate does not mean approved. Never populate or approve `higgs_reference`
+merely because the same physical WAV already works with CosyVoice; the two
+reference types are not interchangeable.
 
 ## Phase B — production worker/server startup
 
@@ -100,8 +126,10 @@ because the same physical WAV already works with CosyVoice.
 
 ## Phase C — one normal turn
 
-- [ ] Use an explicitly approved reference and `rate=normal` with absent affect
-      controls or one simple supported case.
+- [ ] Use an explicitly approved reference and a valid production turn with all
+      required controls, for example `rate=normal`, `arousal=2`,
+      `affect=neutral`, `pause_before=none`, `pause_within=0`, and
+      `hesitations=0`.
 - [ ] Confirm the reference reaches SGLang and the request returns HTTP 200 WAV.
 - [ ] Validate the final turn WAV and record sample rate, channels, frames,
       duration, file size, and hash.
@@ -110,13 +138,20 @@ because the same physical WAV already works with CosyVoice.
 
 ## Phase D — controlled-turn matrix
 
-Render at least:
+Every matrix row must be a valid production turn containing all six required
+controls. Render at least:
 
-- [ ] slow + neutral + medium (`atempo=0.85`);
-- [ ] fast + neutral + medium (`atempo=1.15`);
-- [ ] low + warm (contentment override);
-- [ ] sad, anxious, angry, and warm;
-- [ ] absent arousal and affect.
+| Case | `rate` | `arousal` | `affect` | `pause_before` | `pause_within` | `hesitations` | Expected focus |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Baseline | `normal` | `2` | `neutral` | `none` | `0` | `0` | no rate postprocess; 0 ms leading pause |
+| Low + warm | `slow` | `1` | `warm` | `short` | `0` | `1` | contentment override; `atempo=0.85`; 500 ms leading pause |
+| High + angry | `fast` | `3` | `angry` | `long` | `1` | `2` | `atempo=1.15`; 900 ms leading pause; native pause planning |
+| Sad | `normal` | `1` | `sad` | `none` | `0` | `1` | sad mapping and one lexical hesitation |
+| Anxious | `normal` | `3` | `anxious` | `short` | `1` | `2` | anxious mapping, native pause planning, and two hesitations |
+
+Together these rows cover `slow`/`normal`/`fast`, arousal `1`/`2`/`3`, all
+five production affects, every `pause_before` value, `pause_within > 0`, and
+hesitation counts `1` and `2` without constructing an invalid partial turn.
 
 For each case, record the exact prefix/model input, returned WAV metadata,
 postprocess result, timings, and metadata JSON. A successful render proves
@@ -125,7 +160,7 @@ quality.
 
 ## Phase E — two-speaker dialogue
 
-- [ ] Materialize with `--higgs-ready` using two explicitly approved registry
+- [ ] Materialize with `--backend higgs` using two explicitly approved registry
       entries and matching persistent speaker IDs.
 - [ ] Confirm each turn uses the correct reference and one server is reused.
 - [ ] Confirm all turn WAVs, clean assembly, timestamps, telephone output,
@@ -144,7 +179,7 @@ quality.
 
 ## Failure gates
 
-Higgs must not become the default backend while any of these remain unresolved:
+Higgs must not pass the real-runtime production gate while any of these remain unresolved:
 
 - unreliable model/server startup, OOM, or stderr deadlock;
 - failed reference-conditioned requests or wrong speaker/reference selection;
@@ -156,12 +191,12 @@ Higgs must not become the default backend while any of these remain unresolved:
 
 ## Evidence package
 
-Keep a small reviewable package containing the Git commit, config SHA/backend
-identity, environment/package/GPU identity, checkpoint/reference identifiers,
-startup and per-turn timings, WAV metadata, shutdown result, QC output,
-representative metadata JSON, batch summary, and failures/warnings. Do not
-commit checkpoints, generated corpora, caches, secrets, or routine full server
-logs.
+Keep a small reviewable package containing the exact merged `main` commit SHA,
+config SHA/backend identity, environment/package/GPU identity,
+checkpoint/reference identifiers, startup and per-turn timings, WAV metadata,
+shutdown result, QC output, representative metadata JSON, batch summary, and
+failures/warnings. Do not commit checkpoints, generated corpora, caches,
+secrets, or routine full server logs.
 
 Backend selection remains explicit. There is no automatic fallback. Any future
 fallback must record `requested_backend`, `actual_backend`, `fallback_used`, and

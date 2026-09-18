@@ -441,9 +441,8 @@ Reported source paths are relative to that source root.
 3. **Reference materialisation** - `scripts/materialize_vctk_speaker_pool.py`
    converts the selected recordings into `references/` and writes
    `speaker_registry.json`.
-4. **Same-text CosyVoice smoke** - `scripts/run_speaker_pool_smoke.py`
-   synthesizes one shared neutral sentence with every speaker reference through
-   the existing production synthesis path.
+4. **Same-text CosyVoice smoke** - historical review evidence records one
+   shared neutral sentence synthesized with every speaker reference.
 5. **Human review** - listen to the smoke output and fill in the generated
    `smoke_review.tsv`.
 6. **Final active speaker pool** - decided only after that human review.
@@ -513,26 +512,13 @@ retained as provenance, so every reference traces deterministically:
 `spk_001` -> `p248` -> `p248_112` -> original VCTK FLAC and transcript ->
 materialised reference WAV (recorded with its SHA256).
 
-## Speaker-pool smoke test
+## Speaker-pool smoke evidence
 
-The smoke test renders one shared sentence per speaker through
-`tts5703.tts_engine.synthesize_turn`, so it reuses the persistent CosyVoice
-worker and the production zero-shot path. It maps a temporary in-memory smoke
-role to each speaker's reference instead of adding permanent voice-map entries
-to `config/config.yaml`. Requested acoustic conditions are deliberately neutral
-(normal rate, no pauses, no arousal, affect, emotion, or paralinguistic events),
-because the test targets speaker identity, not acoustic control.
-
-`speaker_registry.json` stores the exact VCTK transcript as `prompt_text`, while
-the CosyVoice3 zero-shot path expects that transcript prefixed with
-`You are a helpful assistant.<|endofprompt|>`. The smoke runner therefore
-applies that formatting only to the temporary model-facing config and records
-`prompt_format: cosyvoice3_zero_shot` in its report; the registry transcript and
-the source VCTK transcripts are never rewritten.
-
-`smoke_results.json` is a smoke-test report only: elapsed time, audio duration,
-and real-time factor are recorded for traceability and must not be read as
-speaker-quality scores or used to rank speakers.
+The historical smoke evidence used one shared neutral sentence per speaker.
+`speaker_registry.json` preserves the exact VCTK transcript as `prompt_text`; the
+sidecar materializer adds the CosyVoice3 zero-shot prefix without rewriting the
+registry or source transcripts. Timing results are traceability evidence, not
+speaker-quality scores.
 
 ## Files
 

@@ -1,400 +1,119 @@
-"""Early Kokoro config validation and shared-configuration drift guard."""
+from __future__ import annotations
 
-import copy
+from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
 import pytest
-import yaml
 
-from tts5703.config import ConfigError, _validate_config, load_config
-from tts5703.validate import ValidationError, validate_and_normalize
+from tts5703.config import VALID_ENGINES, ConfigError, _validate_config, load_config
 
-CONFIG_PATH = Path("config/config.yaml")
-KOKORO_CONFIG_PATH = Path("config/config.kokoro.yaml")
-HIGGS_EXAMPLE_CONFIG_PATH = Path("config/config.higgs.example.yaml")
-
-# config.yaml selects CosyVoice and also configures Kokoro; config.kokoro.yaml
-# only carries what the Kokoro controlled-benchmark baseline needs. Everything
-# below must stay identical so a Kokoro run means the same thing under either file.
-SHARED_KOKORO_FIELDS = (
-    ("tts", "kokoro"),
-    ("tts", "default_rate"),
-    ("pause",),
-    ("fade_ms",),
-    ("telephone",),
-)
-# Intentional differences, deliberately excluded from the guard above.
-KNOWN_DIFFERENCES = (("tts", "engine"),)
+HIGGS_CONFIG = Path("config/config.yaml")
+COSYVOICE_CONFIG = Path("config/config_cosyvoice.yaml")
+HIGGS_EXAMPLE = Path("config/config.higgs.example.yaml")
 
 
-def _kokoro_config() -> dict[str, Any]:
-    config = copy.deepcopy(load_config(KOKORO_CONFIG_PATH))
-    return config
+def _higgs() -> dict[str, Any]:
+    return deepcopy(load_config(HIGGS_CONFIG))
 
 
-def _higgs_config() -> dict[str, Any]:
-    config = copy.deepcopy(load_config(CONFIG_PATH))
-    config["tts"]["engine"] = "higgs"
-    config["tts"]["higgs"] = {
-        "server_executable": "tools/sgl-omni",
-        "model_dir": "models/higgs",
-        "voice_map": {"spk_001": {"reference_wav": "refs/spk_001.wav"}},
-    }
-    return config
+def _cosyvoice() -> dict[str, Any]:
+    return deepcopy(load_config(COSYVOICE_CONFIG))
 
 
-def _at(config: dict[str, Any], path: tuple[str, ...]) -> Any:
-    value: Any = config
-    for key in path:
-        value = value[key]
-    return value
+def test_production_engine_universe_is_exact() -> None:
+    assert VALID_ENGINES == {"higgs", "cosyvoice"}
 
 
-def test_reference_kokoro_config_is_valid() -> None:
-    assert load_config(KOKORO_CONFIG_PATH)["tts"]["engine"] == "kokoro"
+def test_checked_in_production_configs_are_valid() -> None:
+    assert load_config(HIGGS_CONFIG)["tts"]["engine"] == "higgs"
+    assert load_config(COSYVOICE_CONFIG)["tts"]["engine"] == "cosyvoice"
+    assert load_config(HIGGS_EXAMPLE)["tts"]["engine"] == "higgs"
 
 
-def test_higgs_is_a_valid_engine_with_minimal_runtime_config() -> None:
-    assert _validate_config(_higgs_config()) is None
+@pytest.mark.parametrize("config_factory", [_higgs, _cosyvoice])
+def test_selected_backend_needs_no_voice_map(config_factory: Any) -> None:
+    config = config_factory()
+    selected = config["tts"]["engine"]
+
+    assert "voice_map" not in config["tts"][selected]
+    assert _validate_config(config) is None
 
 
-def test_higgs_example_config_is_structurally_valid_and_non_default() -> None:
-    example = load_config(HIGGS_EXAMPLE_CONFIG_PATH)
+def test_higgs_only_config_is_valid() -> None:
+    config = _higgs()
+    config["tts"].pop("cosyvoice")
+    assert _validate_config(config) is None
 
-    assert example["tts"]["engine"] == "higgs"
-    assert load_config(CONFIG_PATH)["tts"]["engine"] == "cosyvoice"
+
+def test_cosyvoice_only_config_is_valid() -> None:
+    config = _cosyvoice()
+    assert set(config["tts"]) == {"engine", "cosyvoice"}
+    assert _validate_config(config) is None
+
+
+@pytest.mark.parametrize("engine", ["higgs", "cosyvoice"])
+def test_malformed_unselected_backend_is_ignored(engine: str) -> None:
+    config = _higgs() if engine == "higgs" else _cosyvoice()
+    config["tts"]["engine"] = engine
+    config["tts"]["cosyvoice" if engine == "higgs" else "higgs"] = "invalid"
+    assert _validate_config(config) is None
+
+
+@pytest.mark.parametrize("engine", ["kokoro", "unknown", None])
+def test_unsupported_or_missing_engine_is_rejected(engine: Any) -> None:
+    config = _higgs()
+    config["tts"]["engine"] = engine
+    with pytest.raises(ConfigError, match="tts.engine must be one of"):
+        _validate_config(config)
 
 
 @pytest.mark.parametrize("field", ["server_executable", "model_dir"])
 @pytest.mark.parametrize("value", [None, "", "  ", 7])
-def test_higgs_required_runtime_paths_are_non_empty_strings(
-    field: str, value: Any
-) -> None:
-    config = _higgs_config()
+def test_selected_higgs_requires_runtime_paths(field: str, value: Any) -> None:
+    config = _higgs()
     config["tts"]["higgs"][field] = value
-
-    with pytest.raises(ConfigError, match=rf"tts.higgs.{field} must be a non-empty"):
-        _validate_config(config)
-
-
-def test_higgs_runtime_paths_need_not_exist_during_config_validation() -> None:
-    config = _higgs_config()
-    config["tts"]["higgs"]["server_executable"] = "/definitely/missing/sgl-omni"
-    config["tts"]["higgs"]["model_dir"] = "/definitely/missing/model"
-
-    assert _validate_config(config) is None
-
-
-def test_higgs_optional_runtime_defaults_may_be_omitted() -> None:
-    assert _validate_config(_higgs_config()) is None
-
-
-def test_higgs_explicit_loopback_host_is_valid() -> None:
-    config = _higgs_config()
-    config["tts"]["higgs"]["host"] = "127.0.0.1"
-
-    assert _validate_config(config) is None
-
-
-@pytest.mark.parametrize("host", ["localhost", "::1", "0.0.0.0", 7, None])
-def test_higgs_host_must_be_exact_loopback(host: Any) -> None:
-    config = _higgs_config()
-    config["tts"]["higgs"]["host"] = host
-
-    with pytest.raises(ConfigError, match="tts.higgs.host must be 127.0.0.1"):
-        _validate_config(config)
-
-
-@pytest.mark.parametrize("port", [1, 18080, 65535])
-def test_higgs_valid_ports(port: int) -> None:
-    config = _higgs_config()
-    config["tts"]["higgs"]["port"] = port
-
-    assert _validate_config(config) is None
-
-
-@pytest.mark.parametrize("port", [True, 0, 65536, 1.5, "18080"])
-def test_higgs_port_must_be_valid_integer(port: Any) -> None:
-    config = _higgs_config()
-    config["tts"]["higgs"]["port"] = port
-
-    with pytest.raises(ConfigError, match="tts.higgs.port"):
-        _validate_config(config)
-
-
-@pytest.mark.parametrize(
-    "field", ["startup_timeout_seconds", "inference_timeout_seconds"]
-)
-@pytest.mark.parametrize("value", [0.5, 1, 300])
-def test_higgs_valid_positive_timeouts(field: str, value: float) -> None:
-    config = _higgs_config()
-    config["tts"]["higgs"][field] = value
-
-    assert _validate_config(config) is None
-
-
-@pytest.mark.parametrize(
-    "field", ["startup_timeout_seconds", "inference_timeout_seconds"]
-)
-@pytest.mark.parametrize("value", [True, 0, -1, "300"])
-def test_higgs_timeouts_must_be_positive_numbers(field: str, value: Any) -> None:
-    config = _higgs_config()
-    config["tts"]["higgs"][field] = value
-
     with pytest.raises(ConfigError, match=rf"tts.higgs.{field}"):
         _validate_config(config)
 
 
-def test_higgs_custom_ffmpeg_bin_is_valid() -> None:
-    config = _higgs_config()
-    config["tts"]["higgs"]["ffmpeg_bin"] = "tools/fake-ffmpeg"
-
-    assert _validate_config(config) is None
-
-
-@pytest.mark.parametrize("ffmpeg_bin", [None, "", "  ", 7])
-def test_higgs_ffmpeg_bin_must_be_non_empty_string(ffmpeg_bin: Any) -> None:
-    config = _higgs_config()
-    config["tts"]["higgs"]["ffmpeg_bin"] = ffmpeg_bin
-
-    with pytest.raises(ConfigError, match="tts.higgs.ffmpeg_bin"):
+@pytest.mark.parametrize("host", ["localhost", "::1", "0.0.0.0", None])
+def test_higgs_host_is_frozen_to_loopback(host: Any) -> None:
+    config = _higgs()
+    config["tts"]["higgs"]["host"] = host
+    with pytest.raises(ConfigError, match="tts.higgs.host"):
         _validate_config(config)
 
 
-@pytest.mark.parametrize("engine", ["kokoro", "cosyvoice"])
-def test_remaining_configured_engines_are_valid(engine: str) -> None:
-    config = copy.deepcopy(load_config(CONFIG_PATH))
-    config["tts"]["engine"] = engine
-
-    assert _validate_config(config) is None
-
-
-@pytest.mark.parametrize("engine", ["edge_tts", "chatterbox_turbo"])
-def test_removed_engines_are_rejected(engine: str) -> None:
-    config = copy.deepcopy(load_config(CONFIG_PATH))
-    config["tts"]["engine"] = engine
-
-    with pytest.raises(ConfigError, match="tts.engine must be one of"):
+@pytest.mark.parametrize("field", ["python_bin", "repo_dir", "model_dir"])
+@pytest.mark.parametrize("value", ["", "  ", 7])
+def test_selected_cosyvoice_runtime_paths_are_nonblank(field: str, value: Any) -> None:
+    config = _cosyvoice()
+    config["tts"]["cosyvoice"][field] = value
+    with pytest.raises(ConfigError, match=rf"tts.cosyvoice.{field}"):
         _validate_config(config)
 
 
-def test_unknown_engine_remains_rejected() -> None:
-    config = copy.deepcopy(load_config(CONFIG_PATH))
-    config["tts"]["engine"] = "unknown"
-
-    with pytest.raises(ConfigError, match="tts.engine must be one of"):
+@pytest.mark.parametrize("field", ["load_trt", "load_vllm", "fp16"])
+def test_selected_cosyvoice_flags_are_boolean(field: str) -> None:
+    config = _cosyvoice()
+    config["tts"]["cosyvoice"][field] = "yes"
+    with pytest.raises(ConfigError, match=rf"tts.cosyvoice.{field}"):
         _validate_config(config)
 
 
-def test_missing_engine_is_rejected_without_an_implicit_default() -> None:
-    config = copy.deepcopy(load_config(CONFIG_PATH))
-    del config["tts"]["engine"]
-
-    with pytest.raises(ConfigError, match="Missing required configuration key: tts"):
-        _validate_config(config)
-
-
-def test_selected_higgs_requires_higgs_config() -> None:
-    config = _higgs_config()
+def test_selected_backend_block_is_required() -> None:
+    config = _higgs()
     del config["tts"]["higgs"]
-
     with pytest.raises(ConfigError, match="tts.higgs configuration is required"):
         _validate_config(config)
 
 
-@pytest.mark.parametrize("higgs", [None, [], "higgs"])
-def test_higgs_config_must_be_a_mapping(higgs: Any) -> None:
-    config = _higgs_config()
-    config["tts"]["higgs"] = higgs
-
-    with pytest.raises(ConfigError, match="tts.higgs must be a mapping"):
+@pytest.mark.parametrize(
+    "field", ["sample_rate", "channels", "high_pass_hz", "low_pass_hz"]
+)
+def test_shared_telephone_fields_must_be_positive(field: str) -> None:
+    config = _higgs()
+    config["telephone"][field] = 0
+    with pytest.raises(ConfigError, match=rf"telephone.{field}"):
         _validate_config(config)
-
-
-@pytest.mark.parametrize("voice_map", [None, {}, [], "voice"])
-def test_higgs_voice_map_must_be_non_empty_mapping(voice_map: Any) -> None:
-    config = _higgs_config()
-    config["tts"]["higgs"]["voice_map"] = voice_map
-
-    with pytest.raises(
-        ConfigError, match="tts.higgs.voice_map must be a non-empty mapping"
-    ):
-        _validate_config(config)
-
-
-@pytest.mark.parametrize("speaker", [None, "", "  ", 7])
-def test_higgs_speaker_ids_must_be_non_empty_strings(speaker: Any) -> None:
-    config = _higgs_config()
-    config["tts"]["higgs"]["voice_map"] = {
-        speaker: {"reference_wav": "refs/spk_001.wav"}
-    }
-
-    with pytest.raises(ConfigError, match="voice_map keys must be non-empty strings"):
-        _validate_config(config)
-
-
-@pytest.mark.parametrize("voice", [None, [], "refs/spk_001.wav"])
-def test_higgs_voice_entries_must_be_mappings(voice: Any) -> None:
-    config = _higgs_config()
-    config["tts"]["higgs"]["voice_map"]["spk_001"] = voice
-
-    with pytest.raises(ConfigError, match="voice_map.spk_001 must be a mapping"):
-        _validate_config(config)
-
-
-@pytest.mark.parametrize("reference_wav", [None, "", "  ", 7])
-def test_higgs_reference_wav_must_be_non_empty_string(reference_wav: Any) -> None:
-    config = _higgs_config()
-    config["tts"]["higgs"]["voice_map"]["spk_001"] = {"reference_wav": reference_wav}
-
-    with pytest.raises(ConfigError, match="reference_wav must be a non-empty string"):
-        _validate_config(config)
-
-
-@pytest.mark.parametrize("lang_code", [None, "", "   ", 42, ["a"]])
-def test_invalid_lang_code_fails_early(lang_code: Any) -> None:
-    config = _kokoro_config()
-    config["tts"]["kokoro"]["lang_code"] = lang_code
-
-    with pytest.raises(ConfigError, match="tts.kokoro.lang_code must be a non-empty"):
-        _validate_config(config)
-
-
-def test_missing_lang_code_fails_early() -> None:
-    config = _kokoro_config()
-    del config["tts"]["kokoro"]["lang_code"]
-
-    with pytest.raises(ConfigError, match="tts.kokoro.lang_code"):
-        _validate_config(config)
-
-
-@pytest.mark.parametrize("sample_rate", [None, 0, -24_000, 24_000.5, "24000", True])
-def test_invalid_sample_rate_fails_early(sample_rate: Any) -> None:
-    config = _kokoro_config()
-    config["tts"]["kokoro"]["sample_rate"] = sample_rate
-
-    with pytest.raises(
-        ConfigError, match="tts.kokoro.sample_rate must be a positive integer"
-    ):
-        _validate_config(config)
-
-
-@pytest.mark.parametrize("voice_map", [None, {}, [], "af_heart"])
-def test_invalid_voice_map_fails_early(voice_map: Any) -> None:
-    config = _kokoro_config()
-    config["tts"]["kokoro"]["voice_map"] = voice_map
-
-    with pytest.raises(
-        ConfigError, match="tts.kokoro.voice_map must be a non-empty mapping"
-    ):
-        _validate_config(config)
-
-
-@pytest.mark.parametrize("role", ["caller", "counsellor"])
-def test_partial_voice_map_is_a_dialogue_concern_not_a_config_error(role: str) -> None:
-    """Which speakers must exist depends on the dialogue, not on the backend."""
-    config = _kokoro_config()
-    del config["tts"]["kokoro"]["voice_map"][role]
-
-    assert _validate_config(config) is None
-
-
-def test_voice_map_for_unrelated_speaker_roles_is_accepted() -> None:
-    config = _kokoro_config()
-    config["tts"]["kokoro"]["voice_map"] = {"narrator": "af_heart"}
-
-    assert _validate_config(config) is None
-
-
-def test_unused_missing_speaker_mapping_still_fails_at_dialogue_validation() -> None:
-    config = _kokoro_config()
-    del config["tts"]["kokoro"]["voice_map"]["caller"]
-    dialogue = {
-        "schema_version": "0.2",
-        "dialogue_id": "roles001",
-        "turns": [
-            {
-                "turn_id": 1,
-                "speaker": "caller",
-                "text": "I need to talk.",
-                "label": "alert",
-                "acoustic_spec": {},
-            }
-        ],
-    }
-
-    with pytest.raises(ValidationError, match="has no configured voice"):
-        validate_and_normalize(dialogue, config)
-
-
-@pytest.mark.parametrize("speaker", ["", "   ", 7])
-def test_invalid_voice_map_key_fails_early(speaker: Any) -> None:
-    config = _kokoro_config()
-    config["tts"]["kokoro"]["voice_map"] = {speaker: "af_heart"}
-
-    with pytest.raises(ConfigError, match="voice_map keys must be non-empty strings"):
-        _validate_config(config)
-
-
-@pytest.mark.parametrize("voice", [None, "", "  ", 7])
-def test_empty_speaker_voice_fails_early(voice: Any) -> None:
-    config = _kokoro_config()
-    config["tts"]["kokoro"]["voice_map"]["caller"] = voice
-
-    with pytest.raises(ConfigError, match="tts.kokoro.voice_map.caller"):
-        _validate_config(config)
-
-
-def test_non_mapping_kokoro_section_fails_early() -> None:
-    config = _kokoro_config()
-    config["tts"]["kokoro"] = "kokoro"
-
-    with pytest.raises(ConfigError, match="tts.kokoro must be a mapping"):
-        _validate_config(config)
-
-
-@pytest.mark.parametrize("device", ["", "   ", 0])
-def test_invalid_device_fails_early(device: Any) -> None:
-    config = _kokoro_config()
-    config["tts"]["kokoro"]["device"] = device
-
-    with pytest.raises(ConfigError, match="tts.kokoro.device must be null"):
-        _validate_config(config)
-
-
-@pytest.mark.parametrize("device", [None, "cpu"])
-def test_supported_device_values_are_accepted(device: Any) -> None:
-    config = _kokoro_config()
-    config["tts"]["kokoro"]["device"] = device
-
-    assert _validate_config(config) is None
-
-
-def test_kokoro_validation_does_not_apply_to_other_engines() -> None:
-    config = copy.deepcopy(load_config(CONFIG_PATH))
-    config["tts"]["kokoro"]["lang_code"] = ""
-
-    assert config["tts"]["engine"] != "kokoro"
-    assert _validate_config(config) is None
-
-
-@pytest.mark.parametrize("path", SHARED_KOKORO_FIELDS, ids=lambda path: ".".join(path))
-def test_shared_kokoro_configuration_stays_equivalent(path: tuple[str, ...]) -> None:
-    default = yaml.safe_load(CONFIG_PATH.read_text(encoding="utf-8"))
-    kokoro = yaml.safe_load(KOKORO_CONFIG_PATH.read_text(encoding="utf-8"))
-
-    assert _at(default, path) == _at(kokoro, path), (
-        f"{'.'.join(path)} drifted between {CONFIG_PATH} and {KOKORO_CONFIG_PATH}"
-    )
-
-
-def test_known_configuration_differences_are_still_the_only_ones() -> None:
-    default = yaml.safe_load(CONFIG_PATH.read_text(encoding="utf-8"))
-    kokoro = yaml.safe_load(KOKORO_CONFIG_PATH.read_text(encoding="utf-8"))
-
-    assert KNOWN_DIFFERENCES == (("tts", "engine"),)
-    assert _at(default, ("tts", "engine")) == "cosyvoice"
-    assert _at(kokoro, ("tts", "engine")) == "kokoro"
-    # config.kokoro.yaml intentionally omits the other backends' sections.
-    assert set(kokoro["tts"]) - {"engine", "default_rate", "kokoro"} == set()

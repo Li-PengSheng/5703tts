@@ -1,16 +1,17 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
+import inspect
 import json
 import sys
 from copy import deepcopy
 from pathlib import Path
-from types import SimpleNamespace
 from typing import Any
 
 import pytest
 
-from tts5703 import batch_identity, cli
+from tts5703 import batch, batch_identity, cli
 from tts5703.pipeline import PipelineResult
 
 
@@ -46,12 +47,35 @@ def _record(dialogue_id: str, text: str | None = None) -> dict[str, Any]:
     }
 
 
-def _role(upstream: str, speaker: str, reference: str, digest: str) -> dict:
+def _reference_bytes(path: str) -> bytes:
+    return f"reference:{path}".encode()
+
+
+def _reference_sha(path: str) -> str:
+    return hashlib.sha256(_reference_bytes(path)).hexdigest()
+
+
+def _role(
+    upstream: str,
+    speaker: str,
+    reference_stem: str,
+    higgs_digest: str | None = None,
+) -> dict:
+    higgs_path = f"{reference_stem}-higgs.wav"
+    cosy_path = f"{reference_stem}-cosy.wav"
     return {
         "upstream_role": upstream,
         "upstream_scenario_speaker_id": f"scenario-{speaker}",
         "render_speaker_id": speaker,
-        "higgs_reference": {"reference_wav": reference, "sha256": digest},
+        "higgs_reference": {
+            "reference_wav": higgs_path,
+            "sha256": higgs_digest or _reference_sha(higgs_path),
+        },
+        "cosyvoice_reference": {
+            "prompt_wav": cosy_path,
+            "prompt_text": f"Prompt for {speaker}",
+            "sha256": _reference_sha(cosy_path),
+        },
     }
 
 
@@ -59,27 +83,26 @@ def _sidecar(
     dialogue_ids: tuple[str, ...],
     *,
     b_speaker: str = "spk_B_caller",
-    b_reference_sha: str = "3" * 64,
+    b_reference_sha: str | None = None,
     registry_sha: str = "a" * 64,
     active_sha: str = "b" * 64,
 ) -> dict[str, Any]:
     entries = []
     for dialogue_id in dialogue_ids:
         caller = b_speaker if dialogue_id == "B" else f"spk_{dialogue_id}_caller"
-        caller_sha = b_reference_sha if dialogue_id == "B" else "1" * 64
+        caller_sha = b_reference_sha if dialogue_id == "B" else None
         entries.append(
             {
                 "dialogue_id": dialogue_id,
                 "source": {"record_sha256": "provenance-only"},
                 "roles": {
                     "caller": _role(
-                        "User", caller, f"refs/{dialogue_id}-caller.wav", caller_sha
+                        "User", caller, f"refs/{dialogue_id}-caller", caller_sha
                     ),
                     "counsellor": _role(
                         "Listener",
                         f"spk_{dialogue_id}_counsellor",
-                        f"refs/{dialogue_id}-counsellor.wav",
-                        "2" * 64,
+                        f"refs/{dialogue_id}-counsellor",
                     ),
                 },
             }
@@ -100,9 +123,21 @@ def _config(engine: str = "higgs") -> dict[str, Any]:
                 "server_executable": "tools/sgl-omni",
                 "model_dir": "models/higgs",
                 "ffmpeg_bin": "ffmpeg",
-                "voice_map": {},
             },
-        }
+            "cosyvoice": {
+                "python_bin": "python",
+                "repo_dir": "third_party/CosyVoice",
+                "model_dir": "models/CosyVoice",
+            },
+        },
+        "fade_ms": 5,
+        "telephone": {
+            "sample_rate": 8000,
+            "channels": 1,
+            "high_pass_hz": 300,
+            "low_pass_hz": 3400,
+            "volume_db_reduction": 2,
+        },
     }
 
 
@@ -129,19 +164,42 @@ def _invoke(
     policy: dict[str, Any] | None = None,
     resume: bool = False,
     engine: str = "higgs",
+    config: dict[str, Any] | None = None,
     failures: set[str] | None = None,
 ) -> tuple[int, dict[str, Any], list[str]]:
     output = tmp_path / "output"
     config_path = tmp_path / "config.yaml"
     sidecar_path = tmp_path / "sidecar.json"
     policy_path = tmp_path / "policy.json"
-    config_path.write_text("semantic config v1\n", encoding="utf-8")
+    loaded_config = config or _config(engine)
+    config_path.write_text(
+        json.dumps(loaded_config, sort_keys=True) + "\n", encoding="utf-8"
+    )
     sidecar_path.write_text(json.dumps(sidecar), encoding="utf-8")
     if policy is not None:
         policy_path.write_text(json.dumps(policy), encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+    for entry in sidecar.get("dialogues", []):
+        for role in entry.get("roles", {}).values():
+            for reference_key, path_key in (
+                ("higgs_reference", "reference_wav"),
+                ("cosyvoice_reference", "prompt_wav"),
+            ):
+                reference = role.get(reference_key)
+                if not isinstance(reference, dict):
+                    continue
+                declared = reference.get(path_key)
+                if not isinstance(declared, str):
+                    continue
+                path = Path(declared)
+                if not path.is_absolute():
+                    path = tmp_path / path
+                if not path.exists():
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_bytes(_reference_bytes(declared))
     attempted: list[str] = []
 
-    async def fake_run_final(
+    async def fake_run_dialogue(
         record: object,
         sidecar_manifest: dict,
         config: dict,
@@ -163,8 +221,8 @@ def _invoke(
         return PipelineResult(dialogue_id, "success", out_dir=out_dir)
 
     monkeypatch.setattr(cli, "configure_logging", lambda *_: None)
-    monkeypatch.setattr(cli, "load_config", lambda _: _config(engine))
-    monkeypatch.setattr(cli, "run_final_dialogue", fake_run_final)
+    monkeypatch.setattr(cli, "load_config", lambda _: deepcopy(loaded_config))
+    monkeypatch.setattr(batch, "run_dialogue", fake_run_dialogue)
     arguments = [
         "5703tts",
         "--input",
@@ -216,54 +274,6 @@ def _legacy_record(dialogue_id: str) -> dict[str, Any]:
             }
         ],
     }
-
-
-def _invoke_legacy(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-    *,
-    input_path: Path,
-    resume: bool = False,
-) -> tuple[int, dict[str, Any], list[str]]:
-    output = tmp_path / "output"
-    config_path = tmp_path / "config.yaml"
-    config_path.write_text("legacy config\n", encoding="utf-8")
-    attempted: list[str] = []
-
-    def fake_validate(path: Path, _: dict) -> SimpleNamespace:
-        raw = json.loads(path.read_text(encoding="utf-8"))
-        return SimpleNamespace(dialogue_id=raw["dialogue_id"])
-
-    async def fake_run(path: Path, config: dict, output_root: Path) -> PipelineResult:
-        dialogue_id = json.loads(path.read_text(encoding="utf-8"))["dialogue_id"]
-        attempted.append(path.name)
-        return PipelineResult(dialogue_id, "success", out_dir=output_root / dialogue_id)
-
-    async def unexpected_final(*args: object, **kwargs: object) -> PipelineResult:
-        raise AssertionError("legacy batch called run_final_dialogue")
-
-    monkeypatch.setattr(cli, "configure_logging", lambda *_: None)
-    monkeypatch.setattr(cli, "load_config", lambda _: {"tts": {"engine": "kokoro"}})
-    monkeypatch.setattr(cli, "load_and_validate", fake_validate)
-    monkeypatch.setattr(cli, "run_dialogue", fake_run)
-    monkeypatch.setattr(cli, "run_final_dialogue", unexpected_final)
-    arguments = [
-        "5703tts",
-        "--input",
-        str(input_path),
-        "--output",
-        str(output),
-        "--config",
-        str(config_path),
-        "--log-dir",
-        str(tmp_path / "logs"),
-    ]
-    if resume:
-        arguments.append("--resume")
-    monkeypatch.setattr(sys, "argv", arguments)
-    exit_code = asyncio.run(cli.main())
-    manifest = json.loads((output / "batch_result.json").read_text(encoding="utf-8"))
-    return exit_code, manifest, attempted
 
 
 def test_jsonl_record_failures_continue_and_manifest_has_no_synthetic_ids(
@@ -349,7 +359,7 @@ def test_duplicate_dialogue_ids_abort_before_any_output(
     assert not (tmp_path / "output").exists()
 
 
-def test_mixed_final_and_legacy_batch_aborts_before_render(
+def test_mixed_batch_rejects_legacy_record_without_routing_to_legacy(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     input_path = tmp_path / "input"
@@ -372,39 +382,23 @@ def test_mixed_final_and_legacy_batch_aborts_before_render(
         encoding="utf-8",
     )
 
-    with pytest.raises(RuntimeError, match="Cannot mix final nested"):
-        _invoke(
-            tmp_path,
-            monkeypatch,
-            input_path=input_path,
-            sidecar=_sidecar(("A",)),
-        )
-
-    assert not (tmp_path / "output").exists()
-
-
-def test_legacy_directory_ignores_stray_nonfinal_jsonl(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    input_path = tmp_path / "input"
-    input_path.mkdir()
-    (input_path / "legacy_a.json").write_text(
-        json.dumps(_legacy_record("legacy-A")), encoding="utf-8"
-    )
-    (input_path / "legacy_b.json").write_text(
-        json.dumps(_legacy_record("legacy-B")), encoding="utf-8"
-    )
-    _write_jsonl(input_path / "stray.jsonl", [_legacy_record("stray")])
-
-    exit_code, _, attempted = _invoke_legacy(
-        tmp_path, monkeypatch, input_path=input_path
+    exit_code, manifest, attempted = _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=_sidecar(("A",)),
     )
 
-    assert exit_code == 0
-    assert attempted == ["legacy_a.json", "legacy_b.json"]
+    assert exit_code == 1
+    assert attempted == ["A"]
+    rejected = next(
+        item for item in manifest["results"] if item["dialogue_id"] == "legacy"
+    )
+    assert rejected["action"] == "input_error"
+    assert "legacy/v0.2 input is no longer supported" in rejected["error"]["message"]
 
 
-def test_directory_final_jsonl_and_legacy_json_rejected_before_render(
+def test_directory_final_jsonl_renders_while_legacy_json_is_input_error(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     input_path = tmp_path / "input"
@@ -413,23 +407,19 @@ def test_directory_final_jsonl_and_legacy_json_rejected_before_render(
         json.dumps(_legacy_record("legacy")), encoding="utf-8"
     )
     _write_jsonl(input_path / "final.jsonl", [_record("A")])
-    legacy_calls: list[Path] = []
+    exit_code, manifest, attempted = _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=_sidecar(("A",)),
+    )
 
-    async def unexpected_legacy(path: Path, *_: object) -> PipelineResult:
-        legacy_calls.append(path)
-        raise AssertionError("mixed batch called run_dialogue")
-
-    monkeypatch.setattr(cli, "run_dialogue", unexpected_legacy)
-    with pytest.raises(RuntimeError, match="Cannot mix final nested"):
-        _invoke(
-            tmp_path,
-            monkeypatch,
-            input_path=input_path,
-            sidecar=_sidecar(("A",)),
-        )
-
-    assert legacy_calls == []
-    assert not (tmp_path / "output").exists()
+    assert attempted == ["A"]
+    assert exit_code == 1
+    assert [item["action"] for item in manifest["results"]] == [
+        "rendered",
+        "input_error",
+    ]
 
 
 def test_directory_with_final_jsonl_only_uses_final_batch(
@@ -448,7 +438,7 @@ def test_directory_with_final_jsonl_only_uses_final_batch(
 
     assert exit_code == 0
     assert attempted == ["A"]
-    assert manifest["batch_schema_family"] == "final_nested"
+    assert "batch_schema_family" not in manifest
 
 
 @pytest.mark.parametrize(
@@ -482,7 +472,7 @@ def test_safe_final_dialogue_id_is_one_direct_output_child(
 ) -> None:
     output_root = tmp_path / "output"
 
-    candidate = cli._safe_dialogue_output_path(output_root, dialogue_id)
+    candidate = batch._safe_dialogue_output_path(output_root, dialogue_id)
 
     assert candidate == output_root.resolve() / dialogue_id
     assert candidate.parent == output_root.resolve()
@@ -492,7 +482,7 @@ def test_resume_artifact_lookup_rejects_unsafe_dialogue_id(tmp_path: Path) -> No
     output_root = tmp_path / "output"
 
     with pytest.raises(RuntimeError, match="final dialogue_id"):
-        cli._final_artifacts_exist(output_root, "../escape")
+        batch._artifacts_exist(output_root, "../escape")
 
     assert not output_root.exists()
 
@@ -668,7 +658,7 @@ def test_record_edit_and_per_dialogue_reference_change_only_rerender_one(
 
 
 @pytest.mark.parametrize("global_field", ["registry", "active"])
-def test_global_speaker_asset_identity_change_rerenders_all(
+def test_global_speaker_asset_provenance_change_does_not_rerender(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, global_field: str
 ) -> None:
     input_path = tmp_path / "corpus.jsonl"
@@ -689,10 +679,10 @@ def test_global_speaker_asset_identity_change_rerenders_all(
         resume=True,
     )
 
-    assert attempted == ["A", "B"]
+    assert attempted == []
     assert [item["action"] for item in manifest["results"]] == [
-        "rendered",
-        "rendered",
+        "resumed",
+        "resumed",
     ]
 
 
@@ -756,7 +746,7 @@ def test_missing_final_artifact_rerenders(
     assert attempted == ["A"]
 
 
-def test_old_manifest_without_final_fingerprint_rerenders_safely(
+def test_non_v2_manifest_is_rejected_by_the_only_resume_system(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     input_path = tmp_path / "corpus.jsonl"
@@ -780,49 +770,14 @@ def test_old_manifest_without_final_fingerprint_rerenders_safely(
         encoding="utf-8",
     )
 
-    _, manifest, attempted = _invoke(
-        tmp_path,
-        monkeypatch,
-        input_path=input_path,
-        sidecar=_sidecar(("A",)),
-        resume=True,
-    )
-
-    assert attempted == ["A"]
-    assert manifest["results"][0]["action"] == "rendered"
-
-
-def test_legacy_resume_ignores_final_v2_manifest_and_renders_fresh(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    final_input = tmp_path / "final.jsonl"
-    _write_jsonl(final_input, [_record("A")])
-    _invoke(
-        tmp_path,
-        monkeypatch,
-        input_path=final_input,
-        sidecar=_sidecar(("A",)),
-    )
-    previous = json.loads(
-        (tmp_path / "output" / "batch_result.json").read_text(encoding="utf-8")
-    )
-    assert previous["manifest_version"] == "2.0"
-
-    legacy_input = tmp_path / "legacy"
-    legacy_input.mkdir()
-    (legacy_input / "legacy.json").write_text(
-        json.dumps(_legacy_record("legacy-A")), encoding="utf-8"
-    )
-    exit_code, manifest, attempted = _invoke_legacy(
-        tmp_path,
-        monkeypatch,
-        input_path=legacy_input,
-        resume=True,
-    )
-
-    assert exit_code == 0
-    assert attempted == ["legacy.json"]
-    assert manifest["results"][0]["action"] == "rendered"
+    with pytest.raises(RuntimeError, match="malformed batch result"):
+        _invoke(
+            tmp_path,
+            monkeypatch,
+            input_path=input_path,
+            sidecar=_sidecar(("A",)),
+            resume=True,
+        )
 
 
 def test_final_v2_manifest_still_resumes_final_records(
@@ -845,12 +800,304 @@ def test_final_v2_manifest_still_resumes_final_records(
     assert manifest["results"][0]["action"] == "resumed"
 
 
+@pytest.mark.parametrize("engine", ["higgs", "cosyvoice"])
+def test_live_selected_reference_mutation_prevents_resume(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, engine: str
+) -> None:
+    input_path = tmp_path / "final.jsonl"
+    sidecar = _sidecar(("A",))
+    _write_jsonl(input_path, [_record("A")])
+    _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=sidecar,
+        engine=engine,
+    )
+
+    _, unchanged, attempted = _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=sidecar,
+        engine=engine,
+        resume=True,
+    )
+    assert attempted == []
+    assert unchanged["results"][0]["action"] == "resumed"
+
+    field = "reference_wav" if engine == "higgs" else "prompt_wav"
+    declared = sidecar["dialogues"][0]["roles"]["caller"][f"{engine}_reference"][field]
+    (tmp_path / declared).write_bytes(b"mutated live reference bytes")
+
+    _, mutated, attempted = _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=sidecar,
+        engine=engine,
+        resume=True,
+    )
+    assert attempted == ["A"]
+    assert mutated["results"][0]["action"] == "rendered"
+
+
+@pytest.mark.parametrize(
+    ("before", "after"),
+    [("higgs", "cosyvoice"), ("cosyvoice", "higgs")],
+)
+def test_engine_switch_invalidates_resume(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    before: str,
+    after: str,
+) -> None:
+    input_path = tmp_path / "final.jsonl"
+    sidecar = _sidecar(("A",))
+    _write_jsonl(input_path, [_record("A")])
+    _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=sidecar,
+        engine=before,
+    )
+
+    _, manifest, attempted = _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=sidecar,
+        engine=after,
+        resume=True,
+    )
+
+    assert attempted == ["A"]
+    assert manifest["results"][0]["action"] == "rendered"
+
+
+def test_cosyvoice_prompt_text_change_invalidates_resume(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    input_path = tmp_path / "final.jsonl"
+    sidecar = _sidecar(("A",))
+    _write_jsonl(input_path, [_record("A")])
+    _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=sidecar,
+        engine="cosyvoice",
+    )
+    changed = deepcopy(sidecar)
+    changed["dialogues"][0]["roles"]["caller"]["cosyvoice_reference"]["prompt_text"] = (
+        "Changed prompt text"
+    )
+
+    _, _, attempted = _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=changed,
+        engine="cosyvoice",
+        resume=True,
+    )
+
+    assert attempted == ["A"]
+
+
+@pytest.mark.parametrize("engine", ["higgs", "cosyvoice"])
+def test_selected_reference_path_and_sha_change_invalidate_resume(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, engine: str
+) -> None:
+    input_path = tmp_path / "final.jsonl"
+    sidecar = _sidecar(("A",))
+    _write_jsonl(input_path, [_record("A")])
+    _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=sidecar,
+        engine=engine,
+    )
+    changed = deepcopy(sidecar)
+    reference = changed["dialogues"][0]["roles"]["caller"][f"{engine}_reference"]
+    path_field = "reference_wav" if engine == "higgs" else "prompt_wav"
+    reference[path_field] = f"refs/A-caller-{engine}-changed.wav"
+    reference["sha256"] = _reference_sha(reference[path_field])
+
+    _, _, attempted = _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=changed,
+        engine=engine,
+        resume=True,
+    )
+
+    assert attempted == ["A"]
+
+
+@pytest.mark.parametrize("engine", ["higgs", "cosyvoice"])
+def test_unselected_reference_change_does_not_invalidate_resume(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, engine: str
+) -> None:
+    input_path = tmp_path / "final.jsonl"
+    sidecar = _sidecar(("A",))
+    _write_jsonl(input_path, [_record("A")])
+    _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=sidecar,
+        engine=engine,
+    )
+    changed = deepcopy(sidecar)
+    unselected = "cosyvoice" if engine == "higgs" else "higgs"
+    changed["dialogues"][0]["roles"]["caller"][f"{unselected}_reference"] = {
+        "malformed": True
+    }
+
+    _, manifest, attempted = _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=changed,
+        engine=engine,
+        resume=True,
+    )
+
+    assert attempted == []
+    assert manifest["results"][0]["action"] == "resumed"
+
+
+@pytest.mark.parametrize("engine", ["higgs", "cosyvoice"])
+def test_malformed_selected_reference_is_not_resumed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, engine: str
+) -> None:
+    input_path = tmp_path / "final.jsonl"
+    sidecar = _sidecar(("A",))
+    _write_jsonl(input_path, [_record("A")])
+    _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=sidecar,
+        engine=engine,
+    )
+    changed = deepcopy(sidecar)
+    changed["dialogues"][0]["roles"]["caller"][f"{engine}_reference"] = {
+        "malformed": True
+    }
+
+    _, manifest, attempted = _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=changed,
+        engine=engine,
+        resume=True,
+    )
+
+    assert attempted == ["A"]
+    assert manifest["results"][0]["action"] == "rendered"
+    assert manifest["results"][0]["render_fingerprint"] is None
+
+
+@pytest.mark.parametrize("engine", ["higgs", "cosyvoice"])
+def test_unselected_backend_config_change_does_not_invalidate_resume(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, engine: str
+) -> None:
+    input_path = tmp_path / "final.jsonl"
+    sidecar = _sidecar(("A",))
+    config = _config(engine)
+    _write_jsonl(input_path, [_record("A")])
+    _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=sidecar,
+        config=config,
+    )
+    changed = deepcopy(config)
+    unselected = "cosyvoice" if engine == "higgs" else "higgs"
+    changed["tts"][unselected]["model_dir"] = "models/unselected-change"
+
+    _, manifest, attempted = _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=sidecar,
+        config=changed,
+        resume=True,
+    )
+
+    assert attempted == []
+    assert manifest["results"][0]["action"] == "resumed"
+
+
+@pytest.mark.parametrize("engine", ["higgs", "cosyvoice"])
+def test_invalid_unselected_backend_config_does_not_block_render(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, engine: str
+) -> None:
+    input_path = tmp_path / "final.jsonl"
+    config = _config(engine)
+    unselected = "cosyvoice" if engine == "higgs" else "higgs"
+    config["tts"][unselected] = "intentionally invalid and unselected"
+    _write_jsonl(input_path, [_record("A")])
+
+    exit_code, manifest, attempted = _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=_sidecar(("A",)),
+        config=config,
+    )
+
+    assert exit_code == 0
+    assert attempted == ["A"]
+    assert manifest["results"][0]["action"] == "rendered"
+
+
+@pytest.mark.parametrize("change", ["shared", "selected"])
+def test_render_affecting_config_change_invalidates_resume(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, change: str
+) -> None:
+    input_path = tmp_path / "final.jsonl"
+    sidecar = _sidecar(("A",))
+    config = _config("higgs")
+    _write_jsonl(input_path, [_record("A")])
+    _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=sidecar,
+        config=config,
+    )
+    changed = deepcopy(config)
+    if change == "shared":
+        changed["fade_ms"] = 9
+    else:
+        changed["tts"]["higgs"]["model_dir"] = "models/selected-change"
+
+    _, _, attempted = _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=sidecar,
+        config=changed,
+        resume=True,
+    )
+
+    assert attempted == ["A"]
+
+
 def test_final_sidecar_rejects_duplicate_json_keys(tmp_path: Path) -> None:
     sidecar_path = tmp_path / "sidecar.json"
     sidecar_path.write_text('{"dialogues":[],"dialogues":[]}', encoding="utf-8")
 
     with pytest.raises(RuntimeError, match="duplicate object key"):
-        cli._load_final_sidecar(sidecar_path)
+        batch._load_sidecar(sidecar_path)
 
 
 @pytest.mark.parametrize("constant", ["NaN", "Infinity", "-Infinity"])
@@ -863,7 +1110,7 @@ def test_final_sidecar_rejects_non_json_constants(
     )
 
     with pytest.raises(RuntimeError, match="invalid JSON constant"):
-        cli._load_final_sidecar(sidecar_path)
+        batch._load_sidecar(sidecar_path)
 
 
 def test_backend_semantic_identity_change_rerenders(
@@ -873,16 +1120,14 @@ def test_backend_semantic_identity_change_rerenders(
     _write_jsonl(input_path, [_record("A")])
     sidecar = _sidecar(("A",))
     _invoke(tmp_path, monkeypatch, input_path=input_path, sidecar=sidecar)
-    original = batch_identity.final_controlled_tts_backend_identity
+    original = batch_identity._dialogue_backend_identity
 
     def changed(config: dict, dialogue: object) -> dict:
         identity = deepcopy(original(config, dialogue))
         identity["control_mapping"]["implementation_id"] = "changed-for-test"
         return identity
 
-    monkeypatch.setattr(
-        batch_identity, "final_controlled_tts_backend_identity", changed
-    )
+    monkeypatch.setattr(batch_identity, "_dialogue_backend_identity", changed)
     _, _, attempted = _invoke(
         tmp_path,
         monkeypatch,
@@ -910,7 +1155,7 @@ def test_final_manifest_records_semantic_and_provenance_boundaries(
 
     assert exit_code == 0
     assert manifest["manifest_version"] == "2.0"
-    assert manifest["batch_schema_family"] == "final_nested"
+    assert "batch_schema_family" not in manifest
     assert manifest["backend_identity_sha256"]
     controlled = manifest["batch_provenance"]["controlled_tts"]
     assert controlled["mapping_version"] == "controlled_tts_v1"
@@ -954,73 +1199,107 @@ def test_render_failure_records_expected_output_even_when_result_out_dir_is_none
     assert (tmp_path / "output" / "A").is_dir()
 
 
-@pytest.mark.parametrize("engine", ["cosyvoice", "kokoro"])
-def test_final_batch_non_higgs_engine_fails_before_render(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, engine: str
+def test_final_batch_cosyvoice_engine_is_supported(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     input_path = tmp_path / "corpus.jsonl"
     _write_jsonl(input_path, [_record("A")])
 
-    with pytest.raises(RuntimeError, match="require tts.engine='higgs'"):
+    exit_code, manifest, attempted = _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=_sidecar(("A",)),
+        engine="cosyvoice",
+    )
+
+    assert exit_code == 0
+    assert attempted == ["A"]
+    assert manifest["backend"] == "cosyvoice"
+
+
+def test_final_batch_unsupported_engine_fails_before_render(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    input_path = tmp_path / "corpus.jsonl"
+    _write_jsonl(input_path, [_record("A")])
+
+    with pytest.raises(RuntimeError, match="supports only tts.engine='higgs' or"):
         _invoke(
             tmp_path,
             monkeypatch,
             input_path=input_path,
             sidecar=_sidecar(("A",)),
-            engine=engine,
+            engine="unsupported",
         )
 
     assert not (tmp_path / "output").exists()
 
 
-def test_legacy_json_still_uses_run_dialogue_without_final_sidecar(
+def test_legacy_json_is_rejected_without_calling_either_pipeline(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     input_root = tmp_path / "input"
-    output_root = tmp_path / "output"
-    config_path = tmp_path / "config.yaml"
     input_root.mkdir()
-    config_path.write_text("legacy config\n", encoding="utf-8")
-    legacy = {
-        "dialogue_id": "legacy-A",
-        "turns": [
-            {
-                "turn_id": 1,
-                "speaker": "caller",
-                "text": "Legacy",
-                "label": "normal",
-            }
-        ],
-    }
-    (input_root / "legacy.json").write_text(json.dumps(legacy), encoding="utf-8")
-    attempted: list[str] = []
-
-    async def fake_run(path: Path, config: dict, output: Path) -> PipelineResult:
-        attempted.append(path.name)
-        return PipelineResult("legacy-A", "success", out_dir=output / "legacy-A")
-
-    class Dialogue:
-        dialogue_id = "legacy-A"
-
-    monkeypatch.setattr(cli, "configure_logging", lambda *_: None)
-    monkeypatch.setattr(cli, "load_config", lambda _: {"tts": {"engine": "kokoro"}})
-    monkeypatch.setattr(cli, "load_and_validate", lambda *_: Dialogue())
-    monkeypatch.setattr(cli, "run_dialogue", fake_run)
-    monkeypatch.setattr(
-        sys,
-        "argv",
-        [
-            "5703tts",
-            "--input",
-            str(input_root),
-            "--output",
-            str(output_root),
-            "--config",
-            str(config_path),
-            "--log-dir",
-            str(tmp_path / "logs"),
-        ],
+    (input_root / "legacy.json").write_text(
+        json.dumps(_legacy_record("legacy-A")), encoding="utf-8"
+    )
+    exit_code, manifest, attempted = _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_root,
+        sidecar=_sidecar(("legacy-A",)),
     )
 
-    assert asyncio.run(cli.main()) == 0
-    assert attempted == ["legacy.json"]
+    assert exit_code == 1
+    assert attempted == []
+    assert manifest["results"][0]["action"] == "input_error"
+    assert (
+        "legacy/v0.2 input is no longer supported"
+        in manifest["results"][0]["error"]["message"]
+    )
+
+
+def test_v02_json_is_rejected_before_render(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    input_path = tmp_path / "v02.json"
+    raw = _legacy_record("v02-A")
+    raw["schema_version"] = "0.2"
+    raw["turns"][0]["acoustic_spec"] = {
+        "rate": "normal",
+        "pause_before_ms": 0,
+        "pause_after_ms": 0,
+        "arousal": "medium",
+        "coarse_affect": "neutral",
+        "hesitations": 0,
+        "long_pauses": 0,
+    }
+    input_path.write_text(json.dumps(raw), encoding="utf-8")
+
+    exit_code, manifest, attempted = _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=_sidecar(("v02-A",)),
+    )
+
+    assert exit_code == 1
+    assert attempted == []
+    assert manifest["results"][0]["action"] == "input_error"
+    assert (
+        "legacy/v0.2 input is no longer supported"
+        in manifest["results"][0]["error"]["message"]
+    )
+
+
+def test_production_cli_has_no_legacy_dispatch_call_path() -> None:
+    source = inspect.getsource(cli.main) + inspect.getsource(batch.run_batch)
+
+    for forbidden in (
+        "_is_final_batch",
+        "load_and_validate",
+        "legacy_run_dialogue",
+        "_discover_legacy_json_files",
+    ):
+        assert forbidden not in source
