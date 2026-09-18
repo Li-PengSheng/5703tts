@@ -22,15 +22,12 @@ JSON / JSONL containers
   -> manifest v2 / semantic resume
 ```
 
-Schema family is not a production routing decision. Legacy flat and v0.2 code remains
-only as unreachable compatibility implementation pending U3 deletion.
+Every parsed record is validated directly against this single upstream contract.
 
 ## Backend policy
 
 - **Higgs:** primary production backend.
 - **CosyVoice3:** explicit backup/secondary backend.
-- **Kokoro:** not a production CLI engine.
-
 `tts.engine` selects Higgs or CosyVoice for the complete batch. A failure never causes
 automatic backend switching. Config validation and rendering require only the selected
 backend block.

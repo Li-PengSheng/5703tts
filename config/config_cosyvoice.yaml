@@ -1,8 +1,6 @@
 # Explicit backup-backend configuration. There is no automatic fallback from Higgs.
 tts:
   engine: cosyvoice
-  # Compatibility-only for retained v0.2 benchmark tooling.
-  default_rate: "+0%"
   cosyvoice:
     python_bin: third_party/CosyVoice/.venv/bin/python
     repo_dir: third_party/CosyVoice
@@ -10,18 +8,7 @@ tts:
     load_trt: false
     load_vllm: false
     fp16: true
-    voice_map:
-      counsellor:
-        prompt_wav: third_party/CosyVoice/asset/zero_shot_prompt.wav
-        prompt_text: >-
-          You are a helpful assistant.<|endofprompt|>希望你以后能够做的比我还好呦。
-      caller:
-        prompt_wav: third_party/CosyVoice/asset/zero_shot_prompt.wav
-        prompt_text: >-
-          You are a helpful assistant.<|endofprompt|>希望你以后能够做的比我还好呦。
-
-pause:
-  default_ms: 500
+  # Prompt WAV/text and their SHA-256 identities come from --speaker-sidecar.
 
 fade_ms: 5
 

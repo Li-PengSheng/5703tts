@@ -5,9 +5,7 @@ from typing import Any
 
 import yaml
 
-VALID_PRODUCTION_ENGINES = {"cosyvoice", "higgs"}
-# Compatibility-only until U3 removes the unreachable legacy renderer.
-VALID_ENGINES = VALID_PRODUCTION_ENGINES | {"kokoro"}
+VALID_ENGINES = {"cosyvoice", "higgs"}
 
 
 class ConfigError(Exception):
@@ -38,51 +36,8 @@ def load_config(config_path: Path) -> dict[str, Any]:
     return config
 
 
-def _validate_kokoro(kokoro: Any) -> None:
-    """Catch broken Kokoro settings without importing or downloading the model."""
-    if not isinstance(kokoro, dict):
-        raise ConfigError("tts.kokoro must be a mapping")
-
-    lang_code = kokoro.get("lang_code")
-    if not isinstance(lang_code, str) or not lang_code.strip():
-        raise ConfigError(
-            f"tts.kokoro.lang_code must be a non-empty string; got: {lang_code!r}"
-        )
-
-    sample_rate = kokoro.get("sample_rate")
-    if (
-        isinstance(sample_rate, bool)
-        or not isinstance(sample_rate, int)
-        or sample_rate <= 0
-    ):
-        raise ConfigError(
-            f"tts.kokoro.sample_rate must be a positive integer; got: {sample_rate!r}"
-        )
-
-    # Which speakers must exist is a property of the dialogue being rendered, not
-    # of the backend, so that stays at the dialogue validation boundary.
-    voice_map = kokoro.get("voice_map")
-    if not isinstance(voice_map, dict) or not voice_map:
-        raise ConfigError("tts.kokoro.voice_map must be a non-empty mapping")
-    for speaker, voice in voice_map.items():
-        if not isinstance(speaker, str) or not speaker.strip():
-            raise ConfigError(
-                f"tts.kokoro.voice_map keys must be non-empty strings; got: {speaker!r}"
-            )
-        if not isinstance(voice, str) or not voice.strip():
-            raise ConfigError(
-                f"tts.kokoro.voice_map.{speaker} must be a non-empty string"
-            )
-
-    device = kokoro.get("device")
-    if device is not None and (not isinstance(device, str) or not device.strip()):
-        raise ConfigError(
-            f"tts.kokoro.device must be null or a non-empty string; got: {device!r}"
-        )
-
-
 def _validate_higgs(higgs: Any) -> None:
-    """Validate the bounded local-worker and reference-audio contract."""
+    """Validate the selected Higgs runtime contract."""
     if not isinstance(higgs, dict):
         raise ConfigError("tts.higgs must be a mapping")
 
@@ -111,43 +66,15 @@ def _validate_higgs(higgs: Any) -> None:
     if not isinstance(ffmpeg_bin, str) or not ffmpeg_bin.strip():
         raise ConfigError("tts.higgs.ffmpeg_bin must be a non-empty string")
 
-    voice_map = higgs.get("voice_map")
-    if not isinstance(voice_map, dict) or not voice_map:
-        raise ConfigError("tts.higgs.voice_map must be a non-empty mapping")
-    for speaker, voice in voice_map.items():
-        if not isinstance(speaker, str) or not speaker.strip():
-            raise ConfigError(
-                f"tts.higgs.voice_map keys must be non-empty strings; got: {speaker!r}"
-            )
-        if not isinstance(voice, dict):
-            raise ConfigError(f"tts.higgs.voice_map.{speaker} must be a mapping")
-        reference_wav = voice.get("reference_wav")
-        if not isinstance(reference_wav, str) or not reference_wav.strip():
-            raise ConfigError(
-                f"tts.higgs.voice_map.{speaker}.reference_wav "
-                "must be a non-empty string"
-            )
-
 
 def _validate_config(config: dict[str, Any]) -> None:
     """Catch obviously-broken config early instead of failing deep inside a batch run."""
-    try:
-        engine = config["tts"]["engine"]
-    except KeyError as error:
-        raise ConfigError(f"Missing required configuration key: tts.{error}") from error
+    tts = config.get("tts")
+    if not isinstance(tts, dict):
+        raise ConfigError("tts must be a mapping")
+    engine = tts.get("engine")
     if engine not in VALID_ENGINES:
         raise ConfigError(f"tts.engine must be one of {VALID_ENGINES}; got: {engine!r}")
-
-    try:
-        default_pause = config["pause"]["default_ms"]
-    except KeyError as error:
-        raise ConfigError(
-            f"Missing required configuration key: pause.{error}"
-        ) from error
-    if not isinstance(default_pause, (int, float)) or default_pause < 0:
-        raise ConfigError(
-            f"pause.default_ms must be non-negative; got: {default_pause!r}"
-        )
 
     try:
         tel = config["telephone"]
@@ -180,35 +107,14 @@ def _validate_config(config: dict[str, Any]) -> None:
             f"half the sample rate; otherwise the filter configuration is invalid"
         )
 
-    if engine == "kokoro" and "kokoro" not in config.get("tts", {}):
-        raise ConfigError(
-            "tts.kokoro configuration is required when tts.engine is kokoro"
-        )
-    if engine == "kokoro":
-        _validate_kokoro(config["tts"]["kokoro"])
-    if engine == "cosyvoice" and "cosyvoice" not in config.get("tts", {}):
+    if engine == "cosyvoice" and "cosyvoice" not in tts:
         raise ConfigError(
             "tts.cosyvoice configuration is required when tts.engine is cosyvoice"
         )
     if engine == "cosyvoice":
-        cosyvoice = config["tts"]["cosyvoice"]
+        cosyvoice = tts["cosyvoice"]
         if not isinstance(cosyvoice, dict):
             raise ConfigError("tts.cosyvoice must be a mapping")
-        voice_map = cosyvoice.get("voice_map")
-        if not isinstance(voice_map, dict) or not voice_map:
-            raise ConfigError("tts.cosyvoice.voice_map must be a non-empty mapping")
-        for speaker, voice in voice_map.items():
-            if not isinstance(voice, dict):
-                raise ConfigError(
-                    f"tts.cosyvoice.voice_map.{speaker} must be a mapping"
-                )
-            for field in ("prompt_wav", "prompt_text"):
-                value = voice.get(field)
-                if not isinstance(value, str) or not value.strip():
-                    raise ConfigError(
-                        f"tts.cosyvoice.voice_map.{speaker}.{field} "
-                        "must be a non-empty string"
-                    )
         for field in ("python_bin", "repo_dir", "model_dir"):
             value = cosyvoice.get(field)
             if value is not None and (not isinstance(value, str) or not value.strip()):
@@ -229,9 +135,9 @@ def _validate_config(config: dict[str, Any]) -> None:
                 "tts.cosyvoice.sample_rate must be a positive integer; "
                 f"got: {sample_rate!r}"
             )
-    if engine == "higgs" and "higgs" not in config.get("tts", {}):
+    if engine == "higgs" and "higgs" not in tts:
         raise ConfigError(
             "tts.higgs configuration is required when tts.engine is higgs"
         )
     if engine == "higgs":
-        _validate_higgs(config["tts"]["higgs"])
+        _validate_higgs(tts["higgs"])

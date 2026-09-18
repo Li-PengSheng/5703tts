@@ -2,7 +2,6 @@ tts:
   # Production default. Switch explicitly to cosyvoice for the backup backend;
   # the renderer never falls back automatically.
   engine: higgs
-  default_rate: "+0%"
   higgs:
     # Production placeholders: provision these external assets before runtime.
     server_executable: /path/to/sgl-omni
@@ -12,29 +11,13 @@ tts:
     startup_timeout_seconds: 900
     inference_timeout_seconds: 300
     ffmpeg_bin: ffmpeg
-    # Final production rendering uses hash-pinned references from the speaker
-    # sidecar. This map remains only for the U3-pending legacy implementation.
-    voice_map:
-      counsellor:
-        reference_wav: /path/to/approved-counsellor.wav
-      caller:
-        reference_wav: /path/to/approved-caller.wav
-  # Compatibility-only until U3; the production CLI rejects engine: kokoro.
-  kokoro:
-    lang_code: a
-    sample_rate: 24000
-    # null uses Kokoro's default device; set "cpu" to force CPU inference.
-    device: null
-    voice_map:
-      counsellor: af_heart
-      caller: am_adam
   cosyvoice:
     # Explicit backup/secondary production backend.
     # CosyVoice3's dependencies live in their own virtual environment,
     # separate from this project's .venv, so synthesis runs in a subprocess
     # started with this interpreter (paths below are relative to the repo
     # root unless given as absolute paths).
-    # Semantic rate/speed and arousal/coarse-affect instruction mappings are
+    # Semantic rate/speed and arousal/affect instruction mappings are
     # provisional backend adapters pending controlled benchmark evaluation.
     python_bin: third_party/CosyVoice/.venv/bin/python
     repo_dir: third_party/CosyVoice
@@ -42,23 +25,7 @@ tts:
     load_trt: false
     load_vllm: false
     fp16: true
-    # Zero-shot voice cloning: each speaker needs a short reference clip
-    # (prompt_wav) and the transcript of that clip (prompt_text). Both
-    # roles are pointed at CosyVoice's bundled sample clip for now. Replace
-    # them with two distinct reference clips before real use, otherwise
-    # counsellor and caller will sound identical.
-    voice_map:
-      counsellor:
-        prompt_wav: third_party/CosyVoice/asset/zero_shot_prompt.wav
-        prompt_text: >-
-          You are a helpful assistant.<|endofprompt|>希望你以后能够做的比我还好呦。
-      caller:
-        prompt_wav: third_party/CosyVoice/asset/zero_shot_prompt.wav
-        prompt_text: >-
-          You are a helpful assistant.<|endofprompt|>希望你以后能够做的比我还好呦。
-
-pause:
-  default_ms: 500
+  # Speaker references for either engine come only from --speaker-sidecar.
 
 # Short fade applied to the beginning and end of each turn (milliseconds).
 # It removes hard-cut clicks without crossfading turns or affecting metadata timestamps.

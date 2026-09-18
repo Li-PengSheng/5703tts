@@ -3,8 +3,7 @@
 ## 当前产品边界
 
 生产入口只有一条：`upstream/Controlled-TTS-v1` 交付的 final nested JSON/JSONL。
-普通 `5703tts` 命令不再根据 schema family 选择 renderer，也不接受 legacy flat
-或 schema v0.2。
+普通 `5703tts` 命令直接验证这一种 contract，不按输入形状选择 renderer。
 
 ```text
 final JSON/JSONL
@@ -28,9 +27,9 @@ Higgs 是 primary production backend；CosyVoice3 是 backup/secondary。切换�
 这两种 container。读取层拒绝 duplicate JSON keys、NaN/Infinity、非对象记录和空
 `dialogue_id`。JSONL 单行 parse 错误记录为 `input_error`，后续有效记录继续。
 
-所有成功 parse 的记录直接交给 `validate_final_dialogue()`。Legacy/v0.2 会得到清晰的
-production-contract 错误，不会被重新解释成 `NormalizedTurn`。跨 container 的重复
-`dialogue_id` 与不安全输出 ID 会在 render 前失败。
+所有成功 parse 的记录直接交给 `validate_final_dialogue()`；其他输入形状会得到清晰的
+production-contract 错误且不会被重新解释。跨 container 的重复 `dialogue_id` 与不安全
+输出 ID 会在 render 前失败。
 
 ## Canonical 与 backend plan
 
@@ -88,12 +87,6 @@ Resume 接受旧结果前会重新读取选中 backend 的 WAV，并比较 live 
 
 Exclusion 在 speaker lookup/preparation 前执行。Excluded record 计入输入总数，但不需要
 reference、fingerprint 或 output directory；known issue 必须来自 policy data，不能写死。
-
-## 仍待 U3 删除的内容
-
-`validate.py`、`schemas/dialogue_schema.json`、legacy normalized pipeline、Kokoro、旧
-benchmark/compatibility tests 仍物理存在，但普通 production CLI 不可达。本阶段不批量
-删除它们。
 
 ## Evidence 边界
 

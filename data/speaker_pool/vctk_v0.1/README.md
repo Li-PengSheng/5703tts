@@ -54,9 +54,8 @@ VCTK candidates
 3. **Reference materialisation** - `scripts/materialize_vctk_speaker_pool.py`
    converts the selected recordings into `references/` and writes
    `speaker_registry.json`.
-4. **Same-text CosyVoice smoke** - `scripts/run_speaker_pool_smoke.py`
-   synthesizes one shared neutral sentence with every speaker reference through
-   the existing production synthesis path.
+4. **Same-text CosyVoice smoke** - the recorded review evidence synthesizes one
+   shared neutral sentence with every speaker reference.
 5. **Human review** - listen to the smoke output, refine references where a
    backup was clearly better, and record the final active/rejected decision.
 6. **Active speaker pool** - `active_speakers.json` freezes the 10 accepted
@@ -64,10 +63,11 @@ VCTK candidates
    active v0.1 voices and never renumbered.
 7. **Deterministic dialogue assignment** -
    `scripts/assign_dialogue_speakers.py` maps dialogue roles to active
-   `speaker_id` values. Mini-batch rendering comes later and is not implemented
-   here.
+   `speaker_id` values; the production renderer then resolves them through the
+   speaker sidecar.
 
-Stages 1 to 7 are complete for v0.1 except realistic mini-batch rendering.
+Stages 1 to 7 are complete for v0.1. Real Higgs cloud/GPU validation remains a
+separate runtime gate.
 
 ## Active pool v0.1
 
@@ -104,16 +104,20 @@ They are not a validation rule and support no population claim.
 
 ## Deterministic dialogue assignment
 
-`scripts/assign_dialogue_speakers.py` reads one dialogue JSON file or a
-directory of dialogue JSON files and writes:
+`scripts/assign_dialogue_speakers.py` reads final dialogue JSON/JSONL or a
+directory containing those formats and writes:
 
 - `speaker_assignments.jsonl` - one object per dialogue: `dialogue_id`, pool
   version, seed, and `role_assignments` (role → `speaker_id`)
 - `speaker_assignment_summary.json` - usage, role, label, and acoustic
   exposure counts for later QA
 
-Assignment is independent of acoustic controls. Prompt WAV and transcript stay
-in `speaker_registry.json` and are resolved from `speaker_id` at render time.
+Assignment is backend-independent and produces only render `speaker_id` values.
+The materializer resolves those IDs through `speaker_registry.json` and writes
+`higgs_reference`, `cosyvoice_reference`, or both into the production speaker
+sidecar according to `--backend`. The renderer reads speaker and reference
+information only from that sidecar; it does not resolve the registry at runtime.
+Higgs and CosyVoice references are never substituted for one another.
 
 Rules:
 
@@ -129,7 +133,8 @@ Rules:
   dataset size permits role reuse.
 
 ```bash
-uv run python scripts/assign_dialogue_speakers.py --input data/input
+uv run python scripts/assign_dialogue_speakers.py \
+  --input path/to/final_corpus.jsonl
 ```
 
 This stage does not synthesise audio.
@@ -190,27 +195,13 @@ materialised reference WAV (recorded with its SHA256).
 Rejected identities keep the same chain. Nothing is deleted from the registry
 in order to close a gap in the `spk_NNN` sequence.
 
-## Speaker-pool smoke test
+## Speaker-pool smoke evidence
 
-The smoke test renders one shared sentence per speaker through
-`tts5703.tts_engine.synthesize_turn`, so it reuses the persistent CosyVoice
-worker and the production zero-shot path. It maps a temporary in-memory smoke
-role to each speaker's reference instead of adding permanent voice-map entries
-to `config/config.yaml`. Requested acoustic conditions are deliberately neutral
-(normal rate, no pauses, no arousal, affect, emotion, or paralinguistic events),
-because the test targets speaker identity, not acoustic control.
-
-`speaker_registry.json` stores the exact VCTK transcript as `prompt_text`, while
-the CosyVoice3 zero-shot path expects that transcript prefixed with
-`You are a helpful assistant.<|endofprompt|>`. The smoke runner therefore
-applies that formatting only to the temporary model-facing config and records
-`prompt_format: cosyvoice3_zero_shot` in its report; the registry transcript and
-the source VCTK transcripts are never rewritten.
-
-`smoke_results.json` is a smoke-test report only: elapsed time, audio duration,
-and real-time factor are recorded for traceability and must not be read as
-speaker-quality scores or used to rank speakers. Historical smoke runs are not
-rewritten after the active-pool freeze.
+The historical smoke evidence used one shared neutral sentence per speaker.
+`speaker_registry.json` preserves the exact VCTK transcript as `prompt_text`; the
+sidecar materializer adds the CosyVoice3 zero-shot prefix without rewriting the
+registry or source transcripts. Timing results are traceability evidence, not
+speaker-quality scores.
 
 ## Files
 

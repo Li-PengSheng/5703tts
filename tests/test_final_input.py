@@ -7,9 +7,6 @@ import pytest
 
 from tts5703.final_input import (
     FinalInputValidationError,
-    SchemaFamily,
-    SchemaFamilyError,
-    detect_schema_family,
     validate_final_dialogue,
 )
 
@@ -59,72 +56,20 @@ def _final_dialogue() -> dict[str, Any]:
     }
 
 
-def test_schema_family_detection_is_structural() -> None:
-    assert (
-        detect_schema_family({"dialogue_id": "L", "turns": []}) is SchemaFamily.LEGACY
-    )
-    assert (
-        detect_schema_family(
-            {
-                "schema_version": "0.2",
-                "dialogue_id": "V",
-                "turns": [{"acoustic_spec": {}}],
-            }
-        )
-        is SchemaFamily.V0_2
-    )
-    assert detect_schema_family(_final_dialogue()) is SchemaFamily.FINAL_NESTED
-
-
-def test_final_schema_version_is_not_routed_to_v02() -> None:
-    final = _final_dialogue()
-    final["schema_version"] = "future-final"
-    assert detect_schema_family(final) is SchemaFamily.FINAL_NESTED
-
-
 @pytest.mark.parametrize(
-    "turns",
+    "raw",
     [
-        None,
-        [],
-        {},
-        [None],
-        [{"speaker": "caller", "rate": "normal"}],
-        [{"acoustic_spec": []}],
-    ],
-)
-def test_v02_requires_nonempty_well_formed_turns(turns: Any) -> None:
-    raw = {"schema_version": "0.2", "dialogue_id": "not-v02"}
-    if turns is not None:
-        raw["turns"] = turns
-
-    with pytest.raises(SchemaFamilyError, match="requires"):
-        detect_schema_family(raw)
-
-
-@pytest.mark.parametrize(
-    "hybrid",
-    [
+        {"dialogue_id": "legacy", "turns": []},
         {
             "schema_version": "0.2",
-            "turns": [{"acoustic": {"required": {}}}],
-        },
-        {
-            "turns": [
-                {"acoustic_spec": {}},
-                {"acoustic": {"required": {}}},
-            ]
-        },
-        {
-            "turns": [
-                {"acoustic_spec": {}, "acoustic": {"required": {}}},
-            ]
+            "dialogue_id": "old",
+            "turns": [{"turn_id": 1, "speaker": "caller", "acoustic_spec": {}}],
         },
     ],
 )
-def test_hybrid_schema_is_rejected(hybrid: dict[str, Any]) -> None:
-    with pytest.raises(SchemaFamilyError, match="Hybrid"):
-        detect_schema_family(hybrid)
+def test_non_final_contracts_fail_validation(raw: dict[str, Any]) -> None:
+    with pytest.raises(FinalInputValidationError):
+        validate_final_dialogue(raw)
 
 
 def test_final_validation_preserves_nested_source_and_speaker_identities() -> None:

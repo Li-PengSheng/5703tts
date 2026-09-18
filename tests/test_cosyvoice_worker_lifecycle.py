@@ -6,7 +6,7 @@ from collections import deque
 
 import pytest
 
-from tts5703.backends import cosyvoice as cosyvoice_backend
+from tts5703.backends import cosyvoice_client as cosyvoice_backend
 
 
 class FakeWorker:

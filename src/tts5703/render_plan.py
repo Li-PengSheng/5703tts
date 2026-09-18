@@ -11,7 +11,7 @@ from .controlled_tts import map_turn_to_higgs
 from .controlled_tts.planner import plan_hesitations
 from .controlled_tts.schema import load_contract, normalize_turn
 from .cosyvoice_controls import COSYVOICE_SEMANTIC_RATES, resolve_cosyvoice_controls
-from .final_input import SchemaFamily, detect_schema_family, validate_final_dialogue
+from .final_input import validate_final_dialogue
 from .final_references import FinalReferenceError, SelectedReference, selected_reference
 from .input_records import InputRecord
 
@@ -302,8 +302,6 @@ def canonicalize_dialogue(
 ) -> CanonicalDialogue:
     """Normalize final source semantics once, without introducing backend fields."""
     raw = input_record.raw
-    if detect_schema_family(raw) is not SchemaFamily.FINAL_NESTED:
-        raise RenderPlanError("InputRecord is not a final nested dialogue")
     validated = validate_final_dialogue(raw)
     if input_record.dialogue_id != validated.dialogue_id:
         raise RenderPlanError("InputRecord dialogue_id does not match its payload")

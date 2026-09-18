@@ -107,10 +107,6 @@ def _config(tmp_path: Path, *, engine: str = "higgs") -> dict[str, Any]:
                 "server_executable": str(server),
                 "model_dir": str(model),
                 "ffmpeg_bin": "/fake/ffmpeg",
-                "voice_map": {
-                    "C123": {"reference_wav": "/wrong/scenario.wav"},
-                    "spk_001": {"reference_wav": "/wrong/config-fallback.wav"},
-                },
             },
         }
     }
@@ -179,7 +175,7 @@ def test_all_turns_preflight_before_first_worker_request(
     assert not list(tmp_path.glob("turn_*.wav"))
 
 
-@pytest.mark.parametrize("engine", ["cosyvoice", "kokoro"])
+@pytest.mark.parametrize("engine", ["cosyvoice"])
 def test_non_higgs_final_execution_fails_closed_before_output(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, engine: str
 ) -> None:

@@ -37,6 +37,5 @@ Start tests with:
 - `tests/test_materialize_speaker_assignments.py`
 - `tests/test_controlled_tts_v1_parity.py`
 
-`validate.py`, `schemas/dialogue_schema.json`, the old normalized pipeline, Kokoro,
-and legacy tests remain only as U3 deletion inventory. The normal `5703tts` command
-does not call them.
+There is no alternate input validator or renderer dispatch behind the production
+command.

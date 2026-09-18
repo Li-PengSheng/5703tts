@@ -104,13 +104,11 @@ def _config(engine: str = "higgs") -> dict:
                 "server_executable": "tools/sgl-omni",
                 "model_dir": "models/higgs",
                 "ffmpeg_bin": "ffmpeg",
-                "voice_map": {},
             },
             "cosyvoice": {
                 "python_bin": "python",
                 "repo_dir": "third_party/CosyVoice",
                 "model_dir": "models/CosyVoice",
-                "voice_map": {},
             },
         },
         "fade_ms": 5,

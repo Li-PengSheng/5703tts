@@ -1,9 +1,8 @@
 # Illustrative Google Cloud configuration for the primary Higgs backend.
-# Replace every path after approving real runtime/reference assets; config
-# loading validates structure but does not assert path existence.
+# Replace runtime paths before deployment. Speaker references are supplied by
+# --speaker-sidecar, not this file.
 tts:
   engine: higgs
-  default_rate: normal
   higgs:
     server_executable: /path/to/sgl-omni
     model_dir: /path/to/higgs
@@ -12,12 +11,6 @@ tts:
     startup_timeout_seconds: 900
     inference_timeout_seconds: 300
     ffmpeg_bin: ffmpeg
-    voice_map:
-      spk_001:
-        reference_wav: refs/approved_higgs_spk_001.wav
-
-pause:
-  default_ms: 500
 
 fade_ms: 5
 

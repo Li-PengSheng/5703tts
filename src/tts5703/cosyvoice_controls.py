@@ -40,17 +40,20 @@ _AFFECT_INSTRUCTIONS: dict[str, str | None] = {
         "manner, with an emotionally present and caring delivery rather than a "
         "cheerful or excited one."
     ),
-    "distressed": "Use a distressed, worried, and sad tone.",
 }
 _INSTRUCTION_PREFIX = "You are a helpful assistant."
 _END_OF_PROMPT = "<|endofprompt|>"
 
 
 def rate_to_cosyvoice_speed(rate: str) -> float:
-    """Map semantic or legacy percentage rates to CosyVoice's speed argument."""
-    if rate in COSYVOICE_SEMANTIC_RATES:
+    """Map the final semantic rate to CosyVoice's speed argument."""
+    try:
         return COSYVOICE_SEMANTIC_RATES[rate]
-    return max(0.1, 1 + int(rate[:-1]) / 100)
+    except KeyError as error:
+        raise BackendControlError(
+            f"Unsupported CosyVoice rate mapping: {rate!r}. "
+            f"Currently supported mappings: {', '.join(COSYVOICE_SEMANTIC_RATES)}."
+        ) from error
 
 
 def _check_mapping(
@@ -98,8 +101,6 @@ def resolve_cosyvoice_controls(
         "method": "instruction" if coarse_affect is not None else "not_requested",
         "mapping_value": coarse_affect,
     }
-    if coarse_affect == "distressed":
-        affect_resolution["compatibility"] = "legacy"
     return {
         "backend": "cosyvoice",
         "mapping": {

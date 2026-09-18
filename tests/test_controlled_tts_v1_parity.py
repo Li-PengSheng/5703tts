@@ -17,7 +17,6 @@ from typing import Any
 import pytest
 
 from tts5703.controlled_tts import UpstreamValidationError, map_turn_to_higgs
-from tts5703.higgs_controls import resolve_higgs_controls
 
 EXPECTED_REFERENCE_COMMIT = "7b005135e148fad8a142f39dc8be3144c3e5adcc"
 EXPECTED_CONTRACT_SHA256 = (
@@ -352,24 +351,3 @@ def test_complete_plan_parity_with_expected_reference_checkout() -> None:
     assert map_turn_to_higgs(listener, dialogue_context=context) == reference(
         listener, dialogue_context=context
     )
-
-
-def test_existing_v0_2_higgs_bridge_remains_separate_and_unchanged() -> None:
-    plan = resolve_higgs_controls(
-        text="Please stay with me.",
-        rate="normal",
-        arousal="medium",
-        coarse_affect="neutral",
-        pause_before_ms=125,
-        pause_after_ms=500,
-        speaker_id="spk_001",
-    )
-    assert plan["higgs"]["text"] == "Please stay with me."
-    assert plan["higgs"]["synthesis_call_count"] == 1
-    assert plan["unrepresented_controls"] == {
-        field: {
-            "availability": "not_represented_by_current_canonical",
-            "realization": None,
-        }
-        for field in ("pause_within_count", "hesitation_count", "best_effort")
-    }

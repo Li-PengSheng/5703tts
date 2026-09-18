@@ -2,7 +2,7 @@
 
 ## Decision
 
-- Primary local rendering backend: CosyVoice3
+- Backup/secondary production backend: CosyVoice3
 - Model: `FunAudioLLM/Fun-CosyVoice3-0.5B-2512`
 - Mapping: `cosyvoice3_control_mapping` version `v1`
 - Implementation state: frozen for production integration
@@ -28,8 +28,7 @@ formal validation.
 | Coarse affect | `anxious` | Anxious, worried, uneasy instruction without panic or urgency | Exact request mapping; instruction-conditioned; real synthesis succeeded | Perceptual affect fidelity is not formally validated |
 | Coarse affect | `angry` | Angry, firm, forceful instruction without shouting | Exact request mapping; instruction-conditioned; real synthesis succeeded | Perceptual affect fidelity is not formally validated |
 | Coarse affect | `warm` | Warm, gentle, compassionate, supportive, reassuring instruction | Exact request mapping; instruction-conditioned; real synthesis succeeded | Perceptual affect fidelity is not formally validated |
-| Coarse affect | `distressed` | Legacy distressed, worried, sad instruction | Exact request mapping; instruction-conditioned; compatibility smoke succeeded | Legacy compatibility only; not a sixth primary taxonomy label |
-| Turn-boundary pause | Milliseconds before/after a turn | Deterministic pipeline timing during assembly | Pipeline control, not a model instruction | Does not define within-turn pause placement |
+| Turn-boundary pause | `none` / `short` / `long` before a turn | Deterministic `0/500/900 ms` pipeline timing during assembly | Pipeline control, not a model instruction | Pause-after is always zero |
 
 The exact clauses and composition rules live in
 `src/tts5703/cosyvoice_controls.py`; this document does not replace that source of
@@ -71,9 +70,8 @@ production dependencies.
 Step 4A exercised the production route from validation through request resolution,
 the CosyVoice worker, WAV generation, and control-resolution metadata on an NVIDIA
 GeForce RTX 4060. All 12 controlled cases produced readable, non-silent, mono 24 kHz
-WAV files. The five primary affect cases, all three arousal cases, and the legacy
-`distressed` smoke completed successfully. This establishes integration and
-synthesis success, not semantic fidelity.
+WAV files. The five affect cases and all three arousal cases completed successfully.
+This establishes integration and synthesis success, not semantic fidelity.
 
 For one fixed text and VCTK reference (`spk_001`, source speaker `p248`), the rate
 durations were:
@@ -106,19 +104,18 @@ remains provisional.
 
 ## Coarse affect
 
-The primary production labels are `neutral`, `sad`, `anxious`, `angry`, and `warm`.
+The production labels are `neutral`, `sad`, `anxious`, `angry`, and `warm`.
 Each resolves to its targeted instruction, and each synthesized successfully in
-Step 4A. `distressed` remains accepted only for legacy compatibility; it is not a
-sixth member of the proposed five-class taxonomy. Affect fidelity remains
-provisional.
+Step 4A. Affect fidelity remains provisional.
 
 ## Known limitations
 
 - Affect semantic and perceptual fidelity is not formally validated.
 - Arousal semantic and perceptual fidelity is not formally validated.
 - Medium-only arousal selects `instruct2` with only the generic instruction prefix.
-- A within-turn pause count does not specify exact placement.
-- A hesitation count alone does not specify exact realization or placement.
+- `pause_within > 0` fails closed because no verified deterministic CosyVoice
+  realization exists.
+- Hesitations use the shared deterministic lexical planner.
 - Control behaviour can vary with text and reference speaker.
 - The mapping is implementation-frozen, not universally acoustically proven.
 

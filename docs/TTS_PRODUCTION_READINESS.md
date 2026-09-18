@@ -7,16 +7,13 @@ The production CLI accepts only final nested JSON/JSONL from
 selected backup. Both consume the same `InputRecord -> CanonicalDialogue` path and
 share assembly, metadata, QC, manifest v2, and resume. There is no automatic fallback.
 
-Legacy flat input, schema v0.2, Kokoro, and the normalized legacy renderer remain only
-as unreachable U3 cleanup inventory.
-
 ## Offline-verified behavior
 
 - Strict JSON/JSONL parsing and record-level malformed-line reporting.
 - Final contract validation and immutable source records.
 - Backend-neutral canonical turns and production `spk_*` assignment.
 - Frozen Higgs mapping parity and one synthesis call per turn.
-- Cached CosyVoice speed/instruction/prompt requests without `NormalizedTurn`.
+- Cached CosyVoice speed/instruction/prompt requests from canonical turns.
 - Selected-backend-only reference requirements and SHA verification.
 - Shared pause-before, speech-only turn files, ordering, and timing.
 - Backend-specific planned metadata and structural/control-integrity QC.
@@ -34,9 +31,6 @@ uv run python scripts/materialize_speaker_assignments.py \
   --assignments data/speaker_assignments.jsonl \
   --registry data/speaker_pool/vctk_v0.1/speaker_registry.json \
   --active-speakers data/speaker_pool/vctk_v0.1/active_speakers.json \
-  --output data/materialized-unused \
-  --config-out config/materialized.yaml \
-  --base-config config/config.yaml \
   --manifest data/speaker_sidecar.json \
   --backend both
 ```

@@ -131,13 +131,11 @@ def _config(engine: str) -> dict[str, Any]:
                 "server_executable": "bin/sgl-omni",
                 "model_dir": "models/higgs",
                 "ffmpeg_bin": "ffmpeg",
-                "voice_map": {},
             },
             "cosyvoice": {
                 "python_bin": "third_party/CosyVoice/.venv/bin/python",
                 "repo_dir": "third_party/CosyVoice",
                 "model_dir": "models/Fun-CosyVoice3-0.5B",
-                "voice_map": {},
             },
         },
         "fade_ms": 1,

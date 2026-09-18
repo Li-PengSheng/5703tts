@@ -61,8 +61,8 @@ Each turn keeps its upstream `speaker` (`User` or `Listener`) and nested control
 }
 ```
 
-Legacy flat JSON and schema v0.2 are not accepted by the production CLI. Their
-implementation remains temporarily in the repository only for U3 cleanup.
+Other input shapes are rejected by final-contract validation and are never
+reinterpreted.
 
 ## Speaker materialization
 
@@ -75,9 +75,6 @@ uv run python scripts/materialize_speaker_assignments.py \
   --assignments data/speaker_assignments.jsonl \
   --registry data/speaker_pool/vctk_v0.1/speaker_registry.json \
   --active-speakers data/speaker_pool/vctk_v0.1/active_speakers.json \
-  --output data/materialized-unused \
-  --config-out config/materialized.yaml \
-  --base-config config/config.yaml \
   --manifest data/speaker_sidecar.json \
   --backend both
 ```

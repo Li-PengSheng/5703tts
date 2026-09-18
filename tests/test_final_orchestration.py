@@ -16,10 +16,7 @@ from tts5703.backend_info import (
     describe_final_controlled_tts_engine,
     final_controlled_tts_backend_identity,
 )
-from tts5703.engine_capabilities import (
-    ACOUSTIC_CONTROL_FIELDS,
-    final_controlled_tts_v1_capabilities,
-)
+from tts5703.engine_capabilities import final_controlled_tts_v1_capabilities
 from tts5703.higgs_worker import FROZEN_GENERATION_FIELDS
 from tts5703.input_records import InputRecord
 from tts5703.metadata import build_final_metadata
@@ -155,13 +152,8 @@ def _config(*, engine: str = "higgs") -> dict[str, Any]:
                 "server_executable": "bin/sgl-omni",
                 "model_dir": "models/higgs",
                 "ffmpeg_bin": "ffmpeg",
-                "voice_map": {
-                    "C123": {"reference_wav": "wrong-scenario.wav"},
-                    "spk_001": {"reference_wav": "wrong-render-fallback.wav"},
-                },
             },
         },
-        "pause": {"default_ms": 7_777},
         "fade_ms": 5,
         "telephone": {
             "sample_rate": 8_000,
@@ -319,28 +311,6 @@ def test_final_pipeline_pre_render_failures_leave_no_output(
     )
 
     assert result.status == "failed"
-    assert not (output_root / record.dialogue_id).exists()
-
-
-@pytest.mark.parametrize("engine", ["kokoro"])
-def test_final_pipeline_non_higgs_fails_before_output(
-    tmp_path: Path, engine: str
-) -> None:
-    record, sidecar = _inputs(tmp_path)
-    output_root = tmp_path / "output"
-
-    result = asyncio.run(
-        pipeline.run_dialogue(
-            record,
-            sidecar,
-            _config(engine=engine),
-            output_root,
-            project_root=tmp_path,
-        )
-    )
-
-    assert result.status == "failed"
-    assert "not implemented" in (result.error or "")
     assert not (output_root / record.dialogue_id).exists()
 
 
@@ -557,15 +527,6 @@ def test_final_backend_identity_locks_semantics_not_source_bytes(
 
 
 def test_final_capabilities_are_separate_and_truthful() -> None:
-    assert ACOUSTIC_CONTROL_FIELDS == (
-        "rate",
-        "pause_before_ms",
-        "pause_after_ms",
-        "arousal",
-        "coarse_affect",
-        "emotion",
-        "paralinguistic_events",
-    )
     capabilities = final_controlled_tts_v1_capabilities()
     assert capabilities["required"]["pause_within"]["realization"] == (
         "native_higgs_pause_token_planner"

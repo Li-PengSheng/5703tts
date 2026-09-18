@@ -14,8 +14,6 @@ from typing import Any
 
 logger = logging.getLogger("tts5703.tts_engine")
 
-# ponytail: isolated from the legacy backend so that path can be deleted next phase;
-# consolidate only if legacy unexpectedly remains after the migration.
 _WORKER_SCRIPT = Path(__file__).resolve().parents[1] / "cosyvoice_worker.py"
 _TERMINATE_TIMEOUT_SEC = 5
 
