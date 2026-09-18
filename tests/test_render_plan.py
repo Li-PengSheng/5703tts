@@ -276,6 +276,9 @@ def test_container_path_and_line_move_do_not_invalidate_record_identity(
         lambda plan: plan["higgs"].__setitem__("model_input", ""),
         lambda plan: plan["higgs"].__setitem__("synthesis_call_count", 2),
         lambda plan: plan["postprocess"].__setitem__("atempo_factor", 9.9),
+        lambda plan: plan["postprocess"]["atempo"].__setitem__(
+            "processor", "not_ffmpeg"
+        ),
         lambda plan: plan["postprocess"].__setitem__("pause_before_ms", 1),
         lambda plan: plan["higgs"].__setitem__("native_pause_token_count", 99),
     ],

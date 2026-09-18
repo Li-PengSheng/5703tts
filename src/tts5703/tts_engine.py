@@ -5,7 +5,7 @@ from typing import Any
 
 from . import backend_info
 from .backend_errors import BackendControlError
-from .backends import cosyvoice, higgs, kokoro
+from .backends import cosyvoice, cosyvoice_final, higgs, kokoro
 from .config import get_engine as _get_engine
 from .higgs_controls import HiggsControlError, resolve_higgs_turn_controls
 from .render_plan import PreparedDialogue, TurnRenderResult
@@ -91,10 +91,14 @@ def preflight_prepared_dialogue(
 ) -> None:
     """Validate every final prepared turn before starting any worker request."""
     engine = get_engine(config)
-    if engine != "higgs":
+    if engine not in {"higgs", "cosyvoice"}:
         raise RuntimeError(
-            "Controlled TTS v1 prepared execution requires tts.engine='higgs'; "
-            f"got {engine!r}"
+            f"Final prepared execution is not implemented for {engine!r}"
+        )
+    if dialogue.engine != engine:
+        raise RuntimeError(
+            f"Prepared dialogue engine {dialogue.engine!r} does not match "
+            f"tts.engine {engine!r}"
         )
     if not dialogue.turns:
         raise RuntimeError("Prepared dialogue has no turns")
@@ -104,7 +108,14 @@ def preflight_prepared_dialogue(
             "Prepared dialogue ordinals must be unique, ordered, and 1-based"
         )
     for turn in dialogue.turns:
-        higgs.preflight_prepared_turn(turn, config)
+        if turn.backend != engine:
+            raise RuntimeError(
+                f"Prepared turn {turn.ordinal} backend does not match dialogue engine"
+            )
+        if engine == "higgs":
+            higgs.preflight_prepared_turn(turn, config)
+        else:
+            cosyvoice_final.preflight_prepared_turn(turn, config)
 
 
 async def synthesize_prepared_turns(
@@ -112,18 +123,24 @@ async def synthesize_prepared_turns(
 ) -> tuple[TurnRenderResult, ...]:
     """Preflight the whole final dialogue, then render sequentially."""
     preflight_prepared_dialogue(dialogue, config)
+    engine = get_engine(config)
     results: list[TurnRenderResult] = []
     for turn in dialogue.turns:
-        output_path = higgs.synthesize_prepared_turn(turn, out_dir, config)
+        if engine == "higgs":
+            output_path = higgs.synthesize_prepared_turn(turn, out_dir, config)
+            rate_status = "executed" if turn.rate_plan["enabled"] else "not_required"
+        else:
+            output_path = cosyvoice_final.synthesize_prepared_turn(
+                turn, out_dir, config
+            )
+            rate_status = "executed"
         results.append(
             TurnRenderResult(
                 ordinal=turn.ordinal,
                 source_turn_id=turn.source_turn_id,
                 output_path=output_path,
                 synthesis_status="synthesized",
-                rate_status=(
-                    "executed" if turn.rate_plan["enabled"] else "not_required"
-                ),
+                rate_status=rate_status,
             )
         )
     return tuple(results)

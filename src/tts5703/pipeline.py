@@ -186,7 +186,7 @@ async def run_final_dialogue(
         if detect_schema_family(input_record.raw) is not SchemaFamily.FINAL_NESTED:
             raise RenderPlanError("InputRecord is not a final nested dialogue")
         prepared = prepare_final_dialogue(
-            input_record, sidecar, project_root=project_root
+            input_record, sidecar, project_root=project_root, config=config
         )
         # This gate deliberately precedes even output-directory creation.
         preflight_prepared_dialogue(prepared, config)

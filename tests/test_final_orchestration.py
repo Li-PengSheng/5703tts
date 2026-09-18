@@ -322,7 +322,7 @@ def test_final_pipeline_pre_render_failures_leave_no_output(
     assert not (output_root / record.dialogue_id).exists()
 
 
-@pytest.mark.parametrize("engine", ["cosyvoice", "kokoro"])
+@pytest.mark.parametrize("engine", ["kokoro"])
 def test_final_pipeline_non_higgs_fails_before_output(
     tmp_path: Path, engine: str
 ) -> None:
@@ -340,7 +340,7 @@ def test_final_pipeline_non_higgs_fails_before_output(
     )
 
     assert result.status == "failed"
-    assert "requires tts.engine='higgs'" in (result.error or "")
+    assert "not implemented" in (result.error or "")
     assert not (output_root / record.dialogue_id).exists()
 
 

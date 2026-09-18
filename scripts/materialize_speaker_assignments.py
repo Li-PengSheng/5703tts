@@ -464,6 +464,12 @@ def materialize_speaker_assignments(
                     ],
                     "render_speaker_id": speaker_id,
                 }
+                if needs_cosyvoice:
+                    role_row["cosyvoice_reference"] = {
+                        "prompt_wav": cosyvoice_references[speaker_id]["prompt_wav"],
+                        "prompt_text": cosyvoice_references[speaker_id]["prompt_text"],
+                        "sha256": cosyvoice_references[speaker_id]["sha256"],
+                    }
                 if higgs_ready:
                     role_row["higgs_reference"] = {
                         "reference_wav": higgs_references[speaker_id]["reference_wav"],

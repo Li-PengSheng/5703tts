@@ -14,6 +14,7 @@ from typing import Any
 from .backend_info import backend_identity
 from .batch_identity import (
     FINAL_BATCH_MANIFEST_VERSION,
+    BatchIdentityError,
     final_backend_identity,
     render_fingerprint,
     render_fingerprint_components,
@@ -27,6 +28,7 @@ from .final_input import (
     detect_schema_family,
     validate_final_dialogue,
 )
+from .final_references import FinalReferenceError, selected_reference
 from .input_records import InputRecord, InputRecordFailure, read_input_records
 from .pipeline import PipelineResult, run_dialogue, run_final_dialogue
 from .qc import run_qc
@@ -475,8 +477,11 @@ def _final_entry_is_resumable(
     dialogue_id: str,
     fingerprint: str,
     output_root: Path,
+    sidecar_entry: dict[str, Any],
+    engine: str,
+    project_root: Path,
 ) -> bool:
-    return bool(
+    candidate = bool(
         previous
         and previous.get("dialogue_id") == dialogue_id
         and previous.get("status") == "success"
@@ -484,6 +489,23 @@ def _final_entry_is_resumable(
         and previous.get("render_fingerprint") == fingerprint
         and _final_artifacts_exist(output_root, dialogue_id)
     )
+    if not candidate:
+        return False
+    roles = sidecar_entry.get("roles")
+    if not isinstance(roles, dict):
+        return False
+    try:
+        for logical_role, role in roles.items():
+            selected_reference(
+                role,
+                engine,
+                logical_role,
+                project_root=project_root,
+                verify_file=True,
+            )
+    except (FinalReferenceError, OSError):
+        return False
+    return True
 
 
 def _record_source(record: InputRecord | InputRecordFailure) -> dict[str, Any]:
@@ -516,8 +538,11 @@ async def _run_final_batch(
     logger: logging.Logger,
 ) -> int:
     """Orchestrate final records without preparing controls before rendering."""
-    if config.get("tts", {}).get("engine") != "higgs":
-        raise RuntimeError("Final Controlled TTS v1 batches require tts.engine='higgs'")
+    engine = config.get("tts", {}).get("engine")
+    if engine not in {"higgs", "cosyvoice"}:
+        raise RuntimeError(
+            "Final batches require tts.engine='higgs' or tts.engine='cosyvoice'"
+        )
     if args.speaker_sidecar is None:
         raise RuntimeError("Final batches require --speaker-sidecar")
 
@@ -571,17 +596,18 @@ async def _run_final_batch(
 
     registry_sha256 = sidecar.get("registry_sha256")
     active_speakers_sha256 = sidecar.get("active_speakers_sha256")
-    fingerprints: dict[str, str] = {}
+    fingerprints: dict[str, str | None] = {}
     for record in eligible:
-        components = render_fingerprint_components(
-            record,
-            config_sha256=config_sha256,
-            config=config,
-            sidecar_entry=sidecar_by_id[record.dialogue_id],
-            registry_sha256=registry_sha256,
-            active_speakers_sha256=active_speakers_sha256,
-        )
-        fingerprints[record.dialogue_id] = render_fingerprint(components)
+        try:
+            components = render_fingerprint_components(
+                record,
+                config=config,
+                sidecar_entry=sidecar_by_id[record.dialogue_id],
+            )
+        except BatchIdentityError:
+            fingerprints[record.dialogue_id] = None
+        else:
+            fingerprints[record.dialogue_id] = render_fingerprint(components)
 
     manifest_path = args.output / "batch_result.json"
     previous_manifest = (
@@ -654,11 +680,18 @@ async def _run_final_batch(
         fingerprint = fingerprints[item.dialogue_id]
         expected_out_dir = output_paths[item.dialogue_id]
         previous = previous_results.get(item.dialogue_id)
-        if args.resume and _final_entry_is_resumable(
-            previous,
-            dialogue_id=item.dialogue_id,
-            fingerprint=fingerprint,
-            output_root=args.output,
+        if (
+            fingerprint is not None
+            and args.resume
+            and _final_entry_is_resumable(
+                previous,
+                dialogue_id=item.dialogue_id,
+                fingerprint=fingerprint,
+                output_root=args.output,
+                sidecar_entry=sidecar_by_id[item.dialogue_id],
+                engine=engine,
+                project_root=Path.cwd(),
+            )
         ):
             action, status, error = _FINAL_RESUMED, "success", None
         else:
@@ -706,7 +739,7 @@ async def _run_final_batch(
         "started_at": run_started.isoformat(timespec="seconds"),
         "finished_at": finished_at.isoformat(timespec="seconds"),
         "duration_seconds": round((finished_at - run_started).total_seconds(), 3),
-        "backend": "higgs",
+        "backend": engine,
         "backend_identity": batch_backend_identity,
         "backend_identity_sha256": batch_backend_hash,
         "config_path": str(args.config),
@@ -716,9 +749,16 @@ async def _run_final_batch(
         "resume_requested": args.resume,
         "batch_provenance": {
             "controlled_tts": {
-                "mapping_version": mapping["mapping_version"],
-                "release_status": mapping["release_status"],
-                "contract_sha256": mapping["provenance"]["contract_sha256"],
+                "mapping_name": mapping.get("name", mapping.get("mapping_version")),
+                "mapping_version": mapping.get(
+                    "version", mapping.get("mapping_version")
+                ),
+                "release_status": mapping.get("status", mapping.get("release_status")),
+                **(
+                    {"contract_sha256": mapping["provenance"]["contract_sha256"]}
+                    if "provenance" in mapping
+                    else {}
+                ),
                 "implementation_id": mapping["implementation_id"],
             },
             "exclusion_policy": policy_identity,

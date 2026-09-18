@@ -72,6 +72,11 @@ def _entry(caller: str = "spk_001", caller_sha: str = "1" * 64) -> dict:
                     "sha256": caller_sha,
                     "resolved_reference_wav": "/machine/local/caller.wav",
                 },
+                "cosyvoice_reference": {
+                    "prompt_wav": "refs/caller-cosy.wav",
+                    "prompt_text": "Caller prompt",
+                    "sha256": "3" * 64,
+                },
             },
             "counsellor": {
                 "upstream_role": "Listener",
@@ -81,22 +86,41 @@ def _entry(caller: str = "spk_001", caller_sha: str = "1" * 64) -> dict:
                     "reference_wav": "refs/counsellor.wav",
                     "sha256": "2" * 64,
                 },
+                "cosyvoice_reference": {
+                    "prompt_wav": "refs/counsellor-cosy.wav",
+                    "prompt_text": "Counsellor prompt",
+                    "sha256": "4" * 64,
+                },
             },
         },
     }
 
 
-def _config() -> dict:
+def _config(engine: str = "higgs") -> dict:
     return {
         "tts": {
-            "engine": "higgs",
+            "engine": engine,
             "higgs": {
                 "server_executable": "tools/sgl-omni",
                 "model_dir": "models/higgs",
                 "ffmpeg_bin": "ffmpeg",
                 "voice_map": {},
             },
-        }
+            "cosyvoice": {
+                "python_bin": "python",
+                "repo_dir": "third_party/CosyVoice",
+                "model_dir": "models/CosyVoice",
+                "voice_map": {},
+            },
+        },
+        "fade_ms": 5,
+        "telephone": {
+            "sample_rate": 8000,
+            "channels": 1,
+            "high_pass_hz": 300,
+            "low_pass_hz": 3400,
+            "volume_db_reduction": 2,
+        },
     }
 
 
@@ -104,17 +128,12 @@ def _components(
     record: InputRecord,
     *,
     entry: dict | None = None,
-    config_sha: str = "a" * 64,
-    registry_sha: str = "b" * 64,
-    active_sha: str = "c" * 64,
+    config: dict | None = None,
 ) -> dict:
     return batch_identity.render_fingerprint_components(
         record,
-        config_sha256=config_sha,
-        config=_config(),
+        config=config or _config(),
         sidecar_entry=entry or _entry(),
-        registry_sha256=registry_sha,
-        active_speakers_sha256=active_sha,
     )
 
 
@@ -144,7 +163,7 @@ def test_record_location_and_json_formatting_are_not_fingerprint_identity(
     assert "resolved_reference_wav" not in serialized
 
 
-def test_machine_local_absolute_reference_path_is_not_fingerprint_identity(
+def test_selected_reference_declared_path_is_fingerprint_identity(
     tmp_path: Path,
 ) -> None:
     record = _record(tmp_path)
@@ -160,19 +179,21 @@ def test_machine_local_absolute_reference_path_is_not_fingerprint_identity(
     first = _components(record, entry=first_entry)
     second = _components(record, entry=second_entry)
 
-    assert first == second
-    assert first["materialization"]["roles"]["caller"]["portable_reference_wav"] is None
+    assert first != second
+    assert (
+        first["materialization"]["roles"]["caller"]["higgs_reference"]["reference_wav"]
+        == "/machine-one/caller.wav"
+    )
 
 
 @pytest.mark.parametrize(
     ("change", "expected_path"),
     [
         ("source", "source"),
-        ("config", "configuration"),
+        ("shared_config", "configuration"),
+        ("selected_config", "controlled_tts_backend"),
         ("speaker", "materialization"),
         ("reference", "materialization"),
-        ("registry", "materialization"),
-        ("active", "materialization"),
     ],
 )
 def test_semantic_dependencies_invalidate_fingerprint(
@@ -182,28 +203,22 @@ def test_semantic_dependencies_invalidate_fingerprint(
     baseline = _components(record)
     changed_record = record
     entry = _entry()
-    config_sha = "a" * 64
-    registry_sha = "b" * 64
-    active_sha = "c" * 64
+    config = _config()
     if change == "source":
         changed_record = _record(tmp_path, raw=_raw(text="Changed"))
-    elif change == "config":
-        config_sha = "d" * 64
+    elif change == "shared_config":
+        config["fade_ms"] = 7
+    elif change == "selected_config":
+        config["tts"]["higgs"]["model_dir"] = "models/other-higgs"
     elif change == "speaker":
         entry = _entry(caller="spk_999")
     elif change == "reference":
         entry = _entry(caller_sha="9" * 64)
-    elif change == "registry":
-        registry_sha = "8" * 64
-    elif change == "active":
-        active_sha = "7" * 64
 
     changed = _components(
         changed_record,
         entry=entry,
-        config_sha=config_sha,
-        registry_sha=registry_sha,
-        active_sha=active_sha,
+        config=config,
     )
 
     assert changed[expected_path] != baseline[expected_path]
@@ -268,3 +283,26 @@ def test_unrelated_dialogue_state_is_not_a_fingerprint_dependency(
     assert unrelated_assignment_sha
     assert _components(record) == before
     assert before["exclusion_decision"] == {"excluded": False}
+
+
+@pytest.mark.parametrize("engine", ["higgs", "cosyvoice"])
+def test_unselected_backend_config_and_reference_are_not_dependencies(
+    tmp_path: Path, engine: str
+) -> None:
+    record = _record(tmp_path)
+    config = _config(engine)
+    entry = _entry()
+    baseline = _components(record, config=config, entry=entry)
+    changed_config = deepcopy(config)
+    changed_entry = deepcopy(entry)
+    unselected = "cosyvoice" if engine == "higgs" else "higgs"
+    changed_config["tts"][unselected]["model_dir"] = "models/unselected-change"
+    reference = changed_entry["roles"]["caller"][f"{unselected}_reference"]
+    reference["sha256"] = "f" * 64
+    if unselected == "higgs":
+        reference["reference_wav"] = "refs/unselected-other.wav"
+    else:
+        reference["prompt_wav"] = "refs/unselected-other.wav"
+        reference["prompt_text"] = "Changed unselected prompt"
+
+    assert _components(record, config=changed_config, entry=changed_entry) == baseline

@@ -511,6 +511,15 @@ def test_final_sidecar_file_hashes_track_registry_and_active_pool_bytes(
     first = _run(tmp_path, pool, dialogues, rows, output_name="sidecar_one")
     assert first["registry_sha256"] == _sha256_bytes(pool["registry"].read_bytes())
     assert first["active_speakers_sha256"] == _sha256_bytes(pool["active"].read_bytes())
+    caller = first["dialogues"][0]["roles"]["caller"]
+    assert caller["cosyvoice_reference"] == {
+        "prompt_wav": "refs/spk_001.wav",
+        "prompt_text": (
+            "You are a helpful assistant.<|endofprompt|>transcript for spk_001"
+        ),
+        "sha256": _sha256_bytes(b"WAV001"),
+    }
+    assert "higgs_reference" not in caller
 
     pool["registry"].write_text(
         pool["registry"].read_text(encoding="utf-8") + " ", encoding="utf-8"
@@ -525,6 +534,39 @@ def test_final_sidecar_file_hashes_track_registry_and_active_pool_bytes(
     third = _run(tmp_path, pool, dialogues, rows, output_name="sidecar_three")
     assert third["registry_sha256"] == second["registry_sha256"]
     assert third["active_speakers_sha256"] != second["active_speakers_sha256"]
+
+
+def test_final_sidecar_carries_separate_references_for_both_backends(
+    tmp_path: Path,
+) -> None:
+    pool = _pool(tmp_path)
+    _approve_higgs(pool, ("spk_001", "spk_003"))
+
+    manifest = _run(
+        tmp_path,
+        pool,
+        {"final.json": _final_dialogue()},
+        [
+            {
+                "dialogue_id": "final_a",
+                "role_assignments": {
+                    "caller": "spk_001",
+                    "counsellor": "spk_003",
+                },
+            }
+        ],
+        higgs_ready=True,
+    )
+
+    caller = manifest["dialogues"][0]["roles"]["caller"]
+    assert caller["cosyvoice_reference"]["prompt_wav"] == "refs/spk_001.wav"
+    assert caller["cosyvoice_reference"]["prompt_text"].endswith(
+        "transcript for spk_001"
+    )
+    assert caller["higgs_reference"]["reference_wav"] == ("higgs_refs/spk_001.wav")
+    assert (
+        caller["cosyvoice_reference"]["sha256"] != caller["higgs_reference"]["sha256"]
+    )
 
 
 def test_final_higgs_ready_requires_approved_reference_not_primary(

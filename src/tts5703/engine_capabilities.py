@@ -128,6 +128,39 @@ FINAL_CONTROLLED_TTS_V1_CAPABILITIES: dict[str, Any] = {
     },
 }
 
+FINAL_COSYVOICE3_CAPABILITIES: dict[str, Any] = {
+    "required": {
+        "rate": {"support": MODEL_CONTROL, "realization": "numeric_speed"},
+        "arousal": {
+            "support": PROVISIONAL_MODEL_CONTROL,
+            "realization": "instruction_mapping",
+        },
+        "affect": {
+            "support": PROVISIONAL_MODEL_CONTROL,
+            "realization": "instruction_mapping",
+        },
+        "pause_before": {
+            "support": PIPELINE_TIMING,
+            "realization": "prepared_dialogue_assembly",
+        },
+        "pause_within": {
+            "support": UNSUPPORTED,
+            "realization": "fail_closed_when_requested",
+        },
+        "hesitations": {
+            "support": MODEL_CONTROL,
+            "realization": "shared_lexical_planner",
+        },
+    },
+    "best_effort": {
+        field: {
+            "support": UNSUPPORTED,
+            "possible_statuses": ["not_realized", "unsupported"],
+        }
+        for field in ("affect_fine", "volume", "flattened_affect", "events")
+    },
+}
+
 
 class UnknownEngineCapabilityError(KeyError):
     """Raised when no capability declaration exists for the requested engine."""
@@ -161,9 +194,15 @@ def control_support(engine: str) -> dict[str, str]:
     }
 
 
-def final_controlled_tts_v1_capabilities() -> dict[str, Any]:
-    """Return an isolated final-schema capability declaration."""
-    return deepcopy(FINAL_CONTROLLED_TTS_V1_CAPABILITIES)
+def final_controlled_tts_v1_capabilities(engine: str = "higgs") -> dict[str, Any]:
+    """Return the selected backend's isolated final-schema capabilities."""
+    if engine == "higgs":
+        return deepcopy(FINAL_CONTROLLED_TTS_V1_CAPABILITIES)
+    if engine == "cosyvoice":
+        return deepcopy(FINAL_COSYVOICE3_CAPABILITIES)
+    raise UnknownEngineCapabilityError(
+        f"No final-schema capabilities are declared for engine {engine!r}"
+    )
 
 
 def requested_acoustic_spec(turn: Any) -> dict[str, Any]:

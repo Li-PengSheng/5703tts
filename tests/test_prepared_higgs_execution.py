@@ -187,7 +187,7 @@ def test_non_higgs_final_execution_fails_closed_before_output(
     calls: list[object] = []
     monkeypatch.setattr(higgs, "_get_worker", lambda *args: calls.append(args))
 
-    with pytest.raises(RuntimeError, match="requires tts.engine='higgs'"):
+    with pytest.raises(RuntimeError, match="not implemented|does not match"):
         asyncio.run(
             tts_engine.synthesize_prepared_turns(
                 _dialogue(turn), tmp_path, _config(tmp_path, engine=engine)

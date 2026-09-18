@@ -8,7 +8,7 @@ COSYVOICE_CONTROL_MAPPING_NAME = "cosyvoice3_control_mapping"
 COSYVOICE_CONTROL_MAPPING_VERSION = "v1"
 COSYVOICE_CONTROL_MAPPING_STATUS = "provisional"
 
-_SEMANTIC_RATES = {
+COSYVOICE_SEMANTIC_RATES = {
     "slow": 0.8,
     "normal": 1.0,
     "fast": 1.2,
@@ -48,8 +48,8 @@ _END_OF_PROMPT = "<|endofprompt|>"
 
 def rate_to_cosyvoice_speed(rate: str) -> float:
     """Map semantic or legacy percentage rates to CosyVoice's speed argument."""
-    if rate in _SEMANTIC_RATES:
-        return _SEMANTIC_RATES[rate]
+    if rate in COSYVOICE_SEMANTIC_RATES:
+        return COSYVOICE_SEMANTIC_RATES[rate]
     return max(0.1, 1 + int(rate[:-1]) / 100)
 
 

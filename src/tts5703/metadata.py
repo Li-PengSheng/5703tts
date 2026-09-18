@@ -149,8 +149,23 @@ def build_final_metadata(
     if set(results) != expected_ordinals or set(timing_by_ordinal) != expected_ordinals:
         raise ValueError("Final metadata inputs have inconsistent turn ordinals")
 
+    engine = engine_info["engine"]
     mapping = engine_info["control_mapping"]
-    mapping_provenance = mapping["provenance"]
+    mapping_provenance = (
+        {
+            "mapping_version": mapping["mapping_version"],
+            "release_status": mapping["release_status"],
+            "contract_sha256": mapping["provenance"]["contract_sha256"],
+            "implementation_id": mapping["implementation_id"],
+        }
+        if engine == "higgs"
+        else {
+            "mapping_name": mapping["name"],
+            "mapping_version": mapping["version"],
+            "release_status": mapping["status"],
+            "implementation_id": mapping["implementation_id"],
+        }
+    )
     turns: list[dict[str, Any]] = []
     for source, prepared in zip(raw["turns"], dialogue.turns, strict=True):
         result = results[prepared.ordinal]
@@ -184,12 +199,7 @@ def build_final_metadata(
                     }
                 },
                 "planned": prepared.plan,
-                "approved_speaker_reference": {
-                    "render_speaker_id": prepared.render_speaker_id,
-                    "reference_wav": prepared.reference_wav,
-                    "resolved_reference_wav": str(prepared.resolved_reference_wav),
-                    "sha256": prepared.reference_sha256,
-                },
+                "approved_speaker_reference": prepared.approved_reference,
                 "execution": {
                     "synthesis_status": result.synthesis_status,
                     "rate_status": result.rate_status,
@@ -206,17 +216,14 @@ def build_final_metadata(
         "telephone_audio": telephone_path.name,
         "tts": {
             **deepcopy(engine_info),
-            "control_support": final_controlled_tts_v1_capabilities(),
+            "control_support": final_controlled_tts_v1_capabilities(engine),
         },
         "provenance": {
             "record_sha256": dialogue.record_sha256,
             "assignment_sha256": dialogue.assignment_sha256,
             "registry_sha256": dialogue.registry_sha256,
             "active_speakers_sha256": dialogue.active_speakers_sha256,
-            "mapping_version": mapping["mapping_version"],
-            "release_status": mapping["release_status"],
-            "contract_sha256": mapping_provenance["contract_sha256"],
-            "implementation_id": mapping["implementation_id"],
+            **mapping_provenance,
         },
         "turns": turns,
     }

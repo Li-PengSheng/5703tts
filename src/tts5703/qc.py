@@ -189,12 +189,9 @@ def run_final_qc(
 
             plan = prepared.plan
             metadata_plan = metadata_turn["planned"]
-            higgs = plan["higgs"]
             normalized = plan["normalized"]
             realization = plan["realization"]
             hesitation = plan["planner"]["hesitation"]
-            within = plan["planner"]["pause_within"]
-            rate_factor = expected_rate[normalized["rate"]]
             pause_ms = expected_pause[normalized["pause_before"]]
             source_required = source["acoustic"]["required"]
             plan_ok &= (
@@ -205,36 +202,54 @@ def run_final_qc(
                 and normalized["rate"] == source_required["rate"]
                 and normalized["pause_within_count"] == source_required["pause_within"]
                 and normalized["hesitation_count"] == source_required["hesitations"]
-                and higgs["model_input"]
-                == "".join(higgs["prefix_tokens"]) + higgs["text"]
-                and higgs["synthesis_call_count"] == 1
                 and hesitation["inserted_count"]
                 == normalized["hesitation_count"]
                 == realization["hesitation_count"]["inserted_events"]
-                and within["inserted_count"]
-                == normalized["pause_within_count"]
-                == higgs["native_pause_token_count"]
-                == realization["pause_within_count"]["inserted_native_pause_tokens"]
-                and plan["postprocess"]["atempo_factor"] == rate_factor
-                and plan["postprocess"]["atempo"]["factor"] == rate_factor
-                and plan["postprocess"]["atempo"]["enabled"]
-                is (rate_factor is not None)
                 and plan["postprocess"]["pause_before_ms"] == pause_ms
                 and realization["pause_before"]["milliseconds"] == pause_ms
             )
+            if dialogue.engine == "higgs":
+                higgs = plan["higgs"]
+                within = plan["planner"]["pause_within"]
+                rate_factor = expected_rate[normalized["rate"]]
+                plan_ok &= (
+                    higgs["model_input"]
+                    == "".join(higgs["prefix_tokens"]) + higgs["text"]
+                    and higgs["synthesis_call_count"] == 1
+                    and within["inserted_count"]
+                    == normalized["pause_within_count"]
+                    == higgs["native_pause_token_count"]
+                    == realization["pause_within_count"]["inserted_native_pause_tokens"]
+                    and plan["postprocess"]["atempo_factor"] == rate_factor
+                    and plan["postprocess"]["atempo"]["factor"] == rate_factor
+                    and plan["postprocess"]["atempo"]["enabled"]
+                    is (rate_factor is not None)
+                    and "cosyvoice" not in plan
+                )
+            else:
+                cosy = plan["cosyvoice"]
+                plan_ok &= (
+                    plan["backend"] == "cosyvoice"
+                    and "higgs" not in plan
+                    and cosy["speed"]
+                    == {"slow": 0.8, "normal": 1.0, "fast": 1.2}[normalized["rate"]]
+                    and cosy["prompt_wav"] == prepared.prompt_wav
+                    and cosy["prompt_text"] == prepared.prompt_text
+                    and cosy["reference_sha256"] == prepared.reference_sha256
+                    and realization["pause_within_count"]["status"] == "not_required"
+                )
 
             reference = metadata_turn["approved_speaker_reference"]
-            speaker_ok &= (
-                reference["render_speaker_id"] == prepared.render_speaker_id
-                and reference["reference_wav"] == prepared.reference_wav
-                and reference["sha256"] == prepared.reference_sha256
-                and prepared.upstream_scenario_speaker_id != prepared.render_speaker_id
+            speaker_ok &= reference == prepared.approved_reference and (
+                prepared.upstream_scenario_speaker_id != prepared.render_speaker_id
             )
 
             result = results[prepared.ordinal]
             execution = metadata_turn["execution"]
             expected_rate_status = (
-                "not_required" if prepared.rate == "normal" else "executed"
+                "not_required"
+                if dialogue.engine == "higgs" and prepared.rate == "normal"
+                else "executed"
             )
             execution_ok &= (
                 result.source_turn_id == prepared.source_turn_id

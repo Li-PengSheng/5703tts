@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import sys
 from copy import deepcopy
@@ -46,12 +47,35 @@ def _record(dialogue_id: str, text: str | None = None) -> dict[str, Any]:
     }
 
 
-def _role(upstream: str, speaker: str, reference: str, digest: str) -> dict:
+def _reference_bytes(path: str) -> bytes:
+    return f"reference:{path}".encode()
+
+
+def _reference_sha(path: str) -> str:
+    return hashlib.sha256(_reference_bytes(path)).hexdigest()
+
+
+def _role(
+    upstream: str,
+    speaker: str,
+    reference_stem: str,
+    higgs_digest: str | None = None,
+) -> dict:
+    higgs_path = f"{reference_stem}-higgs.wav"
+    cosy_path = f"{reference_stem}-cosy.wav"
     return {
         "upstream_role": upstream,
         "upstream_scenario_speaker_id": f"scenario-{speaker}",
         "render_speaker_id": speaker,
-        "higgs_reference": {"reference_wav": reference, "sha256": digest},
+        "higgs_reference": {
+            "reference_wav": higgs_path,
+            "sha256": higgs_digest or _reference_sha(higgs_path),
+        },
+        "cosyvoice_reference": {
+            "prompt_wav": cosy_path,
+            "prompt_text": f"Prompt for {speaker}",
+            "sha256": _reference_sha(cosy_path),
+        },
     }
 
 
@@ -59,27 +83,26 @@ def _sidecar(
     dialogue_ids: tuple[str, ...],
     *,
     b_speaker: str = "spk_B_caller",
-    b_reference_sha: str = "3" * 64,
+    b_reference_sha: str | None = None,
     registry_sha: str = "a" * 64,
     active_sha: str = "b" * 64,
 ) -> dict[str, Any]:
     entries = []
     for dialogue_id in dialogue_ids:
         caller = b_speaker if dialogue_id == "B" else f"spk_{dialogue_id}_caller"
-        caller_sha = b_reference_sha if dialogue_id == "B" else "1" * 64
+        caller_sha = b_reference_sha if dialogue_id == "B" else None
         entries.append(
             {
                 "dialogue_id": dialogue_id,
                 "source": {"record_sha256": "provenance-only"},
                 "roles": {
                     "caller": _role(
-                        "User", caller, f"refs/{dialogue_id}-caller.wav", caller_sha
+                        "User", caller, f"refs/{dialogue_id}-caller", caller_sha
                     ),
                     "counsellor": _role(
                         "Listener",
                         f"spk_{dialogue_id}_counsellor",
-                        f"refs/{dialogue_id}-counsellor.wav",
-                        "2" * 64,
+                        f"refs/{dialogue_id}-counsellor",
                     ),
                 },
             }
@@ -102,7 +125,21 @@ def _config(engine: str = "higgs") -> dict[str, Any]:
                 "ffmpeg_bin": "ffmpeg",
                 "voice_map": {},
             },
-        }
+            "cosyvoice": {
+                "python_bin": "python",
+                "repo_dir": "third_party/CosyVoice",
+                "model_dir": "models/CosyVoice",
+                "voice_map": {},
+            },
+        },
+        "fade_ms": 5,
+        "telephone": {
+            "sample_rate": 8000,
+            "channels": 1,
+            "high_pass_hz": 300,
+            "low_pass_hz": 3400,
+            "volume_db_reduction": 2,
+        },
     }
 
 
@@ -129,16 +166,39 @@ def _invoke(
     policy: dict[str, Any] | None = None,
     resume: bool = False,
     engine: str = "higgs",
+    config: dict[str, Any] | None = None,
     failures: set[str] | None = None,
 ) -> tuple[int, dict[str, Any], list[str]]:
     output = tmp_path / "output"
     config_path = tmp_path / "config.yaml"
     sidecar_path = tmp_path / "sidecar.json"
     policy_path = tmp_path / "policy.json"
-    config_path.write_text("semantic config v1\n", encoding="utf-8")
+    loaded_config = config or _config(engine)
+    config_path.write_text(
+        json.dumps(loaded_config, sort_keys=True) + "\n", encoding="utf-8"
+    )
     sidecar_path.write_text(json.dumps(sidecar), encoding="utf-8")
     if policy is not None:
         policy_path.write_text(json.dumps(policy), encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+    for entry in sidecar.get("dialogues", []):
+        for role in entry.get("roles", {}).values():
+            for reference_key, path_key in (
+                ("higgs_reference", "reference_wav"),
+                ("cosyvoice_reference", "prompt_wav"),
+            ):
+                reference = role.get(reference_key)
+                if not isinstance(reference, dict):
+                    continue
+                declared = reference.get(path_key)
+                if not isinstance(declared, str):
+                    continue
+                path = Path(declared)
+                if not path.is_absolute():
+                    path = tmp_path / path
+                if not path.exists():
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_bytes(_reference_bytes(declared))
     attempted: list[str] = []
 
     async def fake_run_final(
@@ -163,7 +223,7 @@ def _invoke(
         return PipelineResult(dialogue_id, "success", out_dir=out_dir)
 
     monkeypatch.setattr(cli, "configure_logging", lambda *_: None)
-    monkeypatch.setattr(cli, "load_config", lambda _: _config(engine))
+    monkeypatch.setattr(cli, "load_config", lambda _: deepcopy(loaded_config))
     monkeypatch.setattr(cli, "run_final_dialogue", fake_run_final)
     arguments = [
         "5703tts",
@@ -668,7 +728,7 @@ def test_record_edit_and_per_dialogue_reference_change_only_rerender_one(
 
 
 @pytest.mark.parametrize("global_field", ["registry", "active"])
-def test_global_speaker_asset_identity_change_rerenders_all(
+def test_global_speaker_asset_provenance_change_does_not_rerender(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, global_field: str
 ) -> None:
     input_path = tmp_path / "corpus.jsonl"
@@ -689,10 +749,10 @@ def test_global_speaker_asset_identity_change_rerenders_all(
         resume=True,
     )
 
-    assert attempted == ["A", "B"]
+    assert attempted == []
     assert [item["action"] for item in manifest["results"]] == [
-        "rendered",
-        "rendered",
+        "resumed",
+        "resumed",
     ]
 
 
@@ -845,6 +905,275 @@ def test_final_v2_manifest_still_resumes_final_records(
     assert manifest["results"][0]["action"] == "resumed"
 
 
+@pytest.mark.parametrize("engine", ["higgs", "cosyvoice"])
+def test_live_selected_reference_mutation_prevents_resume(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, engine: str
+) -> None:
+    input_path = tmp_path / "final.jsonl"
+    sidecar = _sidecar(("A",))
+    _write_jsonl(input_path, [_record("A")])
+    _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=sidecar,
+        engine=engine,
+    )
+
+    _, unchanged, attempted = _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=sidecar,
+        engine=engine,
+        resume=True,
+    )
+    assert attempted == []
+    assert unchanged["results"][0]["action"] == "resumed"
+
+    field = "reference_wav" if engine == "higgs" else "prompt_wav"
+    declared = sidecar["dialogues"][0]["roles"]["caller"][f"{engine}_reference"][field]
+    (tmp_path / declared).write_bytes(b"mutated live reference bytes")
+
+    _, mutated, attempted = _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=sidecar,
+        engine=engine,
+        resume=True,
+    )
+    assert attempted == ["A"]
+    assert mutated["results"][0]["action"] == "rendered"
+
+
+@pytest.mark.parametrize(
+    ("before", "after"),
+    [("higgs", "cosyvoice"), ("cosyvoice", "higgs")],
+)
+def test_engine_switch_invalidates_resume(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    before: str,
+    after: str,
+) -> None:
+    input_path = tmp_path / "final.jsonl"
+    sidecar = _sidecar(("A",))
+    _write_jsonl(input_path, [_record("A")])
+    _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=sidecar,
+        engine=before,
+    )
+
+    _, manifest, attempted = _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=sidecar,
+        engine=after,
+        resume=True,
+    )
+
+    assert attempted == ["A"]
+    assert manifest["results"][0]["action"] == "rendered"
+
+
+def test_cosyvoice_prompt_text_change_invalidates_resume(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    input_path = tmp_path / "final.jsonl"
+    sidecar = _sidecar(("A",))
+    _write_jsonl(input_path, [_record("A")])
+    _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=sidecar,
+        engine="cosyvoice",
+    )
+    changed = deepcopy(sidecar)
+    changed["dialogues"][0]["roles"]["caller"]["cosyvoice_reference"]["prompt_text"] = (
+        "Changed prompt text"
+    )
+
+    _, _, attempted = _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=changed,
+        engine="cosyvoice",
+        resume=True,
+    )
+
+    assert attempted == ["A"]
+
+
+@pytest.mark.parametrize("engine", ["higgs", "cosyvoice"])
+def test_selected_reference_path_and_sha_change_invalidate_resume(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, engine: str
+) -> None:
+    input_path = tmp_path / "final.jsonl"
+    sidecar = _sidecar(("A",))
+    _write_jsonl(input_path, [_record("A")])
+    _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=sidecar,
+        engine=engine,
+    )
+    changed = deepcopy(sidecar)
+    reference = changed["dialogues"][0]["roles"]["caller"][f"{engine}_reference"]
+    path_field = "reference_wav" if engine == "higgs" else "prompt_wav"
+    reference[path_field] = f"refs/A-caller-{engine}-changed.wav"
+    reference["sha256"] = _reference_sha(reference[path_field])
+
+    _, _, attempted = _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=changed,
+        engine=engine,
+        resume=True,
+    )
+
+    assert attempted == ["A"]
+
+
+@pytest.mark.parametrize("engine", ["higgs", "cosyvoice"])
+def test_unselected_reference_change_does_not_invalidate_resume(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, engine: str
+) -> None:
+    input_path = tmp_path / "final.jsonl"
+    sidecar = _sidecar(("A",))
+    _write_jsonl(input_path, [_record("A")])
+    _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=sidecar,
+        engine=engine,
+    )
+    changed = deepcopy(sidecar)
+    unselected = "cosyvoice" if engine == "higgs" else "higgs"
+    changed["dialogues"][0]["roles"]["caller"][f"{unselected}_reference"] = {
+        "malformed": True
+    }
+
+    _, manifest, attempted = _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=changed,
+        engine=engine,
+        resume=True,
+    )
+
+    assert attempted == []
+    assert manifest["results"][0]["action"] == "resumed"
+
+
+@pytest.mark.parametrize("engine", ["higgs", "cosyvoice"])
+def test_malformed_selected_reference_is_not_resumed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, engine: str
+) -> None:
+    input_path = tmp_path / "final.jsonl"
+    sidecar = _sidecar(("A",))
+    _write_jsonl(input_path, [_record("A")])
+    _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=sidecar,
+        engine=engine,
+    )
+    changed = deepcopy(sidecar)
+    changed["dialogues"][0]["roles"]["caller"][f"{engine}_reference"] = {
+        "malformed": True
+    }
+
+    _, manifest, attempted = _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=changed,
+        engine=engine,
+        resume=True,
+    )
+
+    assert attempted == ["A"]
+    assert manifest["results"][0]["action"] == "rendered"
+    assert manifest["results"][0]["render_fingerprint"] is None
+
+
+@pytest.mark.parametrize("engine", ["higgs", "cosyvoice"])
+def test_unselected_backend_config_change_does_not_invalidate_resume(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, engine: str
+) -> None:
+    input_path = tmp_path / "final.jsonl"
+    sidecar = _sidecar(("A",))
+    config = _config(engine)
+    _write_jsonl(input_path, [_record("A")])
+    _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=sidecar,
+        config=config,
+    )
+    changed = deepcopy(config)
+    unselected = "cosyvoice" if engine == "higgs" else "higgs"
+    changed["tts"][unselected]["model_dir"] = "models/unselected-change"
+
+    _, manifest, attempted = _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=sidecar,
+        config=changed,
+        resume=True,
+    )
+
+    assert attempted == []
+    assert manifest["results"][0]["action"] == "resumed"
+
+
+@pytest.mark.parametrize("change", ["shared", "selected"])
+def test_render_affecting_config_change_invalidates_resume(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, change: str
+) -> None:
+    input_path = tmp_path / "final.jsonl"
+    sidecar = _sidecar(("A",))
+    config = _config("higgs")
+    _write_jsonl(input_path, [_record("A")])
+    _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=sidecar,
+        config=config,
+    )
+    changed = deepcopy(config)
+    if change == "shared":
+        changed["fade_ms"] = 9
+    else:
+        changed["tts"]["higgs"]["model_dir"] = "models/selected-change"
+
+    _, _, attempted = _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=sidecar,
+        config=changed,
+        resume=True,
+    )
+
+    assert attempted == ["A"]
+
+
 def test_final_sidecar_rejects_duplicate_json_keys(tmp_path: Path) -> None:
     sidecar_path = tmp_path / "sidecar.json"
     sidecar_path.write_text('{"dialogues":[],"dialogues":[]}', encoding="utf-8")
@@ -954,20 +1283,38 @@ def test_render_failure_records_expected_output_even_when_result_out_dir_is_none
     assert (tmp_path / "output" / "A").is_dir()
 
 
-@pytest.mark.parametrize("engine", ["cosyvoice", "kokoro"])
-def test_final_batch_non_higgs_engine_fails_before_render(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, engine: str
+def test_final_batch_cosyvoice_engine_is_supported(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     input_path = tmp_path / "corpus.jsonl"
     _write_jsonl(input_path, [_record("A")])
 
-    with pytest.raises(RuntimeError, match="require tts.engine='higgs'"):
+    exit_code, manifest, attempted = _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=_sidecar(("A",)),
+        engine="cosyvoice",
+    )
+
+    assert exit_code == 0
+    assert attempted == ["A"]
+    assert manifest["backend"] == "cosyvoice"
+
+
+def test_final_batch_unsupported_engine_fails_before_render(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    input_path = tmp_path / "corpus.jsonl"
+    _write_jsonl(input_path, [_record("A")])
+
+    with pytest.raises(RuntimeError, match="require tts.engine='higgs' or"):
         _invoke(
             tmp_path,
             monkeypatch,
             input_path=input_path,
             sidecar=_sidecar(("A",)),
-            engine=engine,
+            engine="kokoro",
         )
 
     assert not (tmp_path / "output").exists()
