@@ -6,7 +6,7 @@ from copy import deepcopy
 from types import SimpleNamespace
 from typing import Any
 
-from .backend_info import backend_identity as _dialogue_backend_identity
+from .backends.info import backend_identity as _dialogue_backend_identity
 from .input_records import InputRecord, canonical_json_sha256
 from .speaker_references import FinalReferenceError, selected_reference
 

@@ -118,7 +118,7 @@ reference types are not interchangeable.
 
 ## Phase B — production worker/server startup
 
-- [ ] Launch through `5703tts`/`higgs_worker.py`, not a manual SGLang-only call.
+- [ ] Launch through `5703tts`/`backends/higgs_worker.py`, not a manual SGLang-only call.
 - [ ] Confirm `/health` readiness, record cold-start time, and confirm no OOM.
 - [ ] Confirm worker/SGLang stderr drains continuously without deadlock.
 - [ ] Stop normally and confirm the worker and server process group exit and GPU

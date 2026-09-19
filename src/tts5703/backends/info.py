@@ -3,7 +3,8 @@
 from copy import deepcopy
 from typing import Any
 
-from .config import get_engine
+from ..config import get_engine
+from ..render_models import PreparedDialogue
 from .cosyvoice_controls import (
     COSYVOICE_CONTROL_MAPPING_NAME,
     COSYVOICE_CONTROL_MAPPING_STATUS,
@@ -16,7 +17,6 @@ from .higgs_controls import (
     load_higgs_control_contract,
 )
 from .higgs_worker import FROZEN_GENERATION_FIELDS
-from .render_models import PreparedDialogue
 
 CONTROLLED_TTS_V1_IMPLEMENTATION_ID = "controlled_tts_v1_prod_1"
 COSYVOICE_IMPLEMENTATION_ID = "cosyvoice3_final_2"

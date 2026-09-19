@@ -2,7 +2,7 @@
 
 import pytest
 
-from tts5703 import engine_capabilities as capabilities
+from tts5703.backends import capabilities
 
 
 @pytest.mark.parametrize("engine", ["higgs", "cosyvoice"])

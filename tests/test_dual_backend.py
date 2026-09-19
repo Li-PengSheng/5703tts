@@ -10,8 +10,8 @@ import pytest
 
 from tts5703 import render_plan, tts_engine
 from tts5703.assemble import assemble_prepared_dialogue
-from tts5703.backend_info import describe_engine
 from tts5703.backends import cosyvoice, higgs
+from tts5703.backends.info import describe_engine
 from tts5703.input_records import InputRecord
 from tts5703.metadata import build_metadata
 from tts5703.qc import run_qc

@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from .cosyvoice_controls import COSYVOICE_SEMANTIC_RATES
+from .backends.cosyvoice_controls import COSYVOICE_SEMANTIC_RATES
 
 _RATE_FACTORS = {"slow": 0.85, "normal": None, "fast": 1.15}
 _PAUSE_BEFORE_MS = {"none": 0, "short": 500, "long": 900}

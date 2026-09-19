@@ -11,13 +11,13 @@ import pytest
 
 from tts5703 import pipeline, render_plan
 from tts5703.assemble import assemble_prepared_dialogue
-from tts5703.backend_info import (
+from tts5703.backends.capabilities import controlled_tts_v1_capabilities
+from tts5703.backends.higgs_worker import FROZEN_GENERATION_FIELDS
+from tts5703.backends.info import (
     CONTROLLED_TTS_V1_IMPLEMENTATION_ID,
     backend_identity,
     describe_engine,
 )
-from tts5703.engine_capabilities import controlled_tts_v1_capabilities
-from tts5703.higgs_worker import FROZEN_GENERATION_FIELDS
 from tts5703.input_records import InputRecord
 from tts5703.metadata import build_metadata
 from tts5703.postprocess import apply_telephone_effect

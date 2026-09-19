@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from .assemble import assemble_prepared_dialogue
-from .backend_info import describe_engine
+from .backends.info import describe_engine
 from .input_contract import validate_dialogue
 from .input_records import InputRecord
 from .metadata import build_metadata, write_metadata

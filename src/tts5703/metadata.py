@@ -5,7 +5,7 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
-from .engine_capabilities import controlled_tts_v1_capabilities
+from .backends.capabilities import controlled_tts_v1_capabilities
 from .input_records import InputRecord
 from .render_models import PreparedDialogue, TurnRenderResult
 

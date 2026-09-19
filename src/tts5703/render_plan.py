@@ -6,10 +6,10 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
+from .backends.cosyvoice_controls import resolve_cosyvoice_controls
 from .controlled_tts import map_turn_to_higgs
 from .controlled_tts.planner import plan_hesitations
 from .controlled_tts.schema import load_contract, normalize_turn
-from .cosyvoice_controls import resolve_cosyvoice_controls
 from .input_contract import validate_dialogue
 from .input_records import InputRecord
 from .plan_validation import (
