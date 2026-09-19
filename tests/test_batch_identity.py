@@ -261,6 +261,21 @@ def test_backend_semantic_identity_changes_invalidate_fingerprint(
     ) != batch_identity.render_fingerprint(baseline)
 
 
+def test_cosyvoice_identity_freezes_frontend_and_is_fingerprint_identity(
+    tmp_path: Path,
+) -> None:
+    components = _components(_record(tmp_path), config=_config("cosyvoice"))
+    identity = components["controlled_tts_backend"]
+    changed = deepcopy(components)
+    changed["controlled_tts_backend"]["text_frontend"] = True
+
+    assert identity["text_frontend"] is False
+    assert identity["control_mapping"]["implementation_id"] == ("cosyvoice3_final_2")
+    assert batch_identity.render_fingerprint(
+        changed
+    ) != batch_identity.render_fingerprint(components)
+
+
 def test_unrelated_dialogue_state_is_not_a_fingerprint_dependency(
     tmp_path: Path,
 ) -> None:

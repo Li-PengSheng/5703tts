@@ -129,8 +129,9 @@ and render-failed outcomes. It is written atomically.
 
 Both backends consume the same canonical controls. Higgs retains the frozen
 Controlled-TTS-v1 planner. CosyVoice3 uses `0.8/1.0/1.2` speeds and its provisional
-instruction mapping. Pause-before uses shared `0/500/900 ms` assembly timing and
-hesitations use the shared lexical planner.
+instruction mapping. Production CosyVoice3 freezes `text_frontend=False` to match the
+validated CV3 execution baseline. Pause-before uses shared `0/500/900 ms` assembly
+timing and hesitations use the shared lexical planner.
 
 CosyVoice3 has no evidence-backed deterministic realization for `pause_within > 0`;
 such a dialogue fails closed before output-directory creation. The system does not

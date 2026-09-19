@@ -39,7 +39,8 @@ class CosyVoice3:
     sample_rate = 24000
     def __init__(self, **kwargs): pass
     def inference_zero_shot(
-        self, text, prompt_text, prompt_wav, stream=False, speed=1.0
+        self, text, prompt_text, prompt_wav, stream=False, speed=1.0,
+        text_frontend=True
     ):
         print('fake zero-shot progress must not enter protocol stdout')
         record(prompt_wav, {
@@ -48,11 +49,13 @@ class CosyVoice3:
             'prompt_text': prompt_text,
             'prompt_wav': prompt_wav,
             'stream': stream,
+            'text_frontend': text_frontend,
             'speed': speed,
         })
         yield {'tts_speech': FakeSpeech()}
     def inference_instruct2(
-        self, text, instruction, prompt_wav, stream=False, speed=1.0
+        self, text, instruction, prompt_wav, stream=False, speed=1.0,
+        text_frontend=True
     ):
         print('fake instruct2 progress must not enter protocol stdout')
         record(prompt_wav, {
@@ -61,6 +64,7 @@ class CosyVoice3:
             'instruction': instruction,
             'prompt_wav': prompt_wav,
             'stream': stream,
+            'text_frontend': text_frontend,
             'speed': speed,
         })
         yield {'tts_speech': FakeSpeech()}
@@ -142,6 +146,7 @@ def test_old_style_request_defaults_to_zero_shot_and_writes_audio(
     assert calls[0]["mode"] == "zero_shot"
     assert calls[0]["speed"] == 1.0
     assert calls[0]["stream"] is False
+    assert calls[0]["text_frontend"] is False
     assert output.read_bytes() == b"RIFF-fake-wave"
     assert "fake zero-shot progress" in result.stderr
 
@@ -188,6 +193,7 @@ def test_instruct2_passes_instruction_and_speed(tmp_path: Path) -> None:
         "instruction": instruction,
         "prompt_wav": str(prompt.resolve()),
         "stream": False,
+        "text_frontend": False,
         "speed": 1.2,
     }
 
