@@ -12,7 +12,7 @@ Read the production path in this order.
    and cached CosyVoice preparation.
 6. `src/tts5703/tts_engine.py` and `src/tts5703/backends/` — selected backend
    preflight and one-call-per-turn execution.
-7. `src/tts5703/assemble.py`, `metadata.py`, and `qc.py` — common output path.
+7. `src/tts5703/render/` — common assembly, postprocessing, metadata, and QC output path.
 8. `src/tts5703/pipeline.py` — public production `run_dialogue()` orchestration.
 9. `src/tts5703/batch_identity.py` and `src/tts5703/batch.py` — semantic resume
    identity, exclusion, manifest v2, and production batch orchestration.

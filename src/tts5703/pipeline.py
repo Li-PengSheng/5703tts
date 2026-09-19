@@ -6,13 +6,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from .assemble import assemble_prepared_dialogue
 from .backends.info import describe_engine
 from .input.contract import validate_dialogue
 from .input.records import InputRecord
-from .metadata import build_metadata, write_metadata
-from .postprocess import apply_telephone_effect
-from .qc import QCResult, run_qc
+from .render.assemble import assemble_prepared_dialogue
+from .render.metadata import build_metadata, write_metadata
+from .render.postprocess import apply_telephone_effect
+from .render.qc import QCResult, run_qc
 from .render_plan import prepare_dialogue
 from .tts_engine import preflight_prepared_dialogue, synthesize_prepared_turns
 

@@ -7,8 +7,8 @@ from typing import Any
 
 from pydub import AudioSegment
 
-from .input.records import InputRecord
-from .render_models import PreparedDialogue, TurnRenderResult
+from ..input.records import InputRecord
+from ..render_models import PreparedDialogue, TurnRenderResult
 
 
 @dataclass
