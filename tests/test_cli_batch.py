@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from pydub import AudioSegment
 
 from tts5703 import batch, batch_identity, cli
 from tts5703.pipeline import PipelineResult
@@ -147,12 +148,64 @@ def _write_jsonl(path: Path, records: list[dict[str, Any] | str]) -> None:
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
-def _write_success_artifacts(output_root: Path, dialogue_id: str) -> Path:
+def _write_success_artifacts(
+    output_root: Path, record: Any, config: dict[str, Any]
+) -> Path:
+    dialogue_id = record.dialogue_id
     out_dir = output_root / dialogue_id
     out_dir.mkdir(parents=True, exist_ok=True)
-    for suffix in ("clean.wav", "telephone.wav", "metadata.json"):
-        (out_dir / f"{dialogue_id}_{suffix}").write_bytes(b"complete")
+    backend = batch_identity.backend_identity(config)
+    turns = []
+    previous_end = 0.0
+    for ordinal, source in enumerate(record.raw["turns"], start=1):
+        turn_audio = f"turn_{ordinal:03d}.wav"
+        AudioSegment.silent(duration=200).export(out_dir / turn_audio, format="wav")
+        end_sec = previous_end + 0.2
+        turns.append(
+            {
+                "source_identity": {
+                    "ordinal": ordinal,
+                    "source_turn_id": source["turn_id"],
+                },
+                "labels": deepcopy(source["labels"]),
+                "requested": {"acoustic": deepcopy(source["acoustic"])},
+                "execution": {
+                    "synthesis_status": "synthesized",
+                    "turn_audio": turn_audio,
+                },
+                "timing": {"start_sec": previous_end, "end_sec": end_sec},
+            }
+        )
+        previous_end = end_sec
+    for suffix in ("clean.wav", "telephone.wav"):
+        AudioSegment.silent(duration=max(200, round(previous_end * 1000))).export(
+            out_dir / f"{dialogue_id}_{suffix}", format="wav"
+        )
+    metadata = {
+        "dialogue_id": dialogue_id,
+        "clean_audio": f"{dialogue_id}_clean.wav",
+        "telephone_audio": f"{dialogue_id}_telephone.wav",
+        "tts": {
+            "engine": config["tts"]["engine"],
+            "backend_identity": backend,
+            "control_mapping": backend["control_mapping"],
+        },
+        "provenance": {"record_sha256": record.record_sha256},
+        "turns": turns,
+    }
+    (out_dir / f"{dialogue_id}_metadata.json").write_text(
+        json.dumps(metadata), encoding="utf-8"
+    )
     return out_dir
+
+
+def _change_metadata_value(path: Path, keys: tuple[str | int, ...], value: Any) -> None:
+    metadata = json.loads(path.read_text(encoding="utf-8"))
+    target = metadata
+    for key in keys[:-1]:
+        target = target[key]
+    target[keys[-1]] = value
+    path.write_text(json.dumps(metadata), encoding="utf-8")
 
 
 def _invoke(
@@ -217,7 +270,7 @@ def _invoke(
                 "synthetic render failure",
                 error_type="SyntheticFailure",
             )
-        out_dir = _write_success_artifacts(output_root, dialogue_id)
+        out_dir = _write_success_artifacts(output_root, record, config)
         return PipelineResult(dialogue_id, "success", out_dir=out_dir)
 
     monkeypatch.setattr(cli, "configure_logging", lambda *_: None)
@@ -482,7 +535,7 @@ def test_resume_artifact_lookup_rejects_unsafe_dialogue_id(tmp_path: Path) -> No
     output_root = tmp_path / "output"
 
     with pytest.raises(RuntimeError, match="final dialogue_id"):
-        batch._artifacts_exist(output_root, "../escape")
+        batch._safe_dialogue_output_path(output_root, "../escape")
 
     assert not output_root.exists()
 
@@ -746,14 +799,175 @@ def test_missing_final_artifact_rerenders(
     assert attempted == ["A"]
 
 
+@pytest.mark.parametrize(
+    "contents",
+    [
+        pytest.param("{broken", id="malformed"),
+        pytest.param('{"dialogue_id":"A","dialogue_id":"A"}', id="duplicate-key"),
+        pytest.param('{"invalid":NaN}', id="non-json-constant"),
+    ],
+)
+def test_invalid_metadata_json_rerenders(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    contents: str,
+) -> None:
+    input_path = tmp_path / "corpus.jsonl"
+    _write_jsonl(input_path, [_record("A")])
+    sidecar = _sidecar(("A",))
+    _invoke(tmp_path, monkeypatch, input_path=input_path, sidecar=sidecar)
+    metadata_path = tmp_path / "output" / "A" / "A_metadata.json"
+    metadata_path.write_text(contents, encoding="utf-8")
+
+    _, manifest, attempted = _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=sidecar,
+        resume=True,
+    )
+
+    assert attempted == ["A"]
+    assert manifest["results"][0]["action"] == "rendered"
+
+
+@pytest.mark.parametrize(
+    ("keys", "value"),
+    [
+        pytest.param(("dialogue_id",), "B", id="wrong-dialogue"),
+        pytest.param(("provenance", "record_sha256"), "wrong", id="wrong-source-sha"),
+        pytest.param(("clean_audio",), "wrong.wav", id="wrong-clean-name"),
+        pytest.param(("telephone_audio",), "wrong.wav", id="wrong-telephone-name"),
+        pytest.param(("tts", "engine"), "cosyvoice", id="wrong-engine"),
+        pytest.param(
+            ("tts", "backend_identity", "backend"),
+            "cosyvoice",
+            id="wrong-backend",
+        ),
+        pytest.param(
+            ("tts", "control_mapping", "implementation_id"),
+            "wrong",
+            id="wrong-metadata-implementation",
+        ),
+        pytest.param(
+            (
+                "tts",
+                "backend_identity",
+                "control_mapping",
+                "implementation_id",
+            ),
+            "wrong",
+            id="wrong-backend-implementation",
+        ),
+    ],
+)
+def test_metadata_identity_mismatch_rerenders(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    keys: tuple[str | int, ...],
+    value: Any,
+) -> None:
+    input_path = tmp_path / "corpus.jsonl"
+    _write_jsonl(input_path, [_record("A")])
+    sidecar = _sidecar(("A",))
+    _invoke(tmp_path, monkeypatch, input_path=input_path, sidecar=sidecar)
+    _change_metadata_value(tmp_path / "output" / "A" / "A_metadata.json", keys, value)
+
+    _, manifest, attempted = _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=sidecar,
+        resume=True,
+    )
+
+    assert attempted == ["A"]
+    assert manifest["results"][0]["action"] == "rendered"
+
+
+def test_missing_turn_wav_rerenders(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    input_path = tmp_path / "corpus.jsonl"
+    _write_jsonl(input_path, [_record("A")])
+    sidecar = _sidecar(("A",))
+    _invoke(tmp_path, monkeypatch, input_path=input_path, sidecar=sidecar)
+    (tmp_path / "output" / "A" / "turn_001.wav").unlink()
+
+    _, manifest, attempted = _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=sidecar,
+        resume=True,
+    )
+
+    assert attempted == ["A"]
+    assert manifest["results"][0]["action"] == "rendered"
+
+
+@pytest.mark.parametrize(
+    "filename",
+    ["turn_001.wav", "A_clean.wav", "A_telephone.wav"],
+)
+def test_corrupt_wav_rerenders(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    filename: str,
+) -> None:
+    input_path = tmp_path / "corpus.jsonl"
+    _write_jsonl(input_path, [_record("A")])
+    sidecar = _sidecar(("A",))
+    _invoke(tmp_path, monkeypatch, input_path=input_path, sidecar=sidecar)
+    (tmp_path / "output" / "A" / filename).write_bytes(b"not a wav")
+
+    _, manifest, attempted = _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=sidecar,
+        resume=True,
+    )
+
+    assert attempted == ["A"]
+    assert manifest["results"][0]["action"] == "rendered"
+
+
+@pytest.mark.parametrize("turn_audio", ["wrong.wav", "../other.wav"])
+def test_unexpected_metadata_turn_filename_rerenders(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    turn_audio: str,
+) -> None:
+    input_path = tmp_path / "corpus.jsonl"
+    _write_jsonl(input_path, [_record("A")])
+    sidecar = _sidecar(("A",))
+    _invoke(tmp_path, monkeypatch, input_path=input_path, sidecar=sidecar)
+    _change_metadata_value(
+        tmp_path / "output" / "A" / "A_metadata.json",
+        ("turns", 0, "execution", "turn_audio"),
+        turn_audio,
+    )
+
+    _, manifest, attempted = _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=sidecar,
+        resume=True,
+    )
+
+    assert attempted == ["A"]
+    assert manifest["results"][0]["action"] == "rendered"
+
+
 def test_non_v2_manifest_is_rejected_by_the_only_resume_system(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     input_path = tmp_path / "corpus.jsonl"
     _write_jsonl(input_path, [_record("A")])
     output = tmp_path / "output"
-    _write_success_artifacts(output, "A")
-    output.mkdir(exist_ok=True)
+    output.mkdir()
     (output / "batch_result.json").write_text(
         json.dumps(
             {
