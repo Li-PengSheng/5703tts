@@ -19,7 +19,7 @@ from .higgs_worker import FROZEN_GENERATION_FIELDS
 from .render_models import PreparedDialogue
 
 CONTROLLED_TTS_V1_IMPLEMENTATION_ID = "controlled_tts_v1_prod_1"
-COSYVOICE_IMPLEMENTATION_ID = "cosyvoice3_final_1"
+COSYVOICE_IMPLEMENTATION_ID = "cosyvoice3_final_2"
 
 
 def _higgs_mapping_identity() -> dict[str, Any]:
@@ -85,6 +85,7 @@ def backend_identity(
         "load_trt": cosy.get("load_trt", False),
         "load_vllm": cosy.get("load_vllm", False),
         "fp16": cosy.get("fp16", True),
+        "text_frontend": False,
         "control_mapping": {
             "name": COSYVOICE_CONTROL_MAPPING_NAME,
             "version": COSYVOICE_CONTROL_MAPPING_VERSION,

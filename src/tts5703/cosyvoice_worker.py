@@ -100,6 +100,7 @@ def _synthesise(model: Any, request: dict[str, Any]) -> dict[str, Any]:
             prompt_text,
             str(prompt_wav),
             stream=False,
+            text_frontend=False,
             speed=speed,
         )
     else:
@@ -115,6 +116,7 @@ def _synthesise(model: Any, request: dict[str, Any]) -> dict[str, Any]:
             instruction,
             str(prompt_wav),
             stream=False,
+            text_frontend=False,
             speed=speed,
         )
 

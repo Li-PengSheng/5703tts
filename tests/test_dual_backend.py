@@ -426,6 +426,7 @@ def test_cosyvoice_metadata_and_qc_use_cached_plan_only(
     )
 
     assert metadata["tts"]["engine"] == "cosyvoice"
+    assert metadata["tts"]["backend_identity"]["text_frontend"] is False
     assert metadata["turns"][0]["planned"] == dialogue.turns[0].plan
     assert "higgs" not in str(metadata["turns"][0]["planned"])
     assert metadata["turns"][0]["approved_speaker_reference"]["prompt_text"]
