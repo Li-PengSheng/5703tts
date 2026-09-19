@@ -1334,14 +1334,14 @@ def test_backend_semantic_identity_change_rerenders(
     _write_jsonl(input_path, [_record("A")])
     sidecar = _sidecar(("A",))
     _invoke(tmp_path, monkeypatch, input_path=input_path, sidecar=sidecar)
-    original = batch_identity._dialogue_backend_identity
+    original = batch_identity._backend_static_identity
 
-    def changed(config: dict, dialogue: object) -> dict:
-        identity = deepcopy(original(config, dialogue))
+    def changed(config: dict) -> dict:
+        identity = deepcopy(original(config))
         identity["control_mapping"]["implementation_id"] = "changed-for-test"
         return identity
 
-    monkeypatch.setattr(batch_identity, "_dialogue_backend_identity", changed)
+    monkeypatch.setattr(batch_identity, "_backend_static_identity", changed)
     _, _, attempted = _invoke(
         tmp_path,
         monkeypatch,

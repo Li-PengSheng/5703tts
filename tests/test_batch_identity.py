@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from tts5703 import batch_identity
+from tts5703.backends.info import backend_static_identity
 from tts5703.input.records import InputRecord
 
 
@@ -135,6 +136,54 @@ def _components(
     )
 
 
+@pytest.mark.parametrize("engine", ["higgs", "cosyvoice"])
+def test_batch_identity_is_exact_static_backend_identity(engine: str) -> None:
+    identity = backend_static_identity(_config(engine))
+
+    assert batch_identity.backend_identity(_config(engine)) == identity
+    assert identity["backend"] == engine
+    assert identity["references"] == {}
+    assert identity["identity_complete"] is True
+    if engine == "higgs":
+        assert set(identity) == {
+            "backend",
+            "model_id",
+            "model_dir",
+            "server_executable",
+            "ffmpeg_bin",
+            "host",
+            "port",
+            "startup_timeout_seconds",
+            "inference_timeout_seconds",
+            "control_mapping",
+            "generation_profile",
+            "references",
+            "identity_complete",
+        }
+        assert identity["control_mapping"]["implementation_id"] == (
+            "controlled_tts_v1_prod_1"
+        )
+    else:
+        assert set(identity) == {
+            "backend",
+            "model",
+            "model_dir",
+            "repo_dir",
+            "python_bin",
+            "load_trt",
+            "load_vllm",
+            "fp16",
+            "text_frontend",
+            "control_mapping",
+            "references",
+            "identity_complete",
+        }
+        assert identity["text_frontend"] is False
+        assert identity["control_mapping"]["implementation_id"] == (
+            "cosyvoice3_final_2"
+        )
+
+
 def test_record_location_and_json_formatting_are_not_fingerprint_identity(
     tmp_path: Path,
 ) -> None:
@@ -241,10 +290,10 @@ def test_backend_semantic_identity_changes_invalidate_fingerprint(
 ) -> None:
     record = _record(tmp_path)
     baseline = _components(record)
-    original = batch_identity._dialogue_backend_identity
+    original = batch_identity._backend_static_identity
 
-    def changed_backend(config: dict, dialogue: object) -> dict:
-        identity = deepcopy(original(config, dialogue))
+    def changed_backend(config: dict) -> dict:
+        identity = deepcopy(original(config))
         if field == "implementation_id":
             identity["control_mapping"][field] = value
         elif field == "contract_sha256":
@@ -253,7 +302,7 @@ def test_backend_semantic_identity_changes_invalidate_fingerprint(
             identity[field] = value
         return identity
 
-    monkeypatch.setattr(batch_identity, "_dialogue_backend_identity", changed_backend)
+    monkeypatch.setattr(batch_identity, "_backend_static_identity", changed_backend)
     changed = _components(record)
 
     assert batch_identity.render_fingerprint(

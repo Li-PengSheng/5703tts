@@ -540,6 +540,17 @@ def test_backend_identity_locks_semantics_not_source_bytes(
     assert "higgs_worker.py" not in str(identity)
 
 
+def test_backend_identity_rejects_conflicting_references_for_one_speaker(
+    tmp_path: Path,
+) -> None:
+    record, sidecar = _inputs(tmp_path)
+    sidecar["dialogues"][0]["roles"]["counsellor"]["render_speaker_id"] = "spk_001"
+    prepared = prepare_dialogue(record, sidecar, project_root=tmp_path)
+
+    with pytest.raises(ValueError, match="conflicting approved references"):
+        backend_identity(_config(), prepared)
+
+
 def test_final_capabilities_are_separate_and_truthful() -> None:
     capabilities = controlled_tts_v1_capabilities()
     assert capabilities["required"]["pause_within"]["realization"] == (
