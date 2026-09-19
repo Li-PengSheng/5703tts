@@ -48,8 +48,7 @@ def preflight_prepared_dialogue(
 async def synthesize_prepared_turns(
     dialogue: PreparedDialogue, out_dir: Path, config: dict[str, Any]
 ) -> tuple[TurnRenderResult, ...]:
-    """Preflight the whole final dialogue, then render sequentially."""
-    preflight_prepared_dialogue(dialogue, config)
+    """Render sequentially; callers must first run preflight_prepared_dialogue()."""
     engine = get_engine(config)
     results: list[TurnRenderResult] = []
     for turn in dialogue.turns:

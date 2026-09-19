@@ -289,11 +289,7 @@ def test_cosyvoice_pause_within_is_explicit_and_fails_closed_before_worker(
     assert plan["capabilities"]["pause_within"] == "fail_closed_when_requested"
     assert plan["realization"]["pause_within_count"]["status"] == "unsupported"
     with pytest.raises(RuntimeError, match="no evidence-backed deterministic"):
-        asyncio.run(
-            tts_engine.synthesize_prepared_turns(
-                dialogue, tmp_path / "output", _config("cosyvoice")
-            )
-        )
+        tts_engine.preflight_prepared_dialogue(dialogue, _config("cosyvoice"))
     assert calls == []
     assert not (tmp_path / "output").exists()
 
@@ -341,6 +337,7 @@ def test_cosyvoice_execution_uses_cached_request_and_never_falls_back(
         lambda *args: (_ for _ in ()).throw(AssertionError("automatic fallback")),
     )
 
+    tts_engine.preflight_prepared_dialogue(dialogue, _config("cosyvoice"))
     results = asyncio.run(
         tts_engine.synthesize_prepared_turns(
             dialogue, tmp_path / "output", _config("cosyvoice")
@@ -381,6 +378,7 @@ def test_cosyvoice_failure_is_not_retried_with_higgs(
         lambda *args: fallback_calls.append("higgs"),
     )
 
+    tts_engine.preflight_prepared_dialogue(dialogue, _config("cosyvoice"))
     with pytest.raises(RuntimeError, match="cosy failed"):
         asyncio.run(
             tts_engine.synthesize_prepared_turns(

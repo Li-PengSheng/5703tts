@@ -136,6 +136,7 @@ def test_cached_plan_reaches_one_exact_worker_request(
         lambda *args, **kwargs: pytest.fail("normal rate must not invoke FFmpeg"),
     )
 
+    tts_engine.preflight_prepared_dialogue(dialogue, _config(tmp_path))
     results = asyncio.run(
         tts_engine.synthesize_prepared_turns(dialogue, tmp_path, _config(tmp_path))
     )
@@ -165,10 +166,8 @@ def test_all_turns_preflight_before_first_worker_request(
     monkeypatch.setattr(higgs, "_request", lambda *args: worker_calls.append(args))
 
     with pytest.raises(RuntimeError, match="reference audio is missing"):
-        asyncio.run(
-            tts_engine.synthesize_prepared_turns(
-                _dialogue(first, second), tmp_path, _config(tmp_path)
-            )
+        tts_engine.preflight_prepared_dialogue(
+            _dialogue(first, second), _config(tmp_path)
         )
 
     assert worker_calls == []
@@ -184,10 +183,8 @@ def test_non_higgs_final_execution_fails_closed_before_output(
     monkeypatch.setattr(higgs, "_get_worker", lambda *args: calls.append(args))
 
     with pytest.raises(RuntimeError, match="not implemented|does not match"):
-        asyncio.run(
-            tts_engine.synthesize_prepared_turns(
-                _dialogue(turn), tmp_path, _config(tmp_path, engine=engine)
-            )
+        tts_engine.preflight_prepared_dialogue(
+            _dialogue(turn), _config(tmp_path, engine=engine)
         )
 
     assert calls == []
@@ -244,10 +241,11 @@ def test_prepared_rate_postprocess_is_after_worker_and_forces_pcm16(
     else:
         monkeypatch.setattr(higgs.subprocess, "run", fake_ffmpeg)
 
+    dialogue = _dialogue(turn)
+    config = _config(tmp_path)
+    tts_engine.preflight_prepared_dialogue(dialogue, config)
     result = asyncio.run(
-        tts_engine.synthesize_prepared_turns(
-            _dialogue(turn), tmp_path, _config(tmp_path)
-        )
+        tts_engine.synthesize_prepared_turns(dialogue, tmp_path, config)
     )[0]
 
     assert len(captured_requests) == 1
