@@ -16,9 +16,9 @@ from .batch_identity import (
     render_fingerprint_components,
 )
 from .config import VALID_ENGINES
-from .exclusion_policy import ExclusionPolicy, load_exclusion_policy
-from .input_contract import FinalInputValidationError, validate_dialogue
-from .input_records import InputRecord, InputRecordFailure
+from .input.contract import FinalInputValidationError, validate_dialogue
+from .input.exclusions import ExclusionPolicy, load_exclusion_policy
+from .input.records import InputRecord, InputRecordFailure
 from .pipeline import run_dialogue
 from .speaker_references import FinalReferenceError, selected_reference
 

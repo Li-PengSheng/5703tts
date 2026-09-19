@@ -8,8 +8,8 @@ from typing import Any
 
 from .assemble import assemble_prepared_dialogue
 from .backends.info import describe_engine
-from .input_contract import validate_dialogue
-from .input_records import InputRecord
+from .input.contract import validate_dialogue
+from .input.records import InputRecord
 from .metadata import build_metadata, write_metadata
 from .postprocess import apply_telephone_effect
 from .qc import QCResult, run_qc

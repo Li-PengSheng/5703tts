@@ -2,9 +2,9 @@
 
 Read the production path in this order.
 
-1. `src/tts5703/input_records.py` — strict JSON/JSONL loading, duplicate-key and
+1. `src/tts5703/input/records.py` — strict JSON/JSONL loading, duplicate-key and
    non-JSON-number rejection, canonical record hashes.
-2. `src/tts5703/input_contract.py` — validation of the final upstream dialogue contract.
+2. `src/tts5703/input/contract.py` — validation of the final upstream dialogue contract.
 3. `src/tts5703/speaker_references.py` — selected-backend reference parsing, path
    resolution, and live SHA verification.
 4. `src/tts5703/render_models.py` — canonical and prepared rendering data models.

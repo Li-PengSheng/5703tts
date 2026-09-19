@@ -8,7 +8,7 @@ from typing import Any
 import pytest
 
 from tts5703 import render_plan
-from tts5703.input_records import InputRecord
+from tts5703.input.records import InputRecord
 from tts5703.render_models import (
     CanonicalTurn,
     CosyVoicePreparedTurn,

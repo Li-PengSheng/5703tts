@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from tts5703.exclusion_policy import (
+from tts5703.input.exclusions import (
     ExclusionPolicyError,
     load_exclusion_policy,
     parse_exclusion_policy,
@@ -108,7 +108,7 @@ def test_policy_hash_is_semantic_not_format_or_key_order_dependent(
 
 
 def test_no_production_corpus_id_is_embedded_in_policy_module() -> None:
-    source = Path("src/tts5703/exclusion_policy.py").read_text(encoding="utf-8")
+    source = Path("src/tts5703/input/exclusions.py").read_text(encoding="utf-8")
     assert "corpus_v1_" not in source
 
 

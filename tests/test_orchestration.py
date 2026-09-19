@@ -18,7 +18,7 @@ from tts5703.backends.info import (
     backend_identity,
     describe_engine,
 )
-from tts5703.input_records import InputRecord
+from tts5703.input.records import InputRecord
 from tts5703.metadata import build_metadata
 from tts5703.postprocess import apply_telephone_effect
 from tts5703.qc import run_qc

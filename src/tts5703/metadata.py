@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from .backends.capabilities import controlled_tts_v1_capabilities
-from .input_records import InputRecord
+from .input.records import InputRecord
 from .render_models import PreparedDialogue, TurnRenderResult
 
 

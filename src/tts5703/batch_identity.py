@@ -7,7 +7,7 @@ from types import SimpleNamespace
 from typing import Any
 
 from .backends.info import backend_identity as _dialogue_backend_identity
-from .input_records import InputRecord, canonical_json_sha256
+from .input.records import InputRecord, canonical_json_sha256
 from .speaker_references import FinalReferenceError, selected_reference
 
 BATCH_MANIFEST_VERSION = "2.0"

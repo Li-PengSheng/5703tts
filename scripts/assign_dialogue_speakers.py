@@ -16,11 +16,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from tts5703.input_contract import (
+from tts5703.input.contract import (
     FinalInputValidationError,
     validate_dialogue,
 )
-from tts5703.input_records import (
+from tts5703.input.records import (
     InputRecord,
     InputRecordError,
     InputRecordFailure,

@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from tts5703 import batch_identity
-from tts5703.input_records import InputRecord
+from tts5703.input.records import InputRecord
 
 
 def _raw(dialogue_id: str = "A", text: str = "Hello") -> dict:
