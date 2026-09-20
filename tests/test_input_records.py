@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from tts5703.input_records import (
+from tts5703.input.records import (
     InputRecord,
     InputRecordFailure,
     canonical_json_sha256,

@@ -14,7 +14,7 @@ from typing import Any
 
 logger = logging.getLogger("tts5703.tts_engine")
 
-_WORKER_SCRIPT = Path(__file__).resolve().parents[1] / "cosyvoice_worker.py"
+_WORKER_SCRIPT = Path(__file__).resolve().with_name("cosyvoice_worker.py")
 _TERMINATE_TIMEOUT_SEC = 5
 
 

@@ -21,13 +21,20 @@ from typing import Any, Self
 
 import pytest
 
-from tts5703 import higgs_worker
+from tts5703.backends import higgs as higgs_backend
+from tts5703.backends import higgs_worker
 
-WORKER = Path("src/tts5703/higgs_worker.py").resolve()
+WORKER = Path("src/tts5703/backends/higgs_worker.py").resolve()
 FROZEN_HIGGS_MAPPING = Path(
     "comp5703-tts-experiments/testing/week5_candidate_evaluation/"
     "targeted_revision_v1/mappings/higgs.py"
 ).resolve()
+
+
+def test_parent_resolves_relocated_worker() -> None:
+    assert higgs_backend._WORKER_SCRIPT == WORKER
+    assert WORKER.is_file()
+
 
 FAKE_SERVER = r"""
 import argparse

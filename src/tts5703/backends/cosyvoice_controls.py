@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from .backend_errors import BackendControlError
+from .errors import BackendControlError
 
 COSYVOICE_CONTROL_MAPPING_NAME = "cosyvoice3_control_mapping"
 COSYVOICE_CONTROL_MAPPING_VERSION = "v1"

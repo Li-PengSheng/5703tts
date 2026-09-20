@@ -7,8 +7,8 @@ from typing import Any
 
 import pytest
 
-from tts5703 import render_plan
-from tts5703.input_records import InputRecord
+from tts5703 import render_models, render_plan
+from tts5703.input.records import InputRecord
 from tts5703.render_models import (
     CanonicalTurn,
     CosyVoicePreparedTurn,
@@ -262,6 +262,50 @@ def test_preparation_maps_once_per_turn_and_preserves_complete_plan(
     assert prepared.assignment_sha256 == "a" * 64
     assert prepared.registry_sha256 == "b" * 64
     assert prepared.active_speakers_sha256 == "c" * 64
+
+
+@pytest.mark.parametrize(
+    ("engine", "validator_name"),
+    [
+        ("higgs", "validate_higgs_plan"),
+        ("cosyvoice", "validate_cosyvoice_plan"),
+    ],
+)
+def test_preparation_validates_each_plan_once_in_constructor(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    engine: str,
+    validator_name: str,
+) -> None:
+    record, sidecar = _inputs(tmp_path)
+    if engine == "cosyvoice":
+        for role in sidecar["dialogues"][0]["roles"].values():
+            reference = role["higgs_reference"]
+            role["cosyvoice_reference"] = {
+                "prompt_wav": reference["reference_wav"],
+                "prompt_text": "Exact approved prompt",
+                "sha256": reference["sha256"],
+            }
+    validator = getattr(render_models, validator_name)
+    calls = 0
+
+    def counting_validator(*args: Any, **kwargs: Any) -> None:
+        nonlocal calls
+        calls += 1
+        validator(*args, **kwargs)
+
+    monkeypatch.setattr(render_models, validator_name, counting_validator)
+    monkeypatch.setattr(render_plan, validator_name, counting_validator, raising=False)
+
+    prepared = prepare_dialogue(
+        record,
+        sidecar,
+        {"tts": {"engine": engine}},
+        project_root=tmp_path,
+    )
+
+    assert calls == len(prepared.turns) == 2
+    assert all(turn.backend == engine for turn in prepared.turns)
 
 
 def test_prepared_plan_is_deeply_isolated_from_callers(tmp_path: Path) -> None:

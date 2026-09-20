@@ -31,7 +31,7 @@ formal validation.
 | Turn-boundary pause | `none` / `short` / `long` before a turn | Deterministic `0/500/900 ms` pipeline timing during assembly | Pipeline control, not a model instruction | Pause-after is always zero |
 
 The exact clauses and composition rules live in
-`src/tts5703/cosyvoice_controls.py`; this document does not replace that source of
+`src/tts5703/backends/cosyvoice_controls.py`; this document does not replace that source of
 truth. Rate-only and control-free turns use `zero_shot`. Any requested arousal or
 coarse affect uses `instruct2`, including medium arousal when it adds no clause.
 

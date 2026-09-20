@@ -6,7 +6,14 @@ import sys
 from pathlib import Path
 from typing import Any
 
-WORKER = Path("src/tts5703/cosyvoice_worker.py").resolve()
+from tts5703.backends import cosyvoice_client
+
+WORKER = Path("src/tts5703/backends/cosyvoice_worker.py").resolve()
+
+
+def test_parent_resolves_relocated_worker() -> None:
+    assert cosyvoice_client._WORKER_SCRIPT == WORKER
+    assert WORKER.is_file()
 
 
 def _prepare_fake_cosyvoice(tmp_path: Path) -> tuple[dict[str, Any], Path, Path]:

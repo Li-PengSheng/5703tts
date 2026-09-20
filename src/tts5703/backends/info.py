@@ -3,7 +3,8 @@
 from copy import deepcopy
 from typing import Any
 
-from .config import get_engine
+from ..config import get_engine
+from ..render_models import PreparedDialogue
 from .cosyvoice_controls import (
     COSYVOICE_CONTROL_MAPPING_NAME,
     COSYVOICE_CONTROL_MAPPING_STATUS,
@@ -16,7 +17,6 @@ from .higgs_controls import (
     load_higgs_control_contract,
 )
 from .higgs_worker import FROZEN_GENERATION_FIELDS
-from .render_models import PreparedDialogue
 
 CONTROLLED_TTS_V1_IMPLEMENTATION_ID = "controlled_tts_v1_prod_1"
 COSYVOICE_IMPLEMENTATION_ID = "cosyvoice3_final_2"
@@ -35,25 +35,12 @@ def _higgs_mapping_identity() -> dict[str, Any]:
     }
 
 
-def backend_identity(
-    config: dict[str, Any], dialogue: PreparedDialogue
-) -> dict[str, Any]:
-    """Describe selected production execution without consulting backend voice maps."""
+def backend_static_identity(config: dict[str, Any]) -> dict[str, Any]:
+    """Return backend identity that does not require a prepared dialogue."""
     engine = get_engine(config)
     if engine not in {"higgs", "cosyvoice"}:
         raise ValueError(f"Final backend identity is not implemented for {engine!r}")
     references: dict[str, dict[str, Any]] = {}
-    for turn in dialogue.turns:
-        reference = dict(turn.approved_reference)
-        reference.pop("render_speaker_id", None)
-        reference.pop("resolved_reference_wav", None)
-        reference.pop("resolved_prompt_wav", None)
-        existing = references.setdefault(turn.render_speaker_id, reference)
-        if existing != reference:
-            raise ValueError(
-                "Prepared dialogue assigns conflicting approved references to "
-                f"{turn.render_speaker_id!r}"
-            )
     if engine == "higgs":
         higgs = config["tts"]["higgs"]
         contract = load_higgs_control_contract()
@@ -95,6 +82,31 @@ def backend_identity(
         "references": references,
         "identity_complete": True,
     }
+
+
+def _dialogue_references(dialogue: PreparedDialogue) -> dict[str, dict[str, Any]]:
+    references: dict[str, dict[str, Any]] = {}
+    for turn in dialogue.turns:
+        reference = dict(turn.approved_reference)
+        reference.pop("render_speaker_id", None)
+        reference.pop("resolved_reference_wav", None)
+        reference.pop("resolved_prompt_wav", None)
+        existing = references.setdefault(turn.render_speaker_id, reference)
+        if existing != reference:
+            raise ValueError(
+                "Prepared dialogue assigns conflicting approved references to "
+                f"{turn.render_speaker_id!r}"
+            )
+    return references
+
+
+def backend_identity(
+    config: dict[str, Any], dialogue: PreparedDialogue
+) -> dict[str, Any]:
+    """Add real prepared-dialogue references to the static backend identity."""
+    identity = backend_static_identity(config)
+    identity["references"] = _dialogue_references(dialogue)
+    return identity
 
 
 def describe_engine(

@@ -5,7 +5,7 @@ from typing import Any
 
 import pytest
 
-from tts5703.input_contract import (
+from tts5703.input.contract import (
     FinalInputValidationError,
     validate_dialogue,
 )

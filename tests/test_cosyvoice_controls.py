@@ -2,8 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from tts5703.backend_errors import BackendControlError
-from tts5703.cosyvoice_controls import (
+from tts5703.backends.cosyvoice_controls import (
     COSYVOICE_CONTROL_MAPPING_NAME,
     COSYVOICE_CONTROL_MAPPING_STATUS,
     COSYVOICE_CONTROL_MAPPING_VERSION,
@@ -11,6 +10,7 @@ from tts5703.cosyvoice_controls import (
     rate_to_cosyvoice_speed,
     resolve_cosyvoice_controls,
 )
+from tts5703.backends.errors import BackendControlError
 
 
 @pytest.mark.parametrize(

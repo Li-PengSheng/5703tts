@@ -6,17 +6,13 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
+from .backends.cosyvoice_controls import resolve_cosyvoice_controls
 from .controlled_tts import map_turn_to_higgs
 from .controlled_tts.planner import plan_hesitations
 from .controlled_tts.schema import load_contract, normalize_turn
-from .cosyvoice_controls import resolve_cosyvoice_controls
-from .input_contract import validate_dialogue
-from .input_records import InputRecord
-from .plan_validation import (
-    RenderPlanError,
-    validate_cosyvoice_plan,
-    validate_higgs_plan,
-)
+from .input.contract import validate_dialogue
+from .input.records import InputRecord
+from .plan_validation import RenderPlanError
 from .render_models import (
     CanonicalDialogue,
     CanonicalTurn,
@@ -225,13 +221,6 @@ def _higgs_dialogue(
         )
         assert reference.resolved_path is not None
         plan = map_turn_to_higgs(source, dialogue_context=input_record.raw)
-        validate_higgs_plan(
-            plan,
-            turn_id=turn.source_turn_id,
-            upstream_role=turn.upstream_role,
-            logical_role=turn.logical_role,
-            scenario_speaker_id=turn.upstream_scenario_speaker_id,
-        )
         turns.append(
             HiggsPreparedTurn(
                 ordinal=turn.ordinal,
@@ -378,7 +367,6 @@ def _cosyvoice_dialogue(
             "sha256": reference.sha256,
         }
         plan = _cosyvoice_plan(turn, reference_snapshot)
-        validate_cosyvoice_plan(plan, turn.source_turn_id)
         turns.append(
             CosyVoicePreparedTurn(
                 ordinal=turn.ordinal,

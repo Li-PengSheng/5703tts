@@ -9,12 +9,16 @@ from typing import Any
 import pytest
 
 from tts5703 import render_plan, tts_engine
-from tts5703.assemble import assemble_prepared_dialogue
-from tts5703.backend_info import describe_engine
 from tts5703.backends import cosyvoice, higgs
-from tts5703.input_records import InputRecord
-from tts5703.metadata import build_metadata
-from tts5703.qc import run_qc
+from tts5703.backends.info import (
+    backend_identity,
+    backend_static_identity,
+    describe_engine,
+)
+from tts5703.input.records import InputRecord
+from tts5703.render.assemble import assemble_prepared_dialogue
+from tts5703.render.metadata import build_metadata
+from tts5703.render.qc import run_qc
 from tts5703.render_models import CanonicalTurn, CosyVoicePreparedTurn, TurnRenderResult
 from tts5703.render_plan import (
     RenderPlanError,
@@ -188,6 +192,34 @@ def test_same_final_record_builds_backend_neutral_then_both_backend_plans(
     assert cosy_turn.pause_before_ms == 500
 
 
+@pytest.mark.parametrize("engine", ["higgs", "cosyvoice"])
+def test_dialogue_identity_only_adds_prepared_references(
+    tmp_path: Path, engine: str
+) -> None:
+    record, sidecar = _fixture(tmp_path)
+    config = _config(engine)
+    dialogue = prepare_dialogue(record, sidecar, config, project_root=tmp_path)
+
+    static = backend_static_identity(config)
+    identity = backend_identity(config, dialogue)
+    static_without_references = {
+        key: value for key, value in static.items() if key != "references"
+    }
+    identity_without_references = {
+        key: value for key, value in identity.items() if key != "references"
+    }
+    expected_reference = dialogue.turns[0].approved_reference
+    expected_reference.pop("render_speaker_id")
+    expected_reference.pop("resolved_reference_wav", None)
+    expected_reference.pop("resolved_prompt_wav", None)
+
+    assert static["references"] == {}
+    assert identity_without_references == static_without_references
+    assert identity["references"] == {
+        dialogue.turns[0].render_speaker_id: expected_reference
+    }
+
+
 @pytest.mark.parametrize(
     ("engine", "selected", "unselected"),
     [
@@ -289,11 +321,7 @@ def test_cosyvoice_pause_within_is_explicit_and_fails_closed_before_worker(
     assert plan["capabilities"]["pause_within"] == "fail_closed_when_requested"
     assert plan["realization"]["pause_within_count"]["status"] == "unsupported"
     with pytest.raises(RuntimeError, match="no evidence-backed deterministic"):
-        asyncio.run(
-            tts_engine.synthesize_prepared_turns(
-                dialogue, tmp_path / "output", _config("cosyvoice")
-            )
-        )
+        tts_engine.preflight_prepared_dialogue(dialogue, _config("cosyvoice"))
     assert calls == []
     assert not (tmp_path / "output").exists()
 
@@ -341,6 +369,7 @@ def test_cosyvoice_execution_uses_cached_request_and_never_falls_back(
         lambda *args: (_ for _ in ()).throw(AssertionError("automatic fallback")),
     )
 
+    tts_engine.preflight_prepared_dialogue(dialogue, _config("cosyvoice"))
     results = asyncio.run(
         tts_engine.synthesize_prepared_turns(
             dialogue, tmp_path / "output", _config("cosyvoice")
@@ -381,6 +410,7 @@ def test_cosyvoice_failure_is_not_retried_with_higgs(
         lambda *args: fallback_calls.append("higgs"),
     )
 
+    tts_engine.preflight_prepared_dialogue(dialogue, _config("cosyvoice"))
     with pytest.raises(RuntimeError, match="cosy failed"):
         asyncio.run(
             tts_engine.synthesize_prepared_turns(

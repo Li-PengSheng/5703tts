@@ -7,8 +7,8 @@ from pathlib import Path
 import pytest
 from pydub import AudioSegment
 
-from tts5703.assemble import assemble_prepared_dialogue
 from tts5703.controlled_tts import map_turn_to_higgs
+from tts5703.render.assemble import assemble_prepared_dialogue
 from tts5703.render_models import (
     HiggsPreparedTurn,
     PreparedDialogue,

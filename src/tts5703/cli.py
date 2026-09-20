@@ -10,7 +10,7 @@ from pathlib import Path
 
 from .batch import run_batch
 from .config import VALID_ENGINES, load_config
-from .input_records import InputRecord, InputRecordFailure, read_input_records
+from .input.records import InputRecord, InputRecordFailure, read_input_records
 
 
 def configure_logging(log_path: Path, verbose: bool) -> None:

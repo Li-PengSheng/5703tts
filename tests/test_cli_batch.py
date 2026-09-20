@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from pydub import AudioSegment
 
 from tts5703 import batch, batch_identity, cli
 from tts5703.pipeline import PipelineResult
@@ -45,6 +46,18 @@ def _record(dialogue_id: str, text: str | None = None) -> dict[str, Any]:
             }
         ],
     }
+
+
+def _record_with_turn_count(dialogue_id: str, count: int) -> dict[str, Any]:
+    record = _record(dialogue_id)
+    template = record["turns"][0]
+    record["turns"] = []
+    for ordinal in range(1, count + 1):
+        turn = deepcopy(template)
+        turn["turn_id"] = f"{dialogue_id}-turn-{ordinal}"
+        turn["text"] = f"Dialogue {dialogue_id}, turn {ordinal}"
+        record["turns"].append(turn)
+    return record
 
 
 def _reference_bytes(path: str) -> bytes:
@@ -147,12 +160,64 @@ def _write_jsonl(path: Path, records: list[dict[str, Any] | str]) -> None:
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
-def _write_success_artifacts(output_root: Path, dialogue_id: str) -> Path:
+def _write_success_artifacts(
+    output_root: Path, record: Any, config: dict[str, Any]
+) -> Path:
+    dialogue_id = record.dialogue_id
     out_dir = output_root / dialogue_id
     out_dir.mkdir(parents=True, exist_ok=True)
-    for suffix in ("clean.wav", "telephone.wav", "metadata.json"):
-        (out_dir / f"{dialogue_id}_{suffix}").write_bytes(b"complete")
+    backend = batch_identity.backend_identity(config)
+    turns = []
+    previous_end = 0.0
+    for ordinal, source in enumerate(record.raw["turns"], start=1):
+        turn_audio = f"turn_{ordinal:03d}.wav"
+        AudioSegment.silent(duration=200).export(out_dir / turn_audio, format="wav")
+        end_sec = previous_end + 0.2
+        turns.append(
+            {
+                "source_identity": {
+                    "ordinal": ordinal,
+                    "source_turn_id": source["turn_id"],
+                },
+                "labels": deepcopy(source["labels"]),
+                "requested": {"acoustic": deepcopy(source["acoustic"])},
+                "execution": {
+                    "synthesis_status": "synthesized",
+                    "turn_audio": turn_audio,
+                },
+                "timing": {"start_sec": previous_end, "end_sec": end_sec},
+            }
+        )
+        previous_end = end_sec
+    for suffix in ("clean.wav", "telephone.wav"):
+        AudioSegment.silent(duration=max(200, round(previous_end * 1000))).export(
+            out_dir / f"{dialogue_id}_{suffix}", format="wav"
+        )
+    metadata = {
+        "dialogue_id": dialogue_id,
+        "clean_audio": f"{dialogue_id}_clean.wav",
+        "telephone_audio": f"{dialogue_id}_telephone.wav",
+        "tts": {
+            "engine": config["tts"]["engine"],
+            "backend_identity": backend,
+            "control_mapping": backend["control_mapping"],
+        },
+        "provenance": {"record_sha256": record.record_sha256},
+        "turns": turns,
+    }
+    (out_dir / f"{dialogue_id}_metadata.json").write_text(
+        json.dumps(metadata), encoding="utf-8"
+    )
     return out_dir
+
+
+def _change_metadata_value(path: Path, keys: tuple[str | int, ...], value: Any) -> None:
+    metadata = json.loads(path.read_text(encoding="utf-8"))
+    target = metadata
+    for key in keys[:-1]:
+        target = target[key]
+    target[keys[-1]] = value
+    path.write_text(json.dumps(metadata), encoding="utf-8")
 
 
 def _invoke(
@@ -217,7 +282,7 @@ def _invoke(
                 "synthetic render failure",
                 error_type="SyntheticFailure",
             )
-        out_dir = _write_success_artifacts(output_root, dialogue_id)
+        out_dir = _write_success_artifacts(output_root, record, config)
         return PipelineResult(dialogue_id, "success", out_dir=out_dir)
 
     monkeypatch.setattr(cli, "configure_logging", lambda *_: None)
@@ -452,6 +517,12 @@ def test_unsafe_final_dialogue_id_aborts_whole_batch_before_render(
 ) -> None:
     input_path = tmp_path / "corpus.jsonl"
     _write_jsonl(input_path, [_record("safe"), _record(dialogue_id)])
+    cleanup_calls = []
+    monkeypatch.setattr(
+        batch,
+        "_cleanup_managed_dialogue_artifacts",
+        lambda *args: cleanup_calls.append(args),
+    )
 
     with pytest.raises(RuntimeError, match="final dialogue_id"):
         _invoke(
@@ -462,6 +533,7 @@ def test_unsafe_final_dialogue_id_aborts_whole_batch_before_render(
         )
 
     assert not (tmp_path / "output").exists()
+    assert cleanup_calls == []
 
 
 @pytest.mark.parametrize(
@@ -482,9 +554,144 @@ def test_resume_artifact_lookup_rejects_unsafe_dialogue_id(tmp_path: Path) -> No
     output_root = tmp_path / "output"
 
     with pytest.raises(RuntimeError, match="final dialogue_id"):
-        batch._artifacts_exist(output_root, "../escape")
+        batch._safe_dialogue_output_path(output_root, "../escape")
 
     assert not output_root.exists()
+
+
+@pytest.mark.parametrize("target_kind", ["in-root", "outside", "dangling"])
+def test_dialogue_directory_symlink_is_rejected_before_cleanup(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    target_kind: str,
+) -> None:
+    output_root = tmp_path / "output"
+    output_root.mkdir()
+    if target_kind == "in-root":
+        target = output_root / "B"
+    elif target_kind == "outside":
+        target = tmp_path / "outside"
+    else:
+        target = tmp_path / "missing"
+    if target_kind != "dangling":
+        target.mkdir()
+        (target / "turn_001.wav").write_bytes(b"target turn")
+        (target / "keep.txt").write_text("preserve", encoding="utf-8")
+    (output_root / "A").symlink_to(target, target_is_directory=True)
+    input_path = tmp_path / "corpus.jsonl"
+    _write_jsonl(input_path, [_record("A")])
+    cleanup_calls = []
+    monkeypatch.setattr(
+        batch,
+        "_cleanup_managed_dialogue_artifacts",
+        lambda *args: cleanup_calls.append(args),
+    )
+
+    with pytest.raises(RuntimeError, match="must not be a symlink"):
+        _invoke(
+            tmp_path,
+            monkeypatch,
+            input_path=input_path,
+            sidecar=_sidecar(("A",)),
+        )
+
+    assert cleanup_calls == []
+    assert (output_root / "A").is_symlink()
+    if target_kind != "dangling":
+        assert (target / "turn_001.wav").read_bytes() == b"target turn"
+        assert (target / "keep.txt").read_text(encoding="utf-8") == "preserve"
+
+
+def test_output_root_symlink_allows_real_dialogue_child(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    real_output = tmp_path / "real-output"
+    real_output.mkdir()
+    (tmp_path / "output").symlink_to(real_output, target_is_directory=True)
+    input_path = tmp_path / "corpus.jsonl"
+    _write_jsonl(input_path, [_record("A")])
+
+    exit_code, manifest, attempted = _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=_sidecar(("A",)),
+    )
+
+    assert exit_code == 0
+    assert attempted == ["A"]
+    assert manifest["results"][0]["action"] == "rendered"
+    assert (tmp_path / "output").is_symlink()
+    assert (real_output / "A" / "A_clean.wav").is_file()
+
+
+@pytest.mark.parametrize(
+    ("name", "managed"),
+    [
+        ("turn_001.wav", True),
+        ("turn_999.wav", True),
+        ("turn_1000.wav", True),
+        ("turn_001.higgs_raw.wav", True),
+        ("turn_001.higgs_raw.wav.part", True),
+        ("turn_001.higgs_processed.part.wav", True),
+        ("A_clean.wav", True),
+        ("A_telephone.wav", True),
+        ("A_metadata.json", True),
+        ("turn_000.wav", False),
+        ("turn_0001.wav", False),
+        ("turn_1.wav", False),
+        ("turn_01.wav", False),
+        ("turn_001.mp3", False),
+        ("turn_001.higgs_notes.wav", False),
+        ("turn_backup.wav", False),
+        ("turn_abc.wav", False),
+        ("A_notes.json", False),
+        ("other_clean.wav", False),
+        ("keep.wav", False),
+    ],
+)
+def test_managed_dialogue_artifact_matching(name: str, managed: bool) -> None:
+    assert batch._is_managed_dialogue_artifact(name, "A") is managed
+
+
+def test_cleanup_removes_only_managed_direct_child_artifacts(tmp_path: Path) -> None:
+    out_dir = tmp_path / "output" / "A"
+    out_dir.mkdir(parents=True)
+    managed = {
+        "turn_001.wav",
+        "turn_005.wav",
+        "turn_1000.wav",
+        "turn_002.higgs_raw.wav",
+        "turn_002.higgs_raw.wav.part",
+        "turn_002.higgs_processed.part.wav",
+        "A_clean.wav",
+        "A_telephone.wav",
+        "A_metadata.json",
+    }
+    for name in managed:
+        (out_dir / name).write_bytes(b"old")
+    keep = out_dir / "keep.txt"
+    keep.write_text("preserve", encoding="utf-8")
+    nested = out_dir / "nested"
+    nested.mkdir()
+    (nested / "turn_999.wav").write_bytes(b"nested")
+    outside = tmp_path / "outside.wav"
+    outside.write_bytes(b"outside")
+    symlink = out_dir / "turn_007.wav"
+    symlink.symlink_to(outside)
+
+    batch._cleanup_managed_dialogue_artifacts(out_dir, "A")
+
+    assert all(not (out_dir / name).exists() for name in managed)
+    assert not symlink.exists()
+    assert not symlink.is_symlink()
+    assert outside.read_bytes() == b"outside"
+    assert keep.read_text(encoding="utf-8") == "preserve"
+    assert (nested / "turn_999.wav").read_bytes() == b"nested"
+
+
+def test_cleanup_is_a_noop_for_missing_dialogue_directory(tmp_path: Path) -> None:
+    batch._cleanup_managed_dialogue_artifacts(tmp_path / "missing", "A")
 
 
 def test_missing_nonexcluded_sidecar_entry_aborts_before_any_render(
@@ -746,14 +953,175 @@ def test_missing_final_artifact_rerenders(
     assert attempted == ["A"]
 
 
+@pytest.mark.parametrize(
+    "contents",
+    [
+        pytest.param("{broken", id="malformed"),
+        pytest.param('{"dialogue_id":"A","dialogue_id":"A"}', id="duplicate-key"),
+        pytest.param('{"invalid":NaN}', id="non-json-constant"),
+    ],
+)
+def test_invalid_metadata_json_rerenders(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    contents: str,
+) -> None:
+    input_path = tmp_path / "corpus.jsonl"
+    _write_jsonl(input_path, [_record("A")])
+    sidecar = _sidecar(("A",))
+    _invoke(tmp_path, monkeypatch, input_path=input_path, sidecar=sidecar)
+    metadata_path = tmp_path / "output" / "A" / "A_metadata.json"
+    metadata_path.write_text(contents, encoding="utf-8")
+
+    _, manifest, attempted = _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=sidecar,
+        resume=True,
+    )
+
+    assert attempted == ["A"]
+    assert manifest["results"][0]["action"] == "rendered"
+
+
+@pytest.mark.parametrize(
+    ("keys", "value"),
+    [
+        pytest.param(("dialogue_id",), "B", id="wrong-dialogue"),
+        pytest.param(("provenance", "record_sha256"), "wrong", id="wrong-source-sha"),
+        pytest.param(("clean_audio",), "wrong.wav", id="wrong-clean-name"),
+        pytest.param(("telephone_audio",), "wrong.wav", id="wrong-telephone-name"),
+        pytest.param(("tts", "engine"), "cosyvoice", id="wrong-engine"),
+        pytest.param(
+            ("tts", "backend_identity", "backend"),
+            "cosyvoice",
+            id="wrong-backend",
+        ),
+        pytest.param(
+            ("tts", "control_mapping", "implementation_id"),
+            "wrong",
+            id="wrong-metadata-implementation",
+        ),
+        pytest.param(
+            (
+                "tts",
+                "backend_identity",
+                "control_mapping",
+                "implementation_id",
+            ),
+            "wrong",
+            id="wrong-backend-implementation",
+        ),
+    ],
+)
+def test_metadata_identity_mismatch_rerenders(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    keys: tuple[str | int, ...],
+    value: Any,
+) -> None:
+    input_path = tmp_path / "corpus.jsonl"
+    _write_jsonl(input_path, [_record("A")])
+    sidecar = _sidecar(("A",))
+    _invoke(tmp_path, monkeypatch, input_path=input_path, sidecar=sidecar)
+    _change_metadata_value(tmp_path / "output" / "A" / "A_metadata.json", keys, value)
+
+    _, manifest, attempted = _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=sidecar,
+        resume=True,
+    )
+
+    assert attempted == ["A"]
+    assert manifest["results"][0]["action"] == "rendered"
+
+
+def test_missing_turn_wav_rerenders(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    input_path = tmp_path / "corpus.jsonl"
+    _write_jsonl(input_path, [_record("A")])
+    sidecar = _sidecar(("A",))
+    _invoke(tmp_path, monkeypatch, input_path=input_path, sidecar=sidecar)
+    (tmp_path / "output" / "A" / "turn_001.wav").unlink()
+
+    _, manifest, attempted = _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=sidecar,
+        resume=True,
+    )
+
+    assert attempted == ["A"]
+    assert manifest["results"][0]["action"] == "rendered"
+
+
+@pytest.mark.parametrize(
+    "filename",
+    ["turn_001.wav", "A_clean.wav", "A_telephone.wav"],
+)
+def test_corrupt_wav_rerenders(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    filename: str,
+) -> None:
+    input_path = tmp_path / "corpus.jsonl"
+    _write_jsonl(input_path, [_record("A")])
+    sidecar = _sidecar(("A",))
+    _invoke(tmp_path, monkeypatch, input_path=input_path, sidecar=sidecar)
+    (tmp_path / "output" / "A" / filename).write_bytes(b"not a wav")
+
+    _, manifest, attempted = _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=sidecar,
+        resume=True,
+    )
+
+    assert attempted == ["A"]
+    assert manifest["results"][0]["action"] == "rendered"
+
+
+@pytest.mark.parametrize("turn_audio", ["wrong.wav", "../other.wav"])
+def test_unexpected_metadata_turn_filename_rerenders(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    turn_audio: str,
+) -> None:
+    input_path = tmp_path / "corpus.jsonl"
+    _write_jsonl(input_path, [_record("A")])
+    sidecar = _sidecar(("A",))
+    _invoke(tmp_path, monkeypatch, input_path=input_path, sidecar=sidecar)
+    _change_metadata_value(
+        tmp_path / "output" / "A" / "A_metadata.json",
+        ("turns", 0, "execution", "turn_audio"),
+        turn_audio,
+    )
+
+    _, manifest, attempted = _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=sidecar,
+        resume=True,
+    )
+
+    assert attempted == ["A"]
+    assert manifest["results"][0]["action"] == "rendered"
+
+
 def test_non_v2_manifest_is_rejected_by_the_only_resume_system(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     input_path = tmp_path / "corpus.jsonl"
     _write_jsonl(input_path, [_record("A")])
     output = tmp_path / "output"
-    _write_success_artifacts(output, "A")
-    output.mkdir(exist_ok=True)
+    output.mkdir()
     (output / "batch_result.json").write_text(
         json.dumps(
             {
@@ -787,6 +1155,12 @@ def test_final_v2_manifest_still_resumes_final_records(
     sidecar = _sidecar(("A",))
     _write_jsonl(input_path, [_record("A")])
     _invoke(tmp_path, monkeypatch, input_path=input_path, sidecar=sidecar)
+    out_dir = tmp_path / "output" / "A"
+    managed_before = {
+        path.name: path.read_bytes() for path in out_dir.iterdir() if path.is_file()
+    }
+    sentinel = out_dir / "keep.txt"
+    sentinel.write_text("preserve", encoding="utf-8")
 
     _, manifest, attempted = _invoke(
         tmp_path,
@@ -798,6 +1172,130 @@ def test_final_v2_manifest_still_resumes_final_records(
 
     assert attempted == []
     assert manifest["results"][0]["action"] == "resumed"
+    assert {
+        path.name: path.read_bytes()
+        for path in out_dir.iterdir()
+        if path.is_file() and path != sentinel
+    } == managed_before
+    assert sentinel.read_text(encoding="utf-8") == "preserve"
+
+
+def test_corrupt_resume_candidate_cleans_stale_artifacts_before_rerender(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    input_path = tmp_path / "final.jsonl"
+    sidecar = _sidecar(("A",))
+    _write_jsonl(input_path, [_record("A")])
+    _invoke(tmp_path, monkeypatch, input_path=input_path, sidecar=sidecar)
+    out_dir = tmp_path / "output" / "A"
+    (out_dir / "turn_999.wav").write_bytes(b"stale")
+    (out_dir / "A_clean.wav").write_bytes(b"corrupt")
+    sentinel = out_dir / "keep.txt"
+    sentinel.write_text("preserve", encoding="utf-8")
+
+    _, manifest, attempted = _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=sidecar,
+        resume=True,
+    )
+
+    assert attempted == ["A"]
+    assert manifest["results"][0]["action"] == "rendered"
+    assert not (out_dir / "turn_999.wav").exists()
+    assert sentinel.read_text(encoding="utf-8") == "preserve"
+
+
+def test_shorter_rerender_removes_surplus_turn_wavs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    input_path = tmp_path / "final.jsonl"
+    sidecar = _sidecar(("A",))
+    _write_jsonl(input_path, [_record_with_turn_count("A", 6)])
+    _invoke(tmp_path, monkeypatch, input_path=input_path, sidecar=sidecar)
+    out_dir = tmp_path / "output" / "A"
+    sentinel = out_dir / "keep.txt"
+    sentinel.write_text("preserve", encoding="utf-8")
+    _write_jsonl(input_path, [_record_with_turn_count("A", 4)])
+
+    _, manifest, attempted = _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=sidecar,
+        resume=True,
+    )
+
+    assert attempted == ["A"]
+    assert manifest["results"][0]["action"] == "rendered"
+    assert sorted(path.name for path in out_dir.glob("turn_*.wav")) == [
+        "turn_001.wav",
+        "turn_002.wav",
+        "turn_003.wav",
+        "turn_004.wav",
+    ]
+    assert sentinel.read_text(encoding="utf-8") == "preserve"
+
+
+def test_cleanup_failure_fails_dialogue_without_rendering(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    input_path = tmp_path / "final.jsonl"
+    sidecar = _sidecar(("A",))
+    _write_jsonl(input_path, [_record("A")])
+    _invoke(tmp_path, monkeypatch, input_path=input_path, sidecar=sidecar)
+    out_dir = tmp_path / "output" / "A"
+    (out_dir / "turn_999.wav").mkdir()
+    _write_jsonl(input_path, [_record("A", "changed")])
+
+    exit_code, manifest, attempted = _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=sidecar,
+        resume=True,
+    )
+
+    assert exit_code == 1
+    assert attempted == []
+    entry = manifest["results"][0]
+    assert entry["action"] == "render_failed"
+    assert entry["status"] == "failed"
+    assert entry["error"]["type"] == "RuntimeError"
+    assert "Managed artifact path is not a file" in entry["error"]["message"]
+    assert (out_dir / "turn_999.wav").is_dir()
+
+
+def test_failed_rerender_does_not_leave_old_final_artifacts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    input_path = tmp_path / "final.jsonl"
+    sidecar = _sidecar(("A",))
+    _write_jsonl(input_path, [_record("A")])
+    _invoke(tmp_path, monkeypatch, input_path=input_path, sidecar=sidecar)
+    out_dir = tmp_path / "output" / "A"
+    sentinel = out_dir / "keep.txt"
+    sentinel.write_text("preserve", encoding="utf-8")
+    _write_jsonl(input_path, [_record("A", "changed")])
+
+    exit_code, manifest, attempted = _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=sidecar,
+        resume=True,
+        failures={"A"},
+    )
+
+    assert exit_code == 1
+    assert attempted == ["A"]
+    assert manifest["results"][0]["action"] == "render_failed"
+    assert not any(
+        batch._is_managed_dialogue_artifact(path.name, "A")
+        for path in out_dir.iterdir()
+    )
+    assert sentinel.read_text(encoding="utf-8") == "preserve"
 
 
 @pytest.mark.parametrize("engine", ["higgs", "cosyvoice"])
@@ -1120,14 +1618,14 @@ def test_backend_semantic_identity_change_rerenders(
     _write_jsonl(input_path, [_record("A")])
     sidecar = _sidecar(("A",))
     _invoke(tmp_path, monkeypatch, input_path=input_path, sidecar=sidecar)
-    original = batch_identity._dialogue_backend_identity
+    original = batch_identity._backend_static_identity
 
-    def changed(config: dict, dialogue: object) -> dict:
-        identity = deepcopy(original(config, dialogue))
+    def changed(config: dict) -> dict:
+        identity = deepcopy(original(config))
         identity["control_mapping"]["implementation_id"] = "changed-for-test"
         return identity
 
-    monkeypatch.setattr(batch_identity, "_dialogue_backend_identity", changed)
+    monkeypatch.setattr(batch_identity, "_backend_static_identity", changed)
     _, _, attempted = _invoke(
         tmp_path,
         monkeypatch,

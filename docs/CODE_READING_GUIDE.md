@@ -2,9 +2,9 @@
 
 Read the production path in this order.
 
-1. `src/tts5703/input_records.py` — strict JSON/JSONL loading, duplicate-key and
+1. `src/tts5703/input/records.py` — strict JSON/JSONL loading, duplicate-key and
    non-JSON-number rejection, canonical record hashes.
-2. `src/tts5703/input_contract.py` — validation of the final upstream dialogue contract.
+2. `src/tts5703/input/contract.py` — validation of the final upstream dialogue contract.
 3. `src/tts5703/speaker_references.py` — selected-backend reference parsing, path
    resolution, and live SHA verification.
 4. `src/tts5703/render_models.py` — canonical and prepared rendering data models.
@@ -12,7 +12,7 @@ Read the production path in this order.
    and cached CosyVoice preparation.
 6. `src/tts5703/tts_engine.py` and `src/tts5703/backends/` — selected backend
    preflight and one-call-per-turn execution.
-7. `src/tts5703/assemble.py`, `metadata.py`, and `qc.py` — common output path.
+7. `src/tts5703/render/` — common assembly, postprocessing, metadata, and QC output path.
 8. `src/tts5703/pipeline.py` — public production `run_dialogue()` orchestration.
 9. `src/tts5703/batch_identity.py` and `src/tts5703/batch.py` — semantic resume
    identity, exclusion, manifest v2, and production batch orchestration.

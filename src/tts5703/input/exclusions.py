@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from tts5703.input_records import canonical_json_sha256
+from .records import canonical_json_sha256
 
 EXCLUSION_POLICY_SCHEMA_VERSION = "1.0"
 

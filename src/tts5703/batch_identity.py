@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from types import SimpleNamespace
 from typing import Any
 
-from .backend_info import backend_identity as _dialogue_backend_identity
-from .input_records import InputRecord, canonical_json_sha256
+from .backends.info import backend_static_identity as _backend_static_identity
+from .input.records import InputRecord, canonical_json_sha256
 from .speaker_references import FinalReferenceError, selected_reference
 
 BATCH_MANIFEST_VERSION = "2.0"
@@ -69,8 +68,7 @@ def materialization_component(
 
 def backend_identity(config: dict[str, Any]) -> dict[str, Any]:
     """Describe the selected backend without preparing or mapping a turn."""
-    proxy = SimpleNamespace(turns=())
-    return _dialogue_backend_identity(config, proxy)
+    return _backend_static_identity(config)
 
 
 def render_affecting_config(config: dict[str, Any]) -> dict[str, Any]:

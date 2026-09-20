@@ -9,19 +9,20 @@ from typing import Any
 
 import pytest
 
-from tts5703 import pipeline, render_plan
-from tts5703.assemble import assemble_prepared_dialogue
-from tts5703.backend_info import (
+from tts5703 import pipeline, render_plan, tts_engine
+from tts5703.backends import higgs
+from tts5703.backends.capabilities import controlled_tts_v1_capabilities
+from tts5703.backends.higgs_worker import FROZEN_GENERATION_FIELDS
+from tts5703.backends.info import (
     CONTROLLED_TTS_V1_IMPLEMENTATION_ID,
     backend_identity,
     describe_engine,
 )
-from tts5703.engine_capabilities import controlled_tts_v1_capabilities
-from tts5703.higgs_worker import FROZEN_GENERATION_FIELDS
-from tts5703.input_records import InputRecord
-from tts5703.metadata import build_metadata
-from tts5703.postprocess import apply_telephone_effect
-from tts5703.qc import run_qc
+from tts5703.input.records import InputRecord
+from tts5703.render.assemble import assemble_prepared_dialogue
+from tts5703.render.metadata import build_metadata
+from tts5703.render.postprocess import apply_telephone_effect
+from tts5703.render.qc import run_qc
 from tts5703.render_models import TurnRenderResult
 from tts5703.render_plan import prepare_dialogue
 
@@ -219,6 +220,7 @@ def test_final_pipeline_prepares_once_and_orders_preflight_before_output(
     dialogue_dir = output_root / record.dialogue_id
     calls: list[str] = []
     mapper_calls = 0
+    preflight_calls = 0
     original_mapper = render_plan.map_turn_to_higgs
     original_prepare = pipeline.prepare_dialogue
     original_assemble = pipeline.assemble_prepared_dialogue
@@ -234,26 +236,18 @@ def test_final_pipeline_prepares_once_and_orders_preflight_before_output(
         return original_prepare(*args, **kwargs)
 
     def preflight(*args: Any, **kwargs: Any) -> None:
+        nonlocal preflight_calls
+        preflight_calls += 1
         calls.append("preflight")
-        assert not dialogue_dir.exists()
+        if preflight_calls == 1:
+            assert not dialogue_dir.exists()
 
-    async def synthesize(dialogue: Any, out_dir: Path, config: dict[str, Any]):
+    def synthesize(turn: Any, out_dir: Path, config: dict[str, Any]) -> Path:
         calls.append("synthesize")
         assert out_dir == dialogue_dir and out_dir.is_dir()
-        results = []
-        for turn in dialogue.turns:
-            path = out_dir / f"turn_{turn.ordinal:03d}.wav"
-            _write_wav(path)
-            results.append(
-                TurnRenderResult(
-                    turn.ordinal,
-                    turn.source_turn_id,
-                    path,
-                    "synthesized",
-                    "executed" if turn.rate != "normal" else "not_required",
-                )
-            )
-        return tuple(results)
+        path = out_dir / f"turn_{turn.ordinal:03d}.wav"
+        _write_wav(path)
+        return path
 
     def assemble(*args: Any, **kwargs: Any):
         calls.append("assemble")
@@ -266,7 +260,8 @@ def test_final_pipeline_prepares_once_and_orders_preflight_before_output(
     monkeypatch.setattr(render_plan, "map_turn_to_higgs", mapper)
     monkeypatch.setattr(pipeline, "prepare_dialogue", prepare)
     monkeypatch.setattr(pipeline, "preflight_prepared_dialogue", preflight)
-    monkeypatch.setattr(pipeline, "synthesize_prepared_turns", synthesize)
+    monkeypatch.setattr(tts_engine, "preflight_prepared_dialogue", preflight)
+    monkeypatch.setattr(higgs, "synthesize_prepared_turn", synthesize)
     monkeypatch.setattr(pipeline, "assemble_prepared_dialogue", assemble)
     monkeypatch.setattr(pipeline, "apply_telephone_effect", telephone)
 
@@ -281,7 +276,15 @@ def test_final_pipeline_prepares_once_and_orders_preflight_before_output(
     )
 
     assert result.status == "success"
-    assert calls == ["prepare", "preflight", "synthesize", "assemble", "telephone"]
+    assert calls == [
+        "prepare",
+        "preflight",
+        "synthesize",
+        "synthesize",
+        "assemble",
+        "telephone",
+    ]
+    assert preflight_calls == 1
     assert mapper_calls == len(record.raw["turns"])
     assert result.qc is not None and result.qc.passed
 
@@ -292,6 +295,13 @@ def test_final_pipeline_pre_render_failures_leave_no_output(
 ) -> None:
     record, sidecar = _inputs(tmp_path)
     output_root = tmp_path / "output"
+    synthesis_calls: list[str] = []
+
+    async def synthesize(*args: Any, **kwargs: Any) -> tuple[TurnRenderResult, ...]:
+        synthesis_calls.append("synthesize")
+        return ()
+
+    monkeypatch.setattr(pipeline, "synthesize_prepared_turns", synthesize)
     if failure == "prepare":
         sidecar["dialogues"][0]["source"]["record_sha256"] = "0" * 64
     else:
@@ -312,7 +322,10 @@ def test_final_pipeline_pre_render_failures_leave_no_output(
     )
 
     assert result.status == "failed"
+    assert synthesis_calls == []
     assert not (output_root / record.dialogue_id).exists()
+    if failure == "preflight":
+        assert result.error_type == "RuntimeError"
 
 
 def test_final_metadata_preserves_source_plan_execution_and_provenance(
@@ -525,6 +538,17 @@ def test_backend_identity_locks_semantics_not_source_bytes(
     )
     assert "source_sha256" not in str(identity)
     assert "higgs_worker.py" not in str(identity)
+
+
+def test_backend_identity_rejects_conflicting_references_for_one_speaker(
+    tmp_path: Path,
+) -> None:
+    record, sidecar = _inputs(tmp_path)
+    sidecar["dialogues"][0]["roles"]["counsellor"]["render_speaker_id"] = "spk_001"
+    prepared = prepare_dialogue(record, sidecar, project_root=tmp_path)
+
+    with pytest.raises(ValueError, match="conflicting approved references"):
+        backend_identity(_config(), prepared)
 
 
 def test_final_capabilities_are_separate_and_truthful() -> None:

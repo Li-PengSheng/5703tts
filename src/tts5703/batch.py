@@ -4,9 +4,13 @@ import argparse
 import datetime
 import json
 import logging
+import math
+import re
 import time
 from pathlib import Path
 from typing import Any
+
+from pydub import AudioSegment
 
 from .batch_identity import (
     BATCH_MANIFEST_VERSION,
@@ -16,9 +20,9 @@ from .batch_identity import (
     render_fingerprint_components,
 )
 from .config import VALID_ENGINES
-from .exclusion_policy import ExclusionPolicy, load_exclusion_policy
-from .input_contract import FinalInputValidationError, validate_dialogue
-from .input_records import InputRecord, InputRecordFailure
+from .input.contract import FinalInputValidationError, validate_dialogue
+from .input.exclusions import ExclusionPolicy, load_exclusion_policy
+from .input.records import InputRecord, InputRecordFailure
 from .pipeline import run_dialogue
 from .speaker_references import FinalReferenceError, selected_reference
 
@@ -28,6 +32,10 @@ _EXCLUDED = "excluded_known_issue"
 _INPUT_ERROR = "input_error"
 _RENDER_FAILED = "render_failed"
 _RESUME_MANIFEST_HINT = "Repair or remove this file, or run without --resume to ignore previous batch state."
+_MANAGED_TURN_ARTIFACT = re.compile(
+    r"turn_(?:00[1-9]|0[1-9][0-9]|[1-9][0-9]{2,})"
+    r"(?:\.wav|\.higgs_raw\.wav(?:\.part)?|\.higgs_processed\.part\.wav)"
+)
 
 
 def _write_batch_result(result: dict[str, Any], output_root: Path) -> Path:
@@ -75,11 +83,39 @@ def _safe_dialogue_output_path(output_root: Path, dialogue_id: str) -> Path:
         or Path(dialogue_id).is_absolute()
     ):
         raise RuntimeError(f"Unsafe final dialogue_id for output path: {dialogue_id!r}")
+    raw_candidate = output_root / dialogue_id
+    if raw_candidate.is_symlink():
+        raise RuntimeError(
+            f"Final dialogue output path must not be a symlink: {dialogue_id!r}"
+        )
     root = output_root.resolve()
-    candidate = (root / dialogue_id).resolve()
+    candidate = raw_candidate.resolve()
     if candidate.parent != root or not candidate.is_relative_to(root):
         raise RuntimeError(f"Final dialogue_id escapes output root: {dialogue_id!r}")
     return candidate
+
+
+def _is_managed_dialogue_artifact(name: str, dialogue_id: str) -> bool:
+    if name in {
+        f"{dialogue_id}_clean.wav",
+        f"{dialogue_id}_telephone.wav",
+        f"{dialogue_id}_metadata.json",
+    }:
+        return True
+    return _MANAGED_TURN_ARTIFACT.fullmatch(name) is not None
+
+
+def _cleanup_managed_dialogue_artifacts(out_dir: Path, dialogue_id: str) -> None:
+    """Remove only pipeline-owned direct-child files before a rerender."""
+    if not out_dir.exists():
+        return
+    for path in out_dir.iterdir():
+        if not _is_managed_dialogue_artifact(path.name, dialogue_id):
+            continue
+        if path.is_symlink() or path.is_file():
+            path.unlink()
+            continue
+        raise RuntimeError(f"Managed artifact path is not a file: {path}")
 
 
 class _DuplicateJsonKeyError(ValueError):
@@ -146,35 +182,129 @@ def _index_previous_results(
     return indexed
 
 
-def _artifacts_exist(output_root: Path, dialogue_id: str) -> bool:
+def _resume_artifacts_valid(
+    output_root: Path,
+    input_record: InputRecord,
+    *,
+    engine: str,
+    current_backend_identity: dict[str, Any],
+) -> bool:
+    """Validate persisted output structure before trusting a resume candidate."""
+    dialogue_id = input_record.dialogue_id
     out_dir = _safe_dialogue_output_path(output_root, dialogue_id)
-    return all(
-        (out_dir / filename).is_file()
-        for filename in (
-            f"{dialogue_id}_clean.wav",
-            f"{dialogue_id}_telephone.wav",
-            f"{dialogue_id}_metadata.json",
+    expected_clean = f"{dialogue_id}_clean.wav"
+    expected_telephone = f"{dialogue_id}_telephone.wav"
+    try:
+        metadata = json.loads(
+            (out_dir / f"{dialogue_id}_metadata.json").read_text(encoding="utf-8"),
+            object_pairs_hook=_strict_json_object,
+            parse_constant=_reject_json_constant,
         )
-    )
+        if not isinstance(metadata, dict):
+            return False
+        current_implementation_id = current_backend_identity["control_mapping"][
+            "implementation_id"
+        ]
+        tts = metadata.get("tts")
+        if not isinstance(tts, dict):
+            return False
+        persisted_backend = tts.get("backend_identity")
+        persisted_mapping = tts.get("control_mapping")
+        if not isinstance(persisted_backend, dict) or not isinstance(
+            persisted_mapping, dict
+        ):
+            return False
+        backend_mapping = persisted_backend.get("control_mapping")
+        if not isinstance(backend_mapping, dict):
+            return False
+        if (
+            metadata.get("dialogue_id") != dialogue_id
+            or metadata.get("clean_audio") != expected_clean
+            or metadata.get("telephone_audio") != expected_telephone
+            or metadata["provenance"]["record_sha256"] != input_record.record_sha256
+            or tts.get("engine") != engine
+            or persisted_backend.get("backend") != engine
+            or persisted_mapping.get("implementation_id") != current_implementation_id
+            or backend_mapping.get("implementation_id") != current_implementation_id
+        ):
+            return False
+
+        source_turns = input_record.raw["turns"]
+        metadata_turns = metadata["turns"]
+        if not isinstance(metadata_turns, list) or len(metadata_turns) != len(
+            source_turns
+        ):
+            return False
+
+        previous_end = 0.0
+        for ordinal, (source, persisted) in enumerate(
+            zip(source_turns, metadata_turns, strict=True), start=1
+        ):
+            identity = persisted["source_identity"]
+            execution = persisted["execution"]
+            requested = persisted["requested"]["acoustic"]
+            timing = persisted["timing"]
+            expected_turn_audio = f"turn_{ordinal:03d}.wav"
+            start_sec = timing["start_sec"]
+            end_sec = timing["end_sec"]
+            if (
+                type(identity.get("ordinal")) is not int
+                or identity.get("ordinal") != ordinal
+                or identity.get("source_turn_id") != source["turn_id"]
+                or execution.get("synthesis_status") != "synthesized"
+                or execution.get("turn_audio") != expected_turn_audio
+                or persisted.get("labels") != source["labels"]
+                or requested.get("required") != source["acoustic"]["required"]
+                or requested.get("best_effort") != source["acoustic"].get("best_effort")
+                or isinstance(start_sec, bool)
+                or not isinstance(start_sec, (int, float))
+                or not math.isfinite(start_sec)
+                or isinstance(end_sec, bool)
+                or not isinstance(end_sec, (int, float))
+                or not math.isfinite(end_sec)
+                or start_sec < previous_end
+                or end_sec <= start_sec
+            ):
+                return False
+            speech_seconds = (
+                len(AudioSegment.from_file(out_dir / expected_turn_audio)) / 1000
+            )
+            if speech_seconds <= 0 or abs(end_sec - start_sec - speech_seconds) > 0.05:
+                return False
+            previous_end = end_sec
+
+        return all(
+            path.is_file() and len(AudioSegment.from_file(path)) > 0
+            for path in (out_dir / expected_clean, out_dir / expected_telephone)
+        )
+    except Exception:  # noqa: BLE001 - corrupt artifacts should trigger rerender
+        return False
 
 
 def _entry_is_resumable(
     previous: dict[str, Any] | None,
     *,
-    dialogue_id: str,
+    input_record: InputRecord,
     fingerprint: str,
     output_root: Path,
     sidecar_entry: dict[str, Any],
     engine: str,
+    current_backend_identity: dict[str, Any],
     project_root: Path,
 ) -> bool:
+    dialogue_id = input_record.dialogue_id
     candidate = bool(
         previous
         and previous.get("dialogue_id") == dialogue_id
         and previous.get("status") == "success"
         and previous.get("action") in {_RENDERED, _RESUMED}
         and previous.get("render_fingerprint") == fingerprint
-        and _artifacts_exist(output_root, dialogue_id)
+        and _resume_artifacts_valid(
+            output_root,
+            input_record,
+            engine=engine,
+            current_backend_identity=current_backend_identity,
+        )
     )
     if not candidate:
         return False
@@ -374,31 +504,44 @@ async def run_batch(
             and args.resume
             and _entry_is_resumable(
                 previous,
-                dialogue_id=item.dialogue_id,
+                input_record=item,
                 fingerprint=fingerprint,
                 output_root=args.output,
                 sidecar_entry=sidecar_by_id[item.dialogue_id],
                 engine=engine,
+                current_backend_identity=batch_backend_identity,
                 project_root=Path.cwd(),
             )
         ):
             action, status, error = _RESUMED, "success", None
         else:
-            pipeline_result = await run_dialogue(
-                item,
-                sidecar,
-                config,
-                args.output,
-                project_root=Path.cwd(),
-            )
-            if pipeline_result.status == "success":
-                action, status, error = _RENDERED, "success", None
-            else:
+            try:
+                _cleanup_managed_dialogue_artifacts(expected_out_dir, item.dialogue_id)
+            except (OSError, RuntimeError) as cleanup_error:
                 action, status = _RENDER_FAILED, "failed"
                 error = {
-                    "type": pipeline_result.error_type or "PipelineFailure",
-                    "message": pipeline_result.error or "Unknown dialogue failure",
+                    "type": type(cleanup_error).__name__,
+                    "message": (
+                        f"Failed to clean managed artifacts before rerender: "
+                        f"{cleanup_error}"
+                    ),
                 }
+            else:
+                pipeline_result = await run_dialogue(
+                    item,
+                    sidecar,
+                    config,
+                    args.output,
+                    project_root=Path.cwd(),
+                )
+                if pipeline_result.status == "success":
+                    action, status, error = _RENDERED, "success", None
+                else:
+                    action, status = _RENDER_FAILED, "failed"
+                    error = {
+                        "type": pipeline_result.error_type or "PipelineFailure",
+                        "message": pipeline_result.error or "Unknown dialogue failure",
+                    }
         results.append(
             {
                 "dialogue_id": item.dialogue_id,

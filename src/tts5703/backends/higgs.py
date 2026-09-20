@@ -17,7 +17,7 @@ from ..render_models import HiggsPreparedTurn
 
 logger = logging.getLogger("tts5703.tts_engine")
 
-_WORKER_SCRIPT = Path(__file__).resolve().parents[1] / "higgs_worker.py"
+_WORKER_SCRIPT = Path(__file__).resolve().with_name("higgs_worker.py")
 # The accepted worker can spend up to 20 seconds on SIGTERM and another 20 on
 # SIGKILL while reaping its SGLang process group. Give stdin EOF and SIGTERM
 # enough time to complete that ownership contract before escalating.
