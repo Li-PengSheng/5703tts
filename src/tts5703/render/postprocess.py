@@ -1,4 +1,9 @@
-"""Stage 4: generate telephone-quality audio."""
+"""Derive the limited telephone-labelled signal-processing output.
+
+The effect is only mono conversion, resampling, high-pass/low-pass filtering,
+and level reduction. It is not a telephony codec, packet-loss model, line-noise
+generator, room simulation, or complete PSTN network simulation.
+"""
 
 from typing import Any
 

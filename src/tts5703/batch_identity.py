@@ -1,4 +1,15 @@
-"""Pure semantic identities for production batch resume."""
+"""Pure semantic identity used by manifest-v2 resume decisions.
+
+The render fingerprint covers canonical source identity, render-affecting
+shared config, the selected backend's static identity, selected speaker/reference
+materialization, and the exclusion decision. It intentionally excludes input
+file location, JSON formatting, and unselected backend configuration.
+
+Static backend identity records configured model/runtime paths and mapping
+identity, but does not hash the full checkpoint or runtime environment. Live
+artifact integrity and selected-reference bytes are checked separately during
+resume; a matching fingerprint alone is never sufficient.
+"""
 
 from __future__ import annotations
 
@@ -27,7 +38,7 @@ def materialization_component(
     *,
     engine: str = "higgs",
 ) -> dict[str, Any]:
-    """Return only per-dialogue speaker semantics, never sidecar location."""
+    """Return selected per-dialogue speaker semantics, never sidecar location."""
     roles = sidecar_entry.get("roles")
     if not isinstance(roles, dict) or set(roles) != {"caller", "counsellor"}:
         raise BatchIdentityError(
@@ -67,7 +78,7 @@ def materialization_component(
 
 
 def backend_identity(config: dict[str, Any]) -> dict[str, Any]:
-    """Describe the selected backend without preparing or mapping a turn."""
+    """Describe selected static backend semantics before dialogue preparation."""
     return _backend_static_identity(config)
 
 
@@ -86,7 +97,12 @@ def render_fingerprint_components(
     config: dict[str, Any],
     sidecar_entry: dict[str, Any],
 ) -> dict[str, Any]:
-    """Build the explicit semantic component object hashed for resume."""
+    """Build the explicit semantic components hashed for resume.
+
+    File/container location and formatting are absent because
+    ``record_sha256`` already represents canonical source content. Only the
+    selected backend and its selected references participate.
+    """
     materialization = materialization_component(
         sidecar_entry,
         engine=config["tts"]["engine"],
@@ -104,4 +120,5 @@ def render_fingerprint_components(
 
 
 def render_fingerprint(components: dict[str, Any]) -> str:
+    """Hash the canonical semantic component object for manifest-v2 resume."""
     return canonical_json_sha256(components)

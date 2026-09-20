@@ -1,4 +1,13 @@
-"""Canonical dialogue construction and backend-specific planning."""
+"""Two explicit transformations from persisted input to executable plans.
+
+``InputRecord + speaker sidecar -> CanonicalDialogue`` validates the final
+source contract and identity links, introduces production ``spk_*`` assignment,
+and normalizes required controls without adding backend-native controls.
+
+``CanonicalDialogue -> PreparedDialogue`` selects exactly one backend and
+caches its complete execution plan. Source records are snapshots and are never
+rewritten to embed speaker assignment or planner output.
+"""
 
 from __future__ import annotations
 
@@ -85,7 +94,13 @@ def _source_turn_id(turn: dict[str, Any]) -> int | str:
 def canonicalize_dialogue(
     input_record: InputRecord, sidecar: dict[str, Any]
 ) -> CanonicalDialogue:
-    """Normalize final source semantics once, without introducing backend fields."""
+    """Build the backend-neutral rendering contract from source plus sidecar.
+
+    This boundary validates the final source schema, checks ``InputRecord``
+    identity, verifies the sidecar source SHA and speaker alignment, introduces
+    production render speaker IDs, and normalizes controls. It does not create
+    Higgs tokens, CosyVoice instructions, numeric speed, or worker requests.
+    """
     raw = input_record.raw
     validated = validate_dialogue(raw)
     if input_record.dialogue_id != validated.dialogue_id:
@@ -210,6 +225,12 @@ def _higgs_dialogue(
     sidecar: dict[str, Any],
     project_root: Path,
 ) -> PreparedDialogue:
+    """Freeze live-verified Higgs references and Controlled-TTS-v1 plans.
+
+    ``map_turn_to_higgs()`` is called exactly during preparation. The resulting
+    complete plan is cached in ``HiggsPreparedTurn``; execution does not remap
+    source controls later.
+    """
     roles = _sidecar_roles(sidecar, canonical.dialogue_id)
     turns = []
     for source, turn in zip(input_record.raw["turns"], canonical.turns, strict=True):
@@ -247,6 +268,13 @@ def _higgs_dialogue(
 
 
 def _cosyvoice_plan(turn: CanonicalTurn, reference: dict[str, Any]) -> dict[str, Any]:
+    """Build one provisional CosyVoice plan from canonical source semantics.
+
+    Rate becomes 0.8/1.0/1.2 numeric speed; arousal/affect become provisional
+    instruction control; hesitations are lexical; pause_before stays owned by
+    assembly. A positive pause_within is represented as unsupported so whole-
+    dialogue preflight can fail closed before synthesis.
+    """
     contract = load_contract()
     hesitation = plan_hesitations(turn.text, turn.hesitation_count, contract)
     controls = resolve_cosyvoice_controls(turn.rate, turn.arousal, turn.affect)
@@ -350,6 +378,7 @@ def _cosyvoice_dialogue(
     sidecar: dict[str, Any],
     project_root: Path,
 ) -> PreparedDialogue:
+    """Freeze selected prompt WAV/text and one cached plan per canonical turn."""
     roles = _sidecar_roles(sidecar, canonical.dialogue_id)
     turns = []
     for turn in canonical.turns:
@@ -400,7 +429,10 @@ def prepare_dialogue(
     *,
     project_root: Path,
 ) -> PreparedDialogue:
-    """Dispatch one canonical dialogue to exactly one selected backend plan."""
+    """Canonicalize, then prepare exactly the explicitly selected backend.
+
+    There is no automatic fallback and no cross-use of backend reference types.
+    """
     canonical = canonicalize_dialogue(input_record, sidecar)
     engine = "higgs" if config is None else config.get("tts", {}).get("engine")
     if engine == "higgs":

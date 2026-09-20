@@ -1,4 +1,10 @@
-"""Validation for cached backend execution plans."""
+"""Defend the prepared-plan execution boundary before runtime work.
+
+These validators protect source identity, role identity, requested-versus-
+normalized controls, backend-specific request fields, reference/config
+assumptions, and synthesis contracts. They validate structural execution plans;
+they are not acoustic or perceptual QA.
+"""
 
 from typing import Any
 
@@ -26,6 +32,7 @@ def validate_higgs_plan(
     logical_role: str,
     scenario_speaker_id: str,
 ) -> None:
+    """Reject a Higgs plan that cannot safely represent the source turn."""
     try:
         higgs, normalized = plan["higgs"], plan["normalized"]
         requested, postprocess = plan["requested"]["required"], plan["postprocess"]
@@ -110,6 +117,7 @@ def validate_higgs_plan(
 
 
 def validate_cosyvoice_plan(plan: dict[str, Any], source_turn_id: int | str) -> None:
+    """Reject malformed CosyVoice identity, rate, or fail-closed pause plans."""
     try:
         cosy = plan["cosyvoice"]
         normalized = plan["normalized"]

@@ -1,4 +1,10 @@
-"""Final-schema CosyVoice3 preflight and cached-plan execution."""
+"""Explicit backup CosyVoice3 preflight and cached-plan execution.
+
+CosyVoice is selected for the complete run; there is no automatic Higgs-to-
+CosyVoice fallback. It uses its own Python environment and independent prompt
+WAV/text reference contract. Preparation owns mapping; this module only checks
+and executes the cached request.
+"""
 
 from __future__ import annotations
 
@@ -54,7 +60,11 @@ def _runtime(config: dict[str, Any]) -> tuple[dict[str, Any], Path, Path, Path]:
 def preflight_prepared_turn(
     turn: CosyVoicePreparedTurn, config: dict[str, Any]
 ) -> tuple[dict[str, Any], Path, Path, Path]:
-    """Verify capabilities and the selected reference without starting a worker."""
+    """Verify capabilities and the selected prompt reference before worker use.
+
+    ``pause_within > 0`` has no evidence-backed deterministic realization and
+    therefore fails closed. This check does not claim affect/emotion fidelity.
+    """
     plan = turn.plan
     pause_within = plan["normalized"]["pause_within_count"]
     if pause_within:
@@ -85,7 +95,7 @@ def preflight_prepared_turn(
 def synthesize_prepared_turn(
     turn: CosyVoicePreparedTurn, out_dir: Path, config: dict[str, Any]
 ) -> Path:
-    """Send only the cached plan and selected reference to the existing worker."""
+    """Send only the cached plan and selected prompt to the reusable worker."""
     settings, python, repo, model = preflight_prepared_turn(turn, config)
     output = out_dir / f"turn_{turn.ordinal:03d}.wav"
     worker = cosyvoice._get_worker(

@@ -1,4 +1,15 @@
-"""Backend identity and metadata descriptions without runtime side effects."""
+"""Static batch identity and dialogue-aware metadata identity.
+
+``backend_static_identity(config)`` records selected backend runtime/control
+semantics that do not depend on one dialogue. Batch fingerprinting needs this
+before preparation. ``backend_identity(config, dialogue)`` adds the actual
+selected references from a real ``PreparedDialogue`` for metadata. Fake
+dialogue objects are intentionally unnecessary.
+
+Configured paths and mapping/generation identity are recorded, but the complete
+model checkpoint and runtime environment are not cryptographically hashed. That
+is a current reproducibility limitation, not a guarantee supplied here.
+"""
 
 from copy import deepcopy
 from typing import Any
@@ -36,7 +47,12 @@ def _higgs_mapping_identity() -> dict[str, Any]:
 
 
 def backend_static_identity(config: dict[str, Any]) -> dict[str, Any]:
-    """Return backend identity that does not require a prepared dialogue."""
+    """Return selected backend semantics independent of dialogue references.
+
+    The empty references object is intentional: batch identity is calculated
+    before a dialogue is prepared, while per-dialogue materialization is hashed
+    separately by ``batch_identity``.
+    """
     engine = get_engine(config)
     if engine not in {"higgs", "cosyvoice"}:
         raise ValueError(f"Final backend identity is not implemented for {engine!r}")
@@ -85,6 +101,7 @@ def backend_static_identity(config: dict[str, Any]) -> dict[str, Any]:
 
 
 def _dialogue_references(dialogue: PreparedDialogue) -> dict[str, dict[str, Any]]:
+    """Extract the exact selected reference used by each render speaker."""
     references: dict[str, dict[str, Any]] = {}
     for turn in dialogue.turns:
         reference = dict(turn.approved_reference)
@@ -103,7 +120,7 @@ def _dialogue_references(dialogue: PreparedDialogue) -> dict[str, dict[str, Any]
 def backend_identity(
     config: dict[str, Any], dialogue: PreparedDialogue
 ) -> dict[str, Any]:
-    """Add real prepared-dialogue references to the static backend identity."""
+    """Add actual selected references from a real prepared dialogue."""
     identity = backend_static_identity(config)
     identity["references"] = _dialogue_references(dialogue)
     return identity
@@ -112,7 +129,7 @@ def backend_identity(
 def describe_engine(
     config: dict[str, Any], dialogue: PreparedDialogue
 ) -> dict[str, Any]:
-    """Return the selected final engine snapshot for metadata."""
+    """Return dialogue-aware backend/runtime provenance for metadata."""
     identity = backend_identity(config, dialogue)
     if identity["backend"] == "cosyvoice":
         cosy = config["tts"]["cosyvoice"]

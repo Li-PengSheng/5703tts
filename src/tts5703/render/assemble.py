@@ -1,4 +1,10 @@
-"""Stage 3: join turn audio and produce turn-level timestamps."""
+"""Assemble speech-only turn WAVs into a timed clean dialogue.
+
+``pause_before`` belongs to assembly: silence is inserted before timestamp
+``start_sec`` and never baked into a turn WAV. A short fade only protects hard
+waveform edges; turns are concatenated without crossfade. Prepared-turn and
+result ordinals/source IDs must match exactly before assembly is trusted.
+"""
 
 from typing import Any
 
@@ -12,7 +18,7 @@ def assemble_prepared_dialogue(
     turn_results: tuple[TurnRenderResult, ...] | list[TurnRenderResult],
     config: dict[str, Any],
 ) -> tuple[AudioSegment, list[dict[str, Any]]]:
-    """Assemble final speech with only unfaded pre-speech pauses."""
+    """Join ordered speech with assembly-owned, unfaded pre-speech pauses."""
     by_ordinal: dict[int, TurnRenderResult] = {}
     for result in turn_results:
         if result.ordinal in by_ordinal:

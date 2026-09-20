@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""Standard-library JSON-lines worker for an isolated Higgs SGLang server.
+"""Standard-library JSON-lines owner for an isolated Higgs SGLang server.
 
 The parent process must continuously drain or redirect this worker's stderr,
-which also carries the owned SGLang server's stdout and stderr.
+which also carries the owned SGLang server's stdout and stderr. Protocol stdout
+contains JSON Lines only. The worker owns the server process group, readiness
+polling, HTTP speech calls, atomic raw-WAV publication, and final reaping.
 """
 
 from __future__ import annotations
@@ -48,6 +50,9 @@ FROZEN_GENERATION_FIELDS: dict[str, Any] = {
     "top_p": 0.8,
     "top_k": 30,
 }
+# These fields are part of backend identity and stay constant for every turn.
+# In particular, model speed is 1.0; production slow/fast semantics are applied
+# afterward by the parent with FFmpeg atempo 0.85/1.15.
 
 HTTP_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
@@ -268,6 +273,7 @@ def _wait_for_readiness(
 
 
 def _speech_payload(request: dict[str, Any]) -> dict[str, Any]:
+    """Build the frozen SGLang request, including reference conditioning."""
     return {
         "input": request["model_input"],
         **FROZEN_GENERATION_FIELDS,
@@ -300,6 +306,7 @@ def _ensure_server_alive(server: subprocess.Popen[bytes]) -> None:
 def _synthesise(
     server: subprocess.Popen[bytes], config: dict[str, Any], message: dict[str, Any]
 ) -> dict[str, Any]:
+    """Request one WAV and publish it via ``.part`` only after validation."""
     _ensure_server_alive(server)
     request = _validate_request(message)
     body = json.dumps(_speech_payload(request), ensure_ascii=False).encode("utf-8")
@@ -341,6 +348,7 @@ def _synthesise(
 
 
 def _stop_server(server: subprocess.Popen[bytes] | None) -> None:
+    """Terminate and reap the complete owned SGLang process group."""
     if server is None:
         return
     try:
@@ -376,6 +384,12 @@ def _request_cleanup(signum: int, _frame: Any) -> None:
 
 
 def main() -> int:
+    """Initialize once, reuse the server, and classify request/server failures.
+
+    A dead server is fatal and ends the worker. A request validation, HTTP, or
+    output error is recoverable while the server remains alive, so the worker
+    reports the error without discarding the loaded model.
+    """
     signal.signal(signal.SIGINT, _request_cleanup)
     signal.signal(signal.SIGTERM, _request_cleanup)
     server: subprocess.Popen[bytes] | None = None

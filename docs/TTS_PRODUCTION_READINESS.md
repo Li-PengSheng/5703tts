@@ -1,53 +1,98 @@
 # TTS production readiness
 
-## Current production contract
+## Current decision
 
-The production CLI accepts only final nested JSON/JSONL from
-`upstream/Controlled-TTS-v1`. Higgs is primary and CosyVoice3 is an explicitly
-selected backup. Both consume the same `InputRecord -> CanonicalDialogue` path and
-share assembly, metadata, QC, manifest v2, and resume. There is no automatic fallback.
+The software/offline path is strongly validated. CosyVoice3 has real mini-batch runtime evidence. Higgs production integration is implemented and offline-validated, but real reference-conditioned Cloud validation is still pending; Higgs must not be described as production-ready until that gate passes.
 
-## Offline-verified behavior
+Higgs remains the configured production primary. CosyVoice3 remains an explicitly selected backup/secondary. There is no automatic fallback.
 
-- Strict JSON/JSONL parsing and record-level malformed-line reporting.
-- Final contract validation and immutable source records.
-- Backend-neutral canonical turns and production `spk_*` assignment.
-- Frozen Higgs mapping parity and one synthesis call per turn.
-- Cached CosyVoice speed/instruction/prompt requests from canonical turns.
-- Selected-backend-only reference requirements and SHA verification.
-- Shared pause-before, speech-only turn files, ordering, and timing.
-- Backend-specific planned metadata and structural/control-integrity QC.
-- Manifest v2, semantic fingerprints, live-reference resume checks, and atomic writes.
-- Explicit exclusion before speaker/preparation requirements.
-- No automatic backend fallback.
+## Software/offline evidence
 
-## Speaker materialization
+The test suite covers:
 
-Use an explicit target:
+- strict JSON/JSONL parsing, canonical record hashes, and isolated malformed rows;
+- final-contract-only validation and immutable-ish source snapshots;
+- source/logical/scenario/render speaker identity separation;
+- selected-backend-only reference contracts and live SHA verification;
+- canonical/prepared boundaries, frozen plan validation, and defensive copies;
+- frozen Higgs mapping parity, one synthesis call per turn, request construction, worker lifecycle, and FFmpeg rate processing;
+- cached CosyVoice prompt/speed/instruction requests and `text_frontend=False`;
+- whole-dialogue preflight before output directory/GPU work;
+- speech-only turn files, pause-before assembly, ordering, timestamps, clean/telephone outputs;
+- requested/planned/executed metadata and structural/control-integrity QC;
+- manifest v2, semantic fingerprinting, artifact/reference integrity resume, path security, and managed stale cleanup;
+- explicit known-issue exclusion before sidecar/preparation requirements;
+- absence of automatic backend fallback.
 
-```bash
-uv run python scripts/materialize_speaker_assignments.py \
-  --input data/final/dialogues.jsonl \
-  --assignments data/speaker_assignments.jsonl \
-  --registry data/speaker_pool/vctk_v0.1/speaker_registry.json \
-  --active-speakers data/speaker_pool/vctk_v0.1/active_speakers.json \
-  --manifest data/speaker_sidecar.json \
-  --backend both
-```
+This evidence validates software behavior, not acoustic or perceptual quality.
 
-`higgs` requires only approved Higgs references, `cosyvoice` requires only primary
-CosyVoice references, and `both` requires both. Final source records are never
-rewritten and reference types are never substituted.
+## CosyVoice3 runtime evidence
 
-## Known capability boundary
+Phase 3A real runtime evidence exists for the backup backend:
 
-CosyVoice `pause_within > 0` fails closed before output creation because no verified
-deterministic realization is available. Instruction-based arousal/affect mapping is
-provisional. Offline tests do not prove perceptual fidelity.
+- 5 dialogues;
+- 30 turns;
+- 0 failures;
+- identical resume 5/5;
+- controlled artifact corruption triggered rerender;
+- stale turn cleanup passed while unmanaged content survived.
 
-## Next runtime gate
+The raw runtime log remains in the repository, but the evidence summary above—not the log volume—is the handoff statement. This evidence applies to CosyVoice3 and does not validate Higgs. CosyVoice affect/arousal instruction mapping remains provisional and `pause_within > 0` remains unsupported/fail-closed.
 
-Real cloud/GPU validation must establish Higgs startup, reference conditioning,
-speaker separation, intelligibility, stability, performance, and operational cleanup.
-Until that evidence exists, the repository claims software-path readiness only—not
-acoustic quality or production capacity.
+## Higgs status
+
+Implemented and offline-validated:
+
+- selected approved-reference path/SHA contract;
+- frozen Controlled-TTS-v1 plan and generation fields;
+- parent/JSON-lines worker/SGLang ownership model;
+- `/health` and `/v1/audio/speech` request handling;
+- reference payload construction;
+- worker reuse, stderr draining, fatal/recoverable error handling, process-group cleanup;
+- atomic raw-WAV publication and slow/normal/fast rate lifecycle;
+- common assembly, metadata, QC, manifest, resume, and cleanup integration.
+
+Still pending on real Cloud hardware:
+
+- actual chosen SGLang/Higgs stack startup and protocol compatibility;
+- reference-conditioned synthesis with reviewed candidates;
+- speaker identity/separation and perceptual review;
+- intelligibility, naturalness, artifacts, and controlled-turn behavior;
+- batch performance, long-running resource stability, and shutdown/GPU release.
+
+Use [HIGGS_CLOUD_VALIDATION.md](HIGGS_CLOUD_VALIDATION.md) as the formal evidence checklist and [HIGGS_PRODUCTION_RUNBOOK_CN.md](HIGGS_PRODUCTION_RUNBOOK_CN.md) as its execution guide.
+
+## Evidence boundary
+
+Structural QC verifies identity, plan/control consistency, timing, execution status, and WAV readability. It does not establish emotion accuracy, acoustic arousal calibration, speaker similarity, naturalness, intelligibility, or clinical validity.
+
+Telephone output is mono/resampling/high-pass/low-pass/level reduction only. It is not a telephony codec, packet-loss or line-noise model, room simulation, or complete PSTN simulation.
+
+## Reproducibility boundary
+
+Metadata/manifest record source, assignment, registry, active-speaker, mapping, implementation, config, selected reference, and configured backend runtime identity. The complete model checkpoint and runtime environment are not yet cryptographically pinned by backend identity; Cloud evidence must separately record model/runtime/package/CUDA/GPU identity.
+
+Manifest v2 is atomically written at batch completion, not checkpointed after every dialogue. Interrupted work therefore relies on the next run's normal semantic and artifact-integrity decisions rather than a per-dialogue journal.
+
+## Remaining production gates
+
+1. Review and approve actual Higgs reference candidates.
+2. Complete the full Higgs Cloud checklist against the exact merged `main` SHA.
+3. Review technical and perceptual evidence before approving Higgs production use.
+4. Receive the real final source corpus; it is not committed in this repository.
+5. Run a large-scale production rehearsal on that final corpus and review failures, throughput, storage, resume, and handoff artifacts.
+
+Until these gates pass, the accurate claim is: software/offline path strongly validated; CosyVoice mini-batch runtime demonstrated; Higgs production integration implemented but real reference-conditioned Cloud validation pending.
+
+## Known limitations
+
+- Real Higgs Cloud validation is pending.
+- Higgs reference candidates need actual approval.
+- Full model/runtime identity is not cryptographically pinned.
+- Batch result is written at batch completion rather than after each dialogue.
+- Structural QC is not perceptual QA.
+- Telephone processing is not a real phone codec or PSTN simulation.
+- CosyVoice positive pause-within is unsupported.
+- CosyVoice affect/arousal instruction mapping is provisional.
+- There is no automatic backend fallback.
+- The final large source corpus is not committed.

@@ -1,7 +1,13 @@
-"""Materialize assigned production speakers into a backend-aware sidecar.
+"""Create a backend-aware speaker sidecar without rewriting source dialogues.
 
-Final upstream records are never rewritten. The explicit backend target controls
-which independent reference types are required and emitted.
+Inputs are the final dialogue source, assignment rows, speaker registry, and
+active-speaker list. Output is a separate dialogue sidecar linking source roles
+to production render speakers and the explicitly requested ``higgs``,
+``cosyvoice``, or ``both`` reference contracts.
+
+Higgs approval is independent of CosyVoice ``primary_reference``. A registry
+prompt may be a Higgs review candidate, but it is never emitted as an approved
+``higgs_reference`` unless that separate field exists and its live SHA matches.
 """
 
 from __future__ import annotations
@@ -269,7 +275,11 @@ def materialize_speaker_assignments(
     project_root: Path = PROJECT_ROOT,
     backend: str,
 ) -> dict[str, Any]:
-    """Emit a backend-aware sidecar without rewriting final source records."""
+    """Validate all four inputs and emit the selected backend sidecar contract.
+
+    The returned/written manifest records ``source_records_rewritten=False``;
+    assignments and reference provenance remain external to final source JSON.
+    """
     if backend not in {"higgs", "cosyvoice", "both"}:
         raise SpeakerMaterializationError(
             "backend must be one of: higgs, cosyvoice, both"

@@ -148,7 +148,16 @@ git diff --check
 
 No model, worker, GPU, network, or download is used by the test suite.
 
-See [Architecture](docs/ARCHITECTURE.md),
-[Chinese walkthrough](docs/PROJECT_WALKTHROUGH_CN.md),
-[code reading guide](docs/CODE_READING_GUIDE.md), and
-[Higgs cloud validation](docs/HIGGS_CLOUD_VALIDATION.md).
+## Documentation
+
+Higgs is the production primary; CosyVoice3 is the explicitly selected
+backup/secondary. There is no automatic fallback.
+
+- [Architecture/design summary](docs/ARCHITECTURE.md)
+- [Detailed Chinese pipeline guide](docs/PIPELINE_DETAILED_GUIDE_CN.md)
+- [External and internal data contracts](docs/DATA_CONTRACTS.md)
+- [Code reading guide](docs/CODE_READING_GUIDE.md)
+- [Production readiness](docs/TTS_PRODUCTION_READINESS.md)
+- [Formal Higgs Cloud evidence checklist](docs/HIGGS_CLOUD_VALIDATION.md)
+- [Chinese Higgs production runbook](docs/HIGGS_PRODUCTION_RUNBOOK_CN.md)
+- [CosyVoice3 control mapping v1](docs/cosyvoice3_control_mapping_v1.md)

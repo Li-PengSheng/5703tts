@@ -1,4 +1,10 @@
-"""Validation for the production upstream dialogue contract."""
+"""Trust boundary for the final Controlled-TTS nested dialogue contract.
+
+This module validates the one accepted production shape; it does not adapt or
+reinterpret legacy schemas.  Upstream ``User``/``Listener`` roles normalize to
+logical ``caller``/``counsellor`` roles, while scenario ``speaker_id`` values
+remain source identities rather than production render speaker IDs.
+"""
 
 from __future__ import annotations
 
@@ -19,6 +25,8 @@ class FinalInputValidationError(ValueError):
 
 @dataclass(frozen=True)
 class SpeakerIdentity:
+    """Linked upstream role, logical role, and scenario speaker identity."""
+
     upstream_role: str
     logical_role: str
     upstream_scenario_speaker_id: str
@@ -26,6 +34,8 @@ class SpeakerIdentity:
 
 @dataclass(frozen=True)
 class ValidatedDialogue:
+    """Validated final record plus the source-side speaker identity mapping."""
+
     dialogue_id: str
     raw: dict[str, Any]
     speaker_identities: dict[str, SpeakerIdentity]
@@ -44,7 +54,13 @@ def _nonblank(value: Any, path: str) -> str:
 
 
 def validate_dialogue(raw: dict[str, Any]) -> ValidatedDialogue:
-    """Validate final structure while retaining the untouched nested record."""
+    """Validate only the final nested schema and preserve a source snapshot.
+
+    Every turn must have ``turn_id`` and ``labels`` plus all six required
+    controls: rate, arousal, affect, pause_before, pause_within, and hesitations.
+    Best-effort fields are retained as requests; validation never promises that
+    a selected backend can realize them.
+    """
     raw = _mapping(raw, "dialogue")
     dialogue_id = _nonblank(raw.get("dialogue_id"), "dialogue_id")
     scenario = _mapping(raw.get("scenario"), "scenario")

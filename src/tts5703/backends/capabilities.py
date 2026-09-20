@@ -1,4 +1,9 @@
-"""Production control capabilities for the two final-schema backends."""
+"""Declared ownership/support for the two explicitly selected backends.
+
+These declarations describe planning responsibility, not perceptual evidence.
+Higgs is primary; CosyVoice3 is backup/secondary. No capability declaration
+causes automatic fallback between them.
+"""
 
 from copy import deepcopy
 from typing import Any
@@ -102,7 +107,7 @@ class UnknownEngineCapabilityError(KeyError):
 
 
 def controlled_tts_v1_capabilities(engine: str = "higgs") -> dict[str, Any]:
-    """Return the selected backend's isolated final-schema capabilities."""
+    """Return an isolated support declaration for the explicitly selected engine."""
     if engine == "higgs":
         return deepcopy(CONTROLLED_TTS_V1_CAPABILITIES)
     if engine == "cosyvoice":

@@ -1,4 +1,9 @@
-"""Data-driven dialogue exclusion policies."""
+"""Data-driven known-issue exclusion policy and its semantic identity.
+
+Exclusion is decided before speaker preparation.  Keeping the decision in a
+strict, hashable external policy avoids hard-coded dialogue exceptions and
+makes the batch manifest explain why a source record was not rendered.
+"""
 
 from __future__ import annotations
 
@@ -23,6 +28,8 @@ class _DuplicateKeyError(ValueError):
 
 @dataclass(frozen=True)
 class DialogueExclusion:
+    """One explicit known-issue decision and optional provenance."""
+
     dialogue_id: str
     reason: str
     provenance: Any = None
@@ -30,6 +37,8 @@ class DialogueExclusion:
 
 @dataclass(frozen=True, init=False)
 class ExclusionPolicy:
+    """Defensively copied, canonicalized set of dialogue exclusions."""
+
     schema_version: str
     _exclusions: tuple[DialogueExclusion, ...] = field(repr=False)
     policy_sha256: str
@@ -90,6 +99,7 @@ def _reject_non_json_constant(value: str) -> None:
 
 
 def parse_exclusion_policy(raw: dict[str, Any]) -> ExclusionPolicy:
+    """Validate and canonicalize an external exclusion-policy object."""
     if not isinstance(raw, dict):
         raise ExclusionPolicyError("Exclusion policy must be a JSON object")
     version = raw.get("schema_version")
@@ -134,6 +144,7 @@ def parse_exclusion_policy(raw: dict[str, Any]) -> ExclusionPolicy:
 
 
 def load_exclusion_policy(path: Path) -> ExclusionPolicy:
+    """Load strict JSON without duplicate keys or non-JSON numeric constants."""
     try:
         raw = json.loads(
             path.read_text(encoding="utf-8"),

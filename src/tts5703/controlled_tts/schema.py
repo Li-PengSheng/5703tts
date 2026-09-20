@@ -1,4 +1,11 @@
-"""Contract loading and strict upstream normalization for Controlled TTS v1."""
+"""Load the frozen mapping contract and normalize final source turns.
+
+Normalization is source semantics, not backend execution planning.  It requires
+rate, arousal, affect, pause_before, pause_within, and hesitations; recognizes
+best-effort affect_fine, volume, flattened_affect, and events without claiming
+that a backend realizes them; and maps upstream ``User``/``Listener`` to logical
+``caller``/``counsellor`` while preserving the scenario speaker ID.
+"""
 
 from __future__ import annotations
 
@@ -184,6 +191,12 @@ def normalize_turn(
     *,
     dialogue_context: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
+    """Validate one final-schema source turn and return backend-neutral values.
+
+    When dialogue context is supplied, the returned ``speaker_id`` is the
+    upstream scenario identity.  Production ``spk_*`` assignment belongs to the
+    speaker sidecar and is introduced later during canonicalization.
+    """
     contract = _contract()
     turn = _mapping(turn, "turn")
     text = _required(turn, "text", "turn")

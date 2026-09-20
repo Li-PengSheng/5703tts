@@ -1,4 +1,10 @@
-"""Pure CosyVoice3 acoustic-control mappings."""
+"""Pure, provisional CosyVoice3 acoustic-control mappings.
+
+Rate maps to numeric speed (slow 0.8, normal 1.0, fast 1.2). Arousal and affect
+map to instruction text without any claim of perceptual fidelity or acoustic
+calibration. Pause ownership and lexical hesitation planning live outside this
+module; positive pause_within is unsupported and fails at preflight.
+"""
 
 from typing import Any
 
@@ -76,7 +82,7 @@ def validate_cosyvoice_controls(arousal: str | None, coarse_affect: str | None) 
 def build_cosyvoice_instruction(
     arousal: str | None, coarse_affect: str | None
 ) -> str | None:
-    """Build the current CosyVoice3 instruction from requested controls."""
+    """Build the provisional instruction from requested arousal/affect labels."""
     validate_cosyvoice_controls(arousal, coarse_affect)
     controls = [
         instruction
@@ -94,7 +100,7 @@ def build_cosyvoice_instruction(
 def resolve_cosyvoice_controls(
     rate: str, arousal: str | None, coarse_affect: str | None
 ) -> dict[str, Any]:
-    """Describe the backend controls used for synthesis, without fidelity claims."""
+    """Describe planned numeric/instruction controls without fidelity claims."""
     instruction = build_cosyvoice_instruction(arousal, coarse_affect)
     affect_resolution = {
         "requested": coarse_affect,

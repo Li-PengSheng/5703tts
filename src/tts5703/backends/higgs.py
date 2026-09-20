@@ -1,4 +1,14 @@
-"""Parent-side Higgs worker lifecycle, request validation, and rate processing."""
+"""Parent-side Higgs worker ownership, protocol checks, and rate processing.
+
+The main 5703tts process talks JSON Lines over worker stdin/stdout. The Higgs
+worker owns an SGLang-Omni process group and talks HTTP to ``/health`` and
+``/v1/audio/speech``. This isolation lets the worker start, reuse, terminate,
+and reap one loaded server while stdout remains reserved for protocol messages.
+
+Real Cloud validation is still required for the deployed SGLang/Higgs protocol,
+reference-conditioned behavior, and perceptual quality. Offline protocol tests
+do not establish speaker similarity or conditioning quality.
+"""
 
 import atexit
 import hashlib
@@ -38,7 +48,12 @@ def _resolve_path(root: Path, value: str) -> Path:
 
 
 def _drain_stderr(proc: subprocess.Popen[str]) -> deque[str]:
-    """Continuously drain worker/server diagnostics into a bounded tail."""
+    """Continuously drain worker/server diagnostics into a bounded tail.
+
+    A child writing to an undrained stderr pipe can block when the pipe fills,
+    deadlocking synthesis. The daemon thread keeps diagnostics flowing while
+    retaining only a bounded failure tail in the parent.
+    """
     tail: deque[str] = deque(maxlen=_STDERR_TAIL_LINES)
 
     def record(fragment: str) -> None:
@@ -161,7 +176,12 @@ def _get_worker(
     startup_timeout_seconds: float,
     inference_timeout_seconds: float,
 ) -> subprocess.Popen[str]:
-    """Start and exclusively cache one worker that owns one SGLang server."""
+    """Start/cache one worker keyed by all server lifecycle semantics.
+
+    Cache identity is executable, model directory, host, port, startup timeout,
+    and inference timeout. A different key shuts down the old owner before a
+    replacement starts; an equal key reuses the already-loaded server.
+    """
     global _worker_cache
     key: _WorkerKey = (
         server_executable,
@@ -236,7 +256,12 @@ atexit.register(_shutdown_worker)
 
 
 def _request(proc: subprocess.Popen[str], request: dict[str, Any]) -> dict[str, Any]:
-    """Send one request; retain the worker only after recoverable errors."""
+    """Send one JSON-lines request; retain only a demonstrably healthy worker.
+
+    A worker response with ``fatal=true`` or a broken/malformed protocol causes
+    termination and cache eviction. A non-fatal synthesis error leaves the
+    server available for a later request.
+    """
     if proc.poll() is not None:
         fallback = f"worker exited with code {proc.returncode}"
         _discard_worker(proc)
@@ -336,7 +361,15 @@ def _apply_rate(
     rate_plan: dict[str, Any],
     ffmpeg_bin: str,
 ) -> None:
-    """Publish raw audio atomically, optionally through frozen FFmpeg atempo."""
+    """Publish raw audio atomically, optionally through frozen FFmpeg atempo.
+
+    Higgs model ``speed`` remains 1.0. Semantic rate is postprocessed as slow
+    0.85, normal no transform, or fast 1.15. The worker first atomically writes
+    ``turn_NNN.higgs_raw.wav.part`` -> ``turn_NNN.higgs_raw.wav``. Normal rate
+    renames raw directly; slow/fast writes
+    ``turn_NNN.higgs_processed.part.wav`` and atomically replaces
+    ``turn_NNN.wav`` after validation.
+    """
     if not rate_plan["enabled"]:
         raw_path.replace(final_path)
         return
@@ -436,7 +469,7 @@ def _prepared_runtime(
 def preflight_prepared_turn(
     turn: HiggsPreparedTurn, config: dict[str, Any]
 ) -> tuple[dict[str, Any], Path, Path, str]:
-    """Fail closed on prepared execution inputs without starting the worker."""
+    """Fail closed on runtime, plan, and live reference integrity before startup."""
     runtime = _prepared_runtime(config)
     if not turn.model_input.strip():
         raise RuntimeError(f"Prepared turn {turn.ordinal} has empty model_input")
@@ -467,7 +500,12 @@ def preflight_prepared_turn(
 def synthesize_prepared_turn(
     turn: HiggsPreparedTurn, out_dir: Path, config: dict[str, Any]
 ) -> Path:
-    """Execute one cached final plan with one unchanged worker request."""
+    """Execute one cached plan using its selected approved Higgs reference.
+
+    The worker converts ``reference_wav`` to the HTTP conditioning shape
+    ``references: [{\"audio_path\": reference_wav}]``; this parent never
+    substitutes a CosyVoice prompt or remaps controls.
+    """
     higgs, server_executable, model_dir, ffmpeg_bin = preflight_prepared_turn(
         turn, config
     )

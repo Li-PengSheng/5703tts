@@ -1,4 +1,10 @@
-"""Stage 5: write the turn-label-audio alignment contract."""
+"""Build provenance linking source requests, frozen plans, and audio results.
+
+Per-turn metadata deliberately separates requested controls, planned backend
+controls, execution outcome, timing, and speaker/reference identity. This lets
+reviewers distinguish what the source asked for from what was planned and what
+the runtime actually produced without implying perceptual success.
+"""
 
 import json
 from copy import deepcopy
@@ -19,7 +25,11 @@ def build_metadata(
     turn_results: tuple[TurnRenderResult, ...] | list[TurnRenderResult],
     engine_info: dict[str, Any],
 ) -> dict[str, Any]:
-    """Build final metadata only from source, cached plans, and execution results."""
+    """Build metadata only from source, cached plans, and execution results.
+
+    Identity/count checks prevent provenance from being assembled across
+    different dialogues or turn orders.
+    """
     raw = input_record.raw
     if raw.get("dialogue_id") != dialogue.dialogue_id:
         raise ValueError("InputRecord and PreparedDialogue dialogue_id mismatch")

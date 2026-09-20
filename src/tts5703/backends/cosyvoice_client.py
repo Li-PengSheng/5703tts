@@ -1,4 +1,10 @@
-"""Reusable parent-side client for the isolated CosyVoice worker protocol."""
+"""Parent-side JSON-lines client for the isolated CosyVoice environment.
+
+The worker is launched with the CosyVoice-specific Python interpreter, loads
+the model once, and is reused across turns. Its stdout is protocol-only while a
+background thread drains stderr so third-party diagnostics cannot fill a pipe
+and block the child.
+"""
 
 from __future__ import annotations
 
@@ -28,6 +34,7 @@ def _resolve_path(root: Path, value: str) -> Path:
 
 
 def _drain_stderr(proc: subprocess.Popen[str]) -> deque[str]:
+    """Continuously consume diagnostics while retaining a bounded error tail."""
     tail: deque[str] = deque(maxlen=50)
 
     def drain() -> None:
@@ -66,7 +73,7 @@ def _get_worker(
     load_vllm: bool,
     fp16: bool,
 ) -> subprocess.Popen[str]:
-    """Start once and reuse the CosyVoice worker for this process."""
+    """Start once per runtime configuration and reuse the loaded model."""
     proc = subprocess.Popen(
         [python_bin, str(_WORKER_SCRIPT)],
         stdin=subprocess.PIPE,

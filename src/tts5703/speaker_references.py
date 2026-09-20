@@ -1,4 +1,14 @@
-"""Selected-backend final speaker reference parsing and live integrity checks."""
+"""Parse only the selected backend's speaker-reference contract.
+
+Higgs and CosyVoice references are intentionally distinct: Higgs consumes
+``higgs_reference.reference_wav``; CosyVoice consumes
+``cosyvoice_reference.prompt_wav`` plus ``prompt_text``.  A CosyVoice primary
+reference is not automatically an approved Higgs reference.
+
+The declared path is retained for provenance and semantic identity.  The
+resolved path is separately used for runtime access.  With ``verify_file=True``
+the current file bytes must match the sidecar SHA before production use.
+"""
 
 from __future__ import annotations
 
@@ -14,6 +24,8 @@ class FinalReferenceError(ValueError):
 
 @dataclass(frozen=True)
 class SelectedReference:
+    """Reference for the selected backend only, with provenance and live path."""
+
     engine: str
     declared_path: str
     resolved_path: Path | None
@@ -25,6 +37,7 @@ class SelectedReference:
         return "reference_wav" if self.engine == "higgs" else "prompt_wav"
 
     def identity(self) -> dict[str, str]:
+        """Return persisted semantic fields, excluding the machine-local path."""
         identity = {self.path_field: self.declared_path, "sha256": self.sha256}
         if self.prompt_text is not None:
             identity["prompt_text"] = self.prompt_text
@@ -54,7 +67,11 @@ def selected_reference(
     project_root: Path | None = None,
     verify_file: bool = False,
 ) -> SelectedReference:
-    """Parse only the selected backend reference and optionally verify live bytes."""
+    """Parse the selected contract and optionally verify its current bytes.
+
+    Unselected backend reference fields are deliberately ignored, so their
+    absence or changes cannot affect a run using the other backend.
+    """
     if engine == "higgs":
         reference_key, path_field = "higgs_reference", "reference_wav"
     elif engine == "cosyvoice":

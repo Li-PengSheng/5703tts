@@ -1,4 +1,14 @@
-"""Production batch orchestration, manifest construction, and resume."""
+"""Authoritative manifest-v2 orchestration, secure cleanup, and resume.
+
+Manifest v2 is the batch state authority. Resume requires both a previously
+successful semantic fingerprint and live artifact integrity; file existence is
+never enough. A rerender cleans only pipeline-owned direct-child artifacts
+before invoking ``run_dialogue`` so old and new output cannot be mixed.
+
+The manifest is atomically written once at batch completion, not checkpointed
+after every dialogue. An interrupted batch can therefore leave artifacts that
+the next run must treat through normal resume/rerender rules.
+"""
 
 import argparse
 import datetime
@@ -38,8 +48,10 @@ _MANAGED_TURN_ARTIFACT = re.compile(
 )
 
 
+# A. Manifest loading/writing. The versioned result is authoritative state, and
+# malformed prior state fails loudly under --resume instead of guessing.
 def _write_batch_result(result: dict[str, Any], output_root: Path) -> Path:
-    """Atomically write the authoritative result for this output root."""
+    """Atomically write the authoritative end-of-batch result for this root."""
     path = output_root / "batch_result.json"
     temporary_path = output_root / ".batch_result.json.tmp"
     output_root.mkdir(parents=True, exist_ok=True)
@@ -51,6 +63,7 @@ def _write_batch_result(result: dict[str, Any], output_root: Path) -> Path:
 
 
 def _load_previous_batch_result(path: Path) -> dict[str, Any] | None:
+    """Load only a structurally valid manifest-v2 resume authority."""
     if not path.exists():
         return None
     try:
@@ -72,8 +85,16 @@ def _load_previous_batch_result(path: Path) -> dict[str, Any] | None:
     return manifest
 
 
+# B. Path security. Resolve the configured root, but never permit a dialogue ID
+# to select anything except one direct, non-symlink child below that root.
 def _safe_dialogue_output_path(output_root: Path, dialogue_id: str) -> Path:
-    """Return one direct child output path or reject unsafe dialogue IDs."""
+    """Return one non-aliased direct child or reject an unsafe dialogue ID.
+
+    Slash/backslash traversal, absolute paths, ``.``/``..``, and per-dialogue
+    directory symlinks are rejected. The output root itself may be a symlink:
+    it is resolved first, then the candidate must still be exactly one child so
+    cleanup cannot alias another dialogue or escape the root.
+    """
     if (
         not isinstance(dialogue_id, str)
         or not dialogue_id.strip()
@@ -95,7 +116,10 @@ def _safe_dialogue_output_path(output_root: Path, dialogue_id: str) -> Path:
     return candidate
 
 
+# C. Managed-artifact ownership. Names are an allowlist; unrelated operator
+# files and directories are outside pipeline cleanup authority.
 def _is_managed_dialogue_artifact(name: str, dialogue_id: str) -> bool:
+    """Identify only direct-child filenames owned by this pipeline."""
     if name in {
         f"{dialogue_id}_clean.wav",
         f"{dialogue_id}_telephone.wav",
@@ -106,7 +130,13 @@ def _is_managed_dialogue_artifact(name: str, dialogue_id: str) -> bool:
 
 
 def _cleanup_managed_dialogue_artifacts(out_dir: Path, dialogue_id: str) -> None:
-    """Remove only pipeline-owned direct-child files before a rerender."""
+    """Remove only pipeline-owned direct-child files before a rerender.
+
+    Cleanup is intentionally non-recursive: there is no rmtree and no broad
+    ``*.wav`` deletion. Unmanaged files and nested directories survive. A
+    managed-name directory fails closed. A managed child symlink is unlinked as
+    an entry and is never followed to its target.
+    """
     if not out_dir.exists():
         return
     for path in out_dir.iterdir():
@@ -118,6 +148,8 @@ def _cleanup_managed_dialogue_artifacts(out_dir: Path, dialogue_id: str) -> None
         raise RuntimeError(f"Managed artifact path is not a file: {path}")
 
 
+# D. Strict sidecar loading. Duplicate keys or dialogue IDs would make speaker
+# assignment ambiguous, so they are rejected before any record is rendered.
 class _DuplicateJsonKeyError(ValueError):
     pass
 
@@ -136,6 +168,7 @@ def _reject_json_constant(value: str) -> None:
 
 
 def _load_sidecar(path: Path) -> tuple[dict[str, Any], dict[str, dict[str, Any]]]:
+    """Strictly load/index the external sidecar without duplicate JSON keys."""
     try:
         sidecar = json.loads(
             path.read_text(encoding="utf-8"),
@@ -164,6 +197,7 @@ def _load_sidecar(path: Path) -> tuple[dict[str, Any], dict[str, dict[str, Any]]
 def _index_previous_results(
     manifest: dict[str, Any] | None,
 ) -> dict[str, dict[str, Any]]:
+    """Index only unambiguous previous result entries by dialogue ID."""
     indexed: dict[str, dict[str, Any]] = {}
     invalid: set[str] = set()
     for entry in manifest.get("results", []) if manifest else []:
@@ -182,6 +216,9 @@ def _index_previous_results(
     return indexed
 
 
+# F. Resume validation. Semantic equality is established by the manifest
+# fingerprint; this layer independently proves that persisted artifacts still
+# represent that source and remain readable.
 def _resume_artifacts_valid(
     output_root: Path,
     input_record: InputRecord,
@@ -189,7 +226,14 @@ def _resume_artifacts_valid(
     engine: str,
     current_backend_identity: dict[str, Any],
 ) -> bool:
-    """Validate persisted output structure before trusting a resume candidate."""
+    """Validate live artifacts before trusting a semantic resume candidate.
+
+    Checks cover metadata parsing; dialogue/source SHA; selected backend and
+    implementation identity; turn identity and order; requested labels and
+    controls; timing monotonicity and speech duration; expected filenames; and
+    readable, non-empty turn, clean, and telephone WAVs. This is artifact
+    integrity, not perceptual evaluation.
+    """
     dialogue_id = input_record.dialogue_id
     out_dir = _safe_dialogue_output_path(output_root, dialogue_id)
     expected_clean = f"{dialogue_id}_clean.wav"
@@ -292,6 +336,12 @@ def _entry_is_resumable(
     current_backend_identity: dict[str, Any],
     project_root: Path,
 ) -> bool:
+    """Require prior semantic success plus artifacts and live reference bytes.
+
+    The manifest fingerprint gates semantic identity. Artifact validation then
+    detects stale/corrupt metadata or WAVs, and selected-reference verification
+    detects bytes that no longer match the sidecar SHA.
+    """
     dialogue_id = input_record.dialogue_id
     candidate = bool(
         previous
@@ -354,7 +404,14 @@ async def run_batch(
     batch_started: float,
     logger: logging.Logger,
 ) -> int:
-    """Orchestrate production records without preparing controls before render."""
+    """Orchestrate per-record decisions and write the final manifest-v2 state.
+
+    Conceptual order is: validate final records; apply known-issue exclusions;
+    load the strict sidecar; calculate selected-backend fingerprints; load prior
+    state when requested; then choose input_error, excluded, resumed, rendered,
+    or render_failed for each source result. Controls are prepared only inside
+    ``run_dialogue`` for records actually rendered.
+    """
     engine = config.get("tts", {}).get("engine")
     if engine not in VALID_ENGINES:
         raise RuntimeError(
@@ -376,6 +433,8 @@ async def run_batch(
         "policy_sha256": policy.policy_sha256 if policy else None,
     }
 
+    # Final-contract validation is not a legacy adapter. Invalid parsed records
+    # remain record-level failures in the final manifest.
     invalid_records: dict[int, Exception] = {}
     valid_records: list[InputRecord] = []
     for record in records:
@@ -390,6 +449,7 @@ async def run_batch(
         else:
             valid_records.append(record)
 
+    # Known-issue exclusion precedes sidecar/reference requirements.
     exclusion_by_id = {
         record.dialogue_id: policy.exclusion_for(record.dialogue_id) if policy else None
         for record in valid_records
@@ -418,6 +478,8 @@ async def run_batch(
 
     registry_sha256 = sidecar.get("registry_sha256")
     active_speakers_sha256 = sidecar.get("active_speakers_sha256")
+    # E. Semantic fingerprints contain render-affecting meaning, not source or
+    # sidecar file locations and not unselected-backend configuration.
     fingerprints: dict[str, str | None] = {}
     for record in eligible:
         try:
@@ -499,6 +561,8 @@ async def run_batch(
         fingerprint = fingerprints[item.dialogue_id]
         expected_out_dir = output_paths[item.dialogue_id]
         previous = previous_results.get(item.dialogue_id)
+        # H. Each record receives one action/status. A valid resume performs no
+        # cleanup. Every other eligible record takes the rerender path.
         if (
             fingerprint is not None
             and args.resume
@@ -515,6 +579,8 @@ async def run_batch(
         ):
             action, status, error = _RESUMED, "success", None
         else:
+            # G. Rerender cleanup must complete before run_dialogue; otherwise
+            # rendering would risk a mixed old/new artifact set.
             try:
                 _cleanup_managed_dialogue_artifacts(expected_out_dir, item.dialogue_id)
             except (OSError, RuntimeError) as cleanup_error:
@@ -563,6 +629,8 @@ async def run_batch(
     failed = sum(item["status"] == "failed" for item in results)
     input_failures = sum(item["action"] == _INPUT_ERROR for item in results)
     mapping = batch_backend_identity["control_mapping"]
+    # I. The single final write summarizes all per-record actions. This is not
+    # currently a per-dialogue checkpoint journal.
     batch_result = {
         "manifest_version": BATCH_MANIFEST_VERSION,
         "status": status,

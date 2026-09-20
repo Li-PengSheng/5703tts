@@ -1,4 +1,10 @@
-"""Orchestrate stages 1–6 for one dialogue without breaking batch runs."""
+"""Single-dialogue production orchestration and failure containment.
+
+The batch owns record selection, resume, and stale cleanup. This module owns one
+attempt from validated ``InputRecord`` through prepared execution, clean and
+telephone audio, provenance metadata, and structural QC. Exceptions become a
+``PipelineResult`` failure so one dialogue does not crash every other record.
+"""
 
 import logging
 import time
@@ -21,6 +27,8 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class PipelineResult:
+    """Batch-visible success or contained failure for one dialogue attempt."""
+
     dialogue_id: str | None
     status: str
     error: str | None = None
@@ -37,7 +45,18 @@ async def run_dialogue(
     *,
     project_root: Path,
 ) -> PipelineResult:
-    """Render one production InputRecord through the canonical prepared path."""
+    """Run the ordered production path for exactly one dialogue.
+
+    Order is part of the boundary: validate; prepare; preflight every turn;
+    create the output directory; synthesize speech-only turn WAVs; assemble and
+    write clean audio; derive telephone audio; describe the backend; build and
+    write metadata; run structural QC; return ``PipelineResult``.
+
+    Output-directory creation follows preflight so an invalid late turn or
+    reference cannot leave a newly-created dialogue directory before any
+    synthesis request. Exception conversion below preserves batch progress; it
+    does not alter the underlying error or QC semantics.
+    """
     dialogue_id = input_record.dialogue_id
     started = time.perf_counter()
     try:
@@ -45,7 +64,8 @@ async def run_dialogue(
         prepared = prepare_dialogue(
             input_record, sidecar, project_root=project_root, config=config
         )
-        # This gate deliberately precedes even output-directory creation.
+        # Validate the complete execution plan before creating artifacts or
+        # spending GPU work on a prefix of an invalid dialogue.
         preflight_prepared_dialogue(prepared, config)
 
         out_dir = output_root / dialogue_id

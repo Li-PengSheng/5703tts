@@ -1,4 +1,9 @@
-"""Pure, CPU-only Controlled TTS v1 mappings for Higgs production synthesis."""
+"""Pinned identity for the pure, CPU-only Higgs control contract.
+
+The contract hash and source provenance make the frozen planner mapping
+reviewable independently of the live model. They do not prove reference
+conditioning, perceptual control quality, or Cloud runtime compatibility.
+"""
 
 from __future__ import annotations
 
@@ -47,5 +52,5 @@ def _contract() -> dict[str, Any]:
 
 
 def load_higgs_control_contract() -> dict[str, Any]:
-    """Return an isolated copy of the installed frozen mapping contract."""
+    """Verify the installed contract bytes, then return an isolated copy."""
     return deepcopy(_contract())

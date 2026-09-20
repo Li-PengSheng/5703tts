@@ -1,4 +1,11 @@
-"""Command-line entry point for the production rendering pipeline."""
+"""Production CLI: parse, load, discover, de-duplicate, and dispatch.
+
+The CLI selects one backend for the entire run and never falls back. Directory
+input discovery intentionally considers only direct-child ``.json``/``.jsonl``
+containers; each selected container is then read by the strict record loader.
+Duplicate dialogue IDs across all parsed containers are rejected before batch
+dispatch.
+"""
 
 import argparse
 import asyncio
@@ -37,7 +44,7 @@ def _sha256(path: Path) -> str:
 
 
 def _discover_cli_containers(input_path: Path) -> list[Path]:
-    """Discover the final-capable top-level JSON/JSONL candidate set."""
+    """Discover only direct-child final JSON/JSONL containers in stable order."""
     if input_path.is_file():
         if input_path.suffix.lower() not in {".json", ".jsonl"}:
             raise RuntimeError(f"Unsupported input file type: {input_path}")
@@ -84,7 +91,7 @@ def _require_unique_record_ids(records: list[InputRecord]) -> None:
 
 
 async def main() -> int:
-    """Run the one production JSON/JSONL pipeline."""
+    """Parse arguments and dispatch one validated, explicitly selected backend."""
     parser = argparse.ArgumentParser(
         description="Render final upstream dialogue JSON/JSONL."
     )

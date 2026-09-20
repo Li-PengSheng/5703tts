@@ -1,4 +1,14 @@
-"""Deterministic JSON and JSONL input-record loading."""
+"""Strict JSON/JSONL loading and stable source-record identity.
+
+``InputRecord`` is the rendering pipeline's immutable-ish source snapshot: the
+constructor deep-copies the parsed object, and ``raw`` returns another copy.
+Its SHA-256 covers canonical JSON content rather than the container path, line
+number, or original formatting.  The loader rejects duplicate keys, NaN,
+Infinity, non-object records, and blank dialogue IDs at this trust boundary.
+
+JSONL errors are values, not stream-ending exceptions.  A malformed row becomes
+an ``InputRecordFailure`` so later rows can still enter the batch manifest.
+"""
 
 from __future__ import annotations
 
@@ -22,6 +32,12 @@ class _DuplicateKeyError(ValueError):
 
 @dataclass(frozen=True, init=False)
 class InputRecord:
+    """Source snapshot whose canonical content hash anchors render identity.
+
+    ``container_path`` and ``line_number`` are provenance only; moving or
+    reformatting equivalent JSON does not change ``record_sha256``.
+    """
+
     container_path: Path
     source_format: SourceFormat
     line_number: int | None
@@ -48,11 +64,14 @@ class InputRecord:
 
     @property
     def raw(self) -> dict[str, Any]:
+        """Return a defensive copy so consumers cannot alter source identity."""
         return deepcopy(self._raw)
 
 
 @dataclass(frozen=True)
 class InputRecordFailure:
+    """One container/row failure retained for batch-visible reporting."""
+
     container_path: Path
     source_format: SourceFormat
     line_number: int | None
@@ -60,6 +79,7 @@ class InputRecordFailure:
 
 
 def canonical_json_sha256(value: Any) -> str:
+    """Hash semantic JSON content with deterministic key/order formatting."""
     encoded = json.dumps(
         value,
         sort_keys=True,
@@ -84,7 +104,11 @@ def _reject_non_json_constant(value: str) -> None:
 
 
 def discover_input_paths(input_path: Path) -> list[Path]:
-    """Return supported containers in stable path order."""
+    """Return supported containers recursively in stable path order.
+
+    The production CLI deliberately supplies its own direct-child container
+    list; this lower-level helper remains recursive when called on a directory.
+    """
     if input_path.is_file():
         if input_path.suffix.lower() not in {".json", ".jsonl"}:
             raise InputRecordError(f"Unsupported input file type: {input_path}")
@@ -148,7 +172,12 @@ def _parse_record(
 def read_input_records(
     input_path: Path,
 ) -> list[InputRecord | InputRecordFailure]:
-    """Read every record, retaining per-record failures so later lines survive."""
+    """Read every record, retaining per-record failures so later lines survive.
+
+    JSON files contribute one record. JSONL files contribute one result per
+    nonblank row, which isolates malformed data instead of shifting or dropping
+    the rows that follow it.
+    """
     results: list[InputRecord | InputRecordFailure] = []
     for path in discover_input_paths(input_path):
         source_format: SourceFormat = (

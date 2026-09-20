@@ -2,7 +2,8 @@
 
 This script is launched with CosyVoice's Python interpreter, not the main
 project interpreter. Standard output is reserved exclusively for protocol
-messages; third-party output is redirected to standard error.
+messages; third-party output is redirected to standard error. The model is
+loaded once and reused until stdin closes or the process is terminated.
 """
 
 from __future__ import annotations
@@ -78,6 +79,11 @@ def _initialise(init: dict[str, Any]):
 
 
 def _synthesise(model: Any, request: dict[str, Any]) -> dict[str, Any]:
+    """Execute one frozen request with production text preprocessing disabled.
+
+    Both zero-shot and instruct2 calls explicitly set ``text_frontend=False``;
+    this is part of the validated CV3 execution baseline, not a caller default.
+    """
     text = _required_string(request, "text")
     prompt_wav = Path(_required_string(request, "prompt_wav")).resolve()
     output_path = Path(_required_string(request, "output_path")).resolve()

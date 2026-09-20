@@ -1,4 +1,11 @@
-"""Backend-neutral canonical and prepared rendering data models."""
+"""Ownership boundary between source semantics and executable backend plans.
+
+Canonical objects own source/render semantics and production speaker assignment,
+but no backend-native execution fields. Prepared objects own the exact cached
+backend execution plan. Construction validates that plan and deep-copies it;
+accessors return defensive copies so downstream code cannot silently diverge
+from the plan recorded in metadata, checked by QC, and represented in identity.
+"""
 
 from __future__ import annotations
 
@@ -12,7 +19,12 @@ from .plan_validation import validate_cosyvoice_plan, validate_higgs_plan
 
 @dataclass(frozen=True)
 class CanonicalTurn:
-    """Source semantics plus production speaker assignment, without model fields."""
+    """One source turn normalized for rendering, without backend-native fields.
+
+    ``upstream_role`` (User/Listener), ``logical_role``
+    (caller/counsellor), upstream scenario speaker ID, and production
+    ``render_speaker_id`` are intentionally separate identities.
+    """
 
     ordinal: int
     source_turn_id: int | str
@@ -35,6 +47,8 @@ class CanonicalTurn:
 
 @dataclass(frozen=True)
 class CanonicalDialogue:
+    """Backend-neutral dialogue plus source and sidecar provenance hashes."""
+
     dialogue_id: str
     record_sha256: str
     turns: tuple[CanonicalTurn, ...]
@@ -45,7 +59,12 @@ class CanonicalDialogue:
 
 @dataclass(frozen=True, init=False)
 class HiggsPreparedTurn:
-    """Cached frozen Higgs execution plan."""
+    """Validated, cached Higgs execution plan for one canonical turn.
+
+    ``__init__`` is an invariant boundary: ``validate_higgs_plan()`` must pass
+    before downstream code may trust model_input, one-call synthesis, native
+    pause counts, assembly timing, rate_plan, and source/speaker identity.
+    """
 
     ordinal: int
     source_turn_id: int | str
@@ -87,6 +106,7 @@ class HiggsPreparedTurn:
 
     @property
     def plan(self) -> dict[str, Any]:
+        """Return a copy; callers must not mutate the frozen execution plan."""
         return deepcopy(self._plan)
 
     @property
@@ -95,6 +115,7 @@ class HiggsPreparedTurn:
 
     @property
     def model_input(self) -> str:
+        """Exact cached text/tokens sent to Higgs; execution never remaps it."""
         return self._plan["higgs"]["model_input"]
 
     @property
@@ -111,14 +132,17 @@ class HiggsPreparedTurn:
 
     @property
     def rate_plan(self) -> dict[str, Any]:
+        """Frozen FFmpeg atempo plan applied after Higgs synthesis."""
         return deepcopy(self._plan["postprocess"]["atempo"])
 
     @property
     def pause_before_ms(self) -> int:
+        """Assembly-owned leading silence; it is not part of the turn WAV."""
         return self._plan["postprocess"]["pause_before_ms"]
 
     @property
     def approved_reference(self) -> dict[str, Any]:
+        """Selected approved Higgs reference snapshot for metadata/QC."""
         return {
             "render_speaker_id": self.render_speaker_id,
             "reference_wav": self.reference_wav,
@@ -129,7 +153,12 @@ class HiggsPreparedTurn:
 
 @dataclass(frozen=True, init=False)
 class CosyVoicePreparedTurn:
-    """Cached CosyVoice3 execution plan."""
+    """Validated, cached CosyVoice3 execution plan for one canonical turn.
+
+    ``__init__`` runs ``validate_cosyvoice_plan()`` before publishing the
+    object.  The plan fixes prompt identity, lexical hesitation text, numeric
+    speed, inference mode, provisional instruction, and assembly timing.
+    """
 
     ordinal: int
     source_turn_id: int | str
@@ -167,6 +196,7 @@ class CosyVoicePreparedTurn:
 
     @property
     def plan(self) -> dict[str, Any]:
+        """Return a defensive copy of the frozen backend execution plan."""
         return deepcopy(self._plan)
 
     @property
@@ -175,6 +205,7 @@ class CosyVoicePreparedTurn:
 
     @property
     def pause_before_ms(self) -> int:
+        """Assembly-owned leading silence; it is not synthesized by CosyVoice."""
         return self._plan["postprocess"]["pause_before_ms"]
 
     @property
@@ -183,6 +214,7 @@ class CosyVoicePreparedTurn:
 
     @property
     def approved_reference(self) -> dict[str, Any]:
+        """Selected CosyVoice prompt WAV/text snapshot for metadata and QC."""
         return {
             "render_speaker_id": self.render_speaker_id,
             "prompt_wav": self.prompt_wav,
@@ -192,6 +224,7 @@ class CosyVoicePreparedTurn:
         }
 
     def worker_request(self, output_path: Path) -> dict[str, Any]:
+        """Materialize the worker request solely from the validated cached plan."""
         cosy = self._plan["cosyvoice"]
         request = {
             "text": cosy["text"],
@@ -208,6 +241,8 @@ class CosyVoicePreparedTurn:
 
 @dataclass(frozen=True)
 class PreparedDialogue:
+    """One backend's complete immutable-ish execution plan for a dialogue."""
+
     dialogue_id: str
     record_sha256: str
     turns: tuple[HiggsPreparedTurn | CosyVoicePreparedTurn, ...]
@@ -219,6 +254,8 @@ class PreparedDialogue:
 
 @dataclass(frozen=True)
 class TurnRenderResult:
+    """Execution outcome linking a prepared turn to its speech-only WAV."""
+
     ordinal: int
     source_turn_id: int | str
     output_path: Path

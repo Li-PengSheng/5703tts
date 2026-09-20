@@ -1,4 +1,10 @@
-"""Stage 6: basic output completeness checks."""
+"""Structural and control-integrity checks for produced artifacts.
+
+QC checks identity, ordering, cached-plan agreement, reference provenance,
+timings, execution status, and WAV readability. It does not establish emotion
+accuracy, speaker similarity, naturalness, intelligibility, or clinical
+validity; those require separate human/perceptual evidence.
+"""
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -13,6 +19,8 @@ from ..render_models import PreparedDialogue, TurnRenderResult
 
 @dataclass
 class QCResult:
+    """Named structural checks and issues for one rendered dialogue."""
+
     dialogue_id: str
     passed: bool
     checks: dict[str, bool] = field(default_factory=dict)
@@ -28,7 +36,7 @@ def run_qc(
     telephone_path: Path,
     metadata: dict[str, Any],
 ) -> QCResult:
-    """Validate final structural/control integrity; no acoustic quality is judged."""
+    """Validate structural/control integrity; no perceptual quality is judged."""
     checks: dict[str, bool] = {"scope_structural_control_integrity_only": True}
     issues: list[str] = []
 

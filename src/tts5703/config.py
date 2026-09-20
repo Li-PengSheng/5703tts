@@ -1,4 +1,10 @@
-"""Configuration loading for the rendering pipeline."""
+"""Load one explicit backend selection and shared audio configuration.
+
+``tts.engine`` selects Higgs or CosyVoice for the complete run. Validation does
+not implement automatic fallback or rewrite defaults: ``config/config.yaml``
+selects production-primary Higgs, while ``config/config_cosyvoice.yaml`` is the
+explicit backup/secondary configuration.
+"""
 
 from pathlib import Path
 from typing import Any
@@ -13,7 +19,7 @@ class ConfigError(Exception):
 
 
 def get_engine(config: dict[str, Any]) -> str:
-    """Return the explicitly selected supported engine."""
+    """Return the one explicitly selected engine; never infer a fallback."""
     try:
         engine = config["tts"]["engine"]
     except (KeyError, TypeError) as error:
@@ -26,7 +32,7 @@ def get_engine(config: dict[str, Any]) -> str:
 
 
 def load_config(config_path: Path) -> dict[str, Any]:
-    """Load and validate a YAML pipeline configuration file."""
+    """Load YAML and validate only the selected production runtime contract."""
     config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
     if not isinstance(config, dict):
         raise ConfigError(

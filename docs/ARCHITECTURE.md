@@ -1,97 +1,131 @@
 # Production architecture
 
-## One input, one pipeline
+This is the authoritative design summary. See the [detailed Chinese pipeline guide](PIPELINE_DETAILED_GUIDE_CN.md) for implementation-level handoff detail and [data contracts](DATA_CONTRACTS.md) for persisted/internal shapes.
 
-`5703tts` accepts only the final nested JSON/JSONL contract supplied by
-`upstream/Controlled-TTS-v1`.
+## Purpose and backend policy
+
+`5703tts` accepts only final nested JSON/JSONL from `upstream/Controlled-TTS-v1` and produces reviewable dialogue audio plus provenance, QC, and batch state.
+
+- Higgs is the production-primary backend.
+- CosyVoice3 is an explicitly selected backup/secondary backend.
+- `tts.engine` selects one backend for the complete run.
+- There is no automatic fallback.
+- Final source records are never rewritten with production speakers or plans.
+
+## End-to-end model
 
 ```text
-JSON / JSONL containers
-  -> InputRecord
-  -> validate_dialogue
-  -> exclusion decision
-  -> speaker sidecar lookup
+final JSON / JSONL
+  -> InputRecord (canonical source SHA)
+  -> strict final contract validation
+  -> known-issue exclusion
+  -> speaker sidecar
   -> CanonicalDialogue / CanonicalTurn
-  -> prepare selected backend plan
-       -> HiggsPreparedTurn
-       OR CosyVoicePreparedTurn
-  -> TurnRenderResult
-  -> common prepared assembly
-  -> clean + telephone WAV
-  -> final metadata + structural QC
-  -> manifest v2 / semantic resume
+  -> backend-specific preparation
+  -> PreparedDialogue / PreparedTurn
+  -> whole-dialogue preflight
+  -> sequential backend synthesis
+  -> TurnRenderResult + speech-only turn WAVs
+  -> assembly + speech timestamps
+  -> clean WAV
+  -> telephone WAV
+  -> provenance metadata
+  -> structural/control-integrity QC
+  -> batch manifest v2
+  -> semantic resume + artifact-integrity validation
 ```
 
-Every parsed record is validated directly against this single upstream contract.
+## Source, canonical, prepared, and result ownership
 
-## Backend policy
+`InputRecord` owns a defensive source snapshot. `record_sha256` hashes canonical JSON content rather than path, line number, or formatting. Strict parsing rejects duplicate keys, NaN/Infinity, non-object records, and blank IDs; a malformed JSONL row becomes a record-level failure so later rows survive.
 
-- **Higgs:** primary production backend.
-- **CosyVoice3:** explicit backup/secondary backend.
-`tts.engine` selects Higgs or CosyVoice for the complete batch. A failure never causes
-automatic backend switching. Config validation and rendering require only the selected
-backend block.
+`CanonicalTurn` owns backend-neutral source/render semantics: text, labels, upstream role, logical role, scenario speaker ID, production render speaker ID, raw requests, and normalized controls. It owns no model-native execution field.
 
-## Canonical and backend boundaries
+Prepared turns own the complete exact backend execution plan. Constructors validate and deep-copy plans; plan access is defensive. Execution, metadata, and QC consume that cached plan and do not remap controls.
 
-`CanonicalTurn` owns source semantics: ordinal, source turn ID, text, labels, upstream
-and logical roles, scenario and render speaker IDs, requested controls, normalized
-rate/arousal/affect, pauses, and hesitations. It contains no model input, native model
-token, instruction, or speed argument.
+`TurnRenderResult` owns only the link from prepared turn identity to its speech-only WAV and execution statuses. Assembly owns dialogue timing.
 
-Backend prepared turns cache the exact execution plan. Higgs continues to use the
-frozen `map_turn_to_higgs()` implementation. CosyVoice caches text, prompt identity,
-speed, mode, instruction, capability state, and realization status. Execution,
-metadata, and QC consume cached plans and do not remap controls.
+## Speaker and reference boundary
 
-CosyVoice `pause_within > 0` is explicitly unsupported and fails preflight before an
-output directory is created. Pause-before remains assembly-owned `0/500/900 ms`, and
-turn WAV files contain speech only.
+Upstream `User`/`Listener`, logical `caller`/`counsellor`, upstream scenario speaker IDs, and production `spk_*` render IDs are distinct.
 
-## Speaker contract
+The external sidecar binds source identities to render identities and selected references. Higgs requires `higgs_reference.reference_wav`; CosyVoice requires `cosyvoice_reference.prompt_wav` and `prompt_text`. Declared paths remain provenance; resolved paths serve runtime access; live SHA verification protects current bytes. A CosyVoice primary reference is not automatically an approved Higgs reference.
 
-Final source records are immutable. The production speaker sidecar maps each logical
-role to a production `spk_*` identity and target-specific references:
+## Backend ownership
 
-```json
-{
-  "caller": {
-    "upstream_role": "User",
-    "upstream_scenario_speaker_id": "C001",
-    "render_speaker_id": "spk_001",
-    "higgs_reference": {
-      "reference_wav": "refs/higgs.wav",
-      "sha256": "..."
-    },
-    "cosyvoice_reference": {
-      "prompt_wav": "refs/cosy.wav",
-      "prompt_text": "exact transcript",
-      "sha256": "..."
-    }
-  }
-}
-```
+### Higgs
 
-The materializer target is explicit: `higgs`, `cosyvoice`, or `both`. Higgs references
-must be separately approved; CosyVoice uses the registry primary reference. Neither is
-substituted for the other.
+The main process communicates with a standard-library worker over JSON Lines. The worker owns and reaps one SGLang-Omni process group, routes server diagnostics through stderr, polls `GET /health`, and sends `POST /v1/audio/speech`. The parent continuously drains stderr and reuses the loaded server across turns. Reference conditioning is sent as `references: [{"audio_path": ...}]`.
 
-## Batch, exclusion, and resume
+`FROZEN_GENERATION_FIELDS` includes model speed `1.0`. Semantic rate is postprocessing: slow FFmpeg `atempo=0.85`, normal no transform, fast `atempo=1.15`. Real Cloud validation is still required for actual runtime compatibility, reference conditioning, and perceptual quality.
 
-Malformed JSONL rows become `input_error` entries while later valid rows continue.
-Duplicate parsed dialogue IDs and unsafe output IDs fail before rendering. Exclusion is
-data-driven and happens before speaker/preparation requirements.
+### CosyVoice3
 
-Manifest v2 is the only production manifest. Per-dialogue fingerprints use canonical
-record content, shared output settings, selected backend semantic/runtime identity, and
-selected role/reference identity. Whole-file config formatting, input line location,
-and unselected backend state are not semantic inputs. Before resume, the selected
-reference WAVs are resolved with production path rules and their live SHA-256 values
-are checked.
+The parent launches a worker with the CosyVoice-specific Python environment. The model loads once and is reused. Both zero-shot and instruct2 calls freeze `text_frontend=False`. Rate maps to `0.8/1.0/1.2`; affect/arousal instruction mapping is provisional; hesitation is lexical; pause-before is assembly-owned; positive pause-within is unsupported and fails closed.
+
+## Preflight and orchestration boundary
+
+`run_dialogue()` validates, prepares, then preflights every turn before creating the output directory or issuing the first synthesis request. This prevents a later invalid turn/reference from being discovered after earlier GPU work. Backend synthesis functions retain local defensive checks, but do not replace the whole-dialogue gate.
+
+After preflight, turns render sequentially; assembly produces clean audio and timestamps; telephone audio is derived; metadata is written; structural QC runs; exceptions become batch-visible `PipelineResult` failures.
+
+## Audio ownership
+
+Turn WAVs contain speech only. Assembly inserts `pause_before` before timestamp start, validates exact ordinal/source-result alignment, and applies a small edge fade without crossfade. Clean audio is the assembled dialogue.
+
+Telephone audio is only mono conversion, resampling, high-pass/low-pass filtering, and level reduction. It is not a codec, packet-loss/noise/room model, or complete PSTN simulation.
+
+## Trust boundaries
+
+1. Strict JSON parsing prevents ambiguous external objects and non-standard numbers.
+2. Final-contract validation accepts one schema and never adapts legacy shapes.
+3. Sidecar source SHA and speaker alignment prevent cross-record/materialization drift.
+4. Selected references separate declared identity from resolved access and live bytes.
+5. Prepared constructors defend source/role/control/backend-plan invariants.
+6. Whole-dialogue preflight defends the first synthesis boundary.
+7. Worker stdout is protocol-only; stderr is continuously consumed.
+8. Dialogue output paths must be direct children and may not be per-dialogue symlinks.
+9. Cleanup uses a managed-name allowlist and never follows metadata-provided paths.
+
+## Semantic identity
+
+The per-dialogue render fingerprint contains source dialogue ID and canonical record SHA, shared render-affecting configuration, selected backend static runtime/control identity, selected role/render-speaker/reference materialization, and exclusion decision.
+
+It intentionally excludes input file location, JSON formatting, and unselected backend configuration/reference state. Static backend identity is used because fingerprinting happens before dialogue preparation. Metadata instead uses dialogue-aware backend identity with the exact references from the real prepared dialogue; fake dialogue objects are not used.
+
+Configured runtime/model paths and control mapping are recorded, but the full checkpoint and runtime environment are not cryptographically hashed. This is a current reproducibility limitation.
+
+## Resume boundary
+
+Manifest v2 is authoritative batch state. Resume requires both a previous successful result with the same semantic fingerprint and live artifact/reference integrity.
+
+Artifact checks cover metadata parsing, source/dialogue and backend/implementation identity, turn identity/order, labels/requested controls, timing sanity, expected filenames, readable non-empty turn/clean/telephone WAVs, and live selected-reference SHA. File existence alone is insufficient.
+
+## Output ownership and rerender
+
+A valid resume performs no cleanup. Every rerender first removes only pipeline-owned direct-child names, then calls `run_dialogue`. Cleanup failure prevents rendering into a mixed old/new set.
+
+There is no recursive deletion, `rmtree`, or broad `*.wav` deletion. Unmanaged files and nested directories survive; a managed-name directory fails closed; a managed child symlink is unlinked without following it. Dialogue IDs cannot contain traversal separators or alias another output child. The output root itself may be symlinked.
+
+## Manifest and exclusion
+
+Manifest v2 records rendered, resumed, excluded, input-error, and render-failed outcomes. It is atomically written at batch completion, not checkpointed after every dialogue.
+
+Known-issue exclusion is external policy data and occurs before sidecar/preparation requirements. Excluded records retain reason/provenance/policy SHA in the manifest but have no render output or fingerprint.
 
 ## Evidence boundary
 
-Offline tests verify structure, control integrity, cached requests, artifact ordering,
-timing, metadata, QC, and resume behavior. They do not prove emotion, arousal, speaker
-similarity, intelligibility, or naturalness. Real Higgs GPU/cloud validation is the
-next runtime gate.
+Offline tests validate parsing, mapping, plan invariants, request construction, lifecycle logic, assembly, metadata, structural QC, semantic resume, integrity checks, and cleanup security. Phase 3A also provides real CosyVoice evidence for 5 dialogues / 30 turns / 0 failures, resume 5/5, controlled-corruption rerender, and stale-turn cleanup.
+
+Neither evidence set proves Higgs reference-conditioned quality. Structural QC does not prove emotion accuracy, speaker similarity, naturalness, intelligibility, or clinical validity. Real Higgs Cloud validation and a final large-corpus rehearsal remain gates.
+
+## Known limitations
+
+- Real Higgs reference-conditioned Cloud validation is pending.
+- Higgs candidates require explicit approval.
+- Full checkpoint/runtime identity is not cryptographically pinned.
+- Manifest state is written at batch completion, not per dialogue.
+- CosyVoice positive pause-within is unsupported; affect/arousal mapping is provisional.
+- Telephone output is signal processing, not a phone codec/network simulation.
+- There is no automatic backend fallback.
+- The final large source corpus is not committed.

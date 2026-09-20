@@ -1,4 +1,11 @@
-"""Public TTS orchestration boundary and explicit backend dispatch."""
+"""Whole-dialogue preflight and sequential selected-backend execution.
+
+Phase 2B ownership is deliberate: ``run_dialogue()`` invokes
+``preflight_prepared_dialogue()`` for every turn before the first synthesis
+request. ``synthesize_prepared_turns()`` assumes that gate already passed,
+while backend turn functions retain local defensive checks. Whole-dialogue
+atomic readiness and turn-local safety are separate responsibilities.
+"""
 
 from pathlib import Path
 from typing import Any
@@ -16,7 +23,11 @@ def get_engine(config: dict[str, Any]) -> str:
 def preflight_prepared_dialogue(
     dialogue: PreparedDialogue, config: dict[str, Any]
 ) -> None:
-    """Validate every final prepared turn before starting any worker request."""
+    """Validate all prepared turns before starting any worker request.
+
+    This prevents an invalid later turn, missing reference, or unsupported
+    capability from being discovered only after earlier GPU work has occurred.
+    """
     engine = get_engine(config)
     if engine not in {"higgs", "cosyvoice"}:
         raise RuntimeError(
@@ -48,7 +59,12 @@ def preflight_prepared_dialogue(
 async def synthesize_prepared_turns(
     dialogue: PreparedDialogue, out_dir: Path, config: dict[str, Any]
 ) -> tuple[TurnRenderResult, ...]:
-    """Render sequentially; callers must first run preflight_prepared_dialogue()."""
+    """Render turns sequentially after whole-dialogue preflight.
+
+    Sequential execution intentionally reuses one backend worker/model and keeps
+    result order identical to prepared-turn order; this function introduces no
+    concurrency or control remapping.
+    """
     engine = get_engine(config)
     results: list[TurnRenderResult] = []
     for turn in dialogue.turns:
