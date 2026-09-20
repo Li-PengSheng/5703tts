@@ -5,6 +5,7 @@ import datetime
 import json
 import logging
 import math
+import re
 import time
 from pathlib import Path
 from typing import Any
@@ -31,6 +32,10 @@ _EXCLUDED = "excluded_known_issue"
 _INPUT_ERROR = "input_error"
 _RENDER_FAILED = "render_failed"
 _RESUME_MANIFEST_HINT = "Repair or remove this file, or run without --resume to ignore previous batch state."
+_MANAGED_TURN_ARTIFACT = re.compile(
+    r"turn_(?:00[1-9]|0[1-9][0-9]|[1-9][0-9]{2,})"
+    r"(?:\.wav|\.higgs_raw\.wav(?:\.part)?|\.higgs_processed\.part\.wav)"
+)
 
 
 def _write_batch_result(result: dict[str, Any], output_root: Path) -> Path:
@@ -78,11 +83,39 @@ def _safe_dialogue_output_path(output_root: Path, dialogue_id: str) -> Path:
         or Path(dialogue_id).is_absolute()
     ):
         raise RuntimeError(f"Unsafe final dialogue_id for output path: {dialogue_id!r}")
+    raw_candidate = output_root / dialogue_id
+    if raw_candidate.is_symlink():
+        raise RuntimeError(
+            f"Final dialogue output path must not be a symlink: {dialogue_id!r}"
+        )
     root = output_root.resolve()
-    candidate = (root / dialogue_id).resolve()
+    candidate = raw_candidate.resolve()
     if candidate.parent != root or not candidate.is_relative_to(root):
         raise RuntimeError(f"Final dialogue_id escapes output root: {dialogue_id!r}")
     return candidate
+
+
+def _is_managed_dialogue_artifact(name: str, dialogue_id: str) -> bool:
+    if name in {
+        f"{dialogue_id}_clean.wav",
+        f"{dialogue_id}_telephone.wav",
+        f"{dialogue_id}_metadata.json",
+    }:
+        return True
+    return _MANAGED_TURN_ARTIFACT.fullmatch(name) is not None
+
+
+def _cleanup_managed_dialogue_artifacts(out_dir: Path, dialogue_id: str) -> None:
+    """Remove only pipeline-owned direct-child files before a rerender."""
+    if not out_dir.exists():
+        return
+    for path in out_dir.iterdir():
+        if not _is_managed_dialogue_artifact(path.name, dialogue_id):
+            continue
+        if path.is_symlink() or path.is_file():
+            path.unlink()
+            continue
+        raise RuntimeError(f"Managed artifact path is not a file: {path}")
 
 
 class _DuplicateJsonKeyError(ValueError):
@@ -482,21 +515,33 @@ async def run_batch(
         ):
             action, status, error = _RESUMED, "success", None
         else:
-            pipeline_result = await run_dialogue(
-                item,
-                sidecar,
-                config,
-                args.output,
-                project_root=Path.cwd(),
-            )
-            if pipeline_result.status == "success":
-                action, status, error = _RENDERED, "success", None
-            else:
+            try:
+                _cleanup_managed_dialogue_artifacts(expected_out_dir, item.dialogue_id)
+            except (OSError, RuntimeError) as cleanup_error:
                 action, status = _RENDER_FAILED, "failed"
                 error = {
-                    "type": pipeline_result.error_type or "PipelineFailure",
-                    "message": pipeline_result.error or "Unknown dialogue failure",
+                    "type": type(cleanup_error).__name__,
+                    "message": (
+                        f"Failed to clean managed artifacts before rerender: "
+                        f"{cleanup_error}"
+                    ),
                 }
+            else:
+                pipeline_result = await run_dialogue(
+                    item,
+                    sidecar,
+                    config,
+                    args.output,
+                    project_root=Path.cwd(),
+                )
+                if pipeline_result.status == "success":
+                    action, status, error = _RENDERED, "success", None
+                else:
+                    action, status = _RENDER_FAILED, "failed"
+                    error = {
+                        "type": pipeline_result.error_type or "PipelineFailure",
+                        "message": pipeline_result.error or "Unknown dialogue failure",
+                    }
         results.append(
             {
                 "dialogue_id": item.dialogue_id,
