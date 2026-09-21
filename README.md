@@ -153,7 +153,16 @@ No model, worker, GPU, network, or download is used by the test suite.
 Higgs is the production primary; CosyVoice3 is the explicitly selected
 backup/secondary. There is no automatic fallback.
 
+Fresh Ubuntu GPU server bootstrap:
+
+```bash
+git clone https://github.com/Li-PengSheng/5703tts.git
+cd 5703tts
+bash scripts/setup_cloud_environment.sh
+```
+
 - [Architecture/design summary](docs/ARCHITECTURE.md)
+- [Fresh Ubuntu GPU server: copy/paste installation](docs/INSTALLATION_AND_SETUP_CN.md)
 - [Detailed Chinese pipeline guide](docs/PIPELINE_DETAILED_GUIDE_CN.md)
 - [External and internal data contracts](docs/DATA_CONTRACTS.md)
 - [Code reading guide](docs/CODE_READING_GUIDE.md)

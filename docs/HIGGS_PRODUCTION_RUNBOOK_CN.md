@@ -2,7 +2,9 @@
 
 > 正式验收项以 [`HIGGS_CLOUD_VALIDATION.md`](HIGGS_CLOUD_VALIDATION.md) 为准。本手册只解释怎样执行、记录和排错，不替代 evidence checklist。
 
-当前 `main` 基线 `d048fae2a593c72db3fe18927845478ed789323a` 尚未完成真实 Higgs reference-conditioned Cloud runtime validation。Production integration 与 offline validation 已完成，但 Cloud gate 通过前不能宣称 Higgs production-ready。
+开始前先按 [`INSTALLATION_AND_SETUP_CN.md`](INSTALLATION_AND_SETUP_CN.md) 完成 project、Higgs/SGLang runtime、model 与本地配置安装。
+
+真实 Higgs reference-conditioned Cloud runtime validation 尚未完成。Cloud validation 必须使用届时选定且已合并的 exact `main` commit；Production integration 与 offline validation 已完成，但 Cloud gate 通过前不能宣称 Higgs production-ready。
 
 ## 1. Cloud machine 要求
 
@@ -29,7 +31,7 @@ git status --short
 git log --oneline -5
 ```
 
-把 full SHA 写入 evidence notes。运行前 worktree 应清楚说明是否 clean；若不是，保存 diff 并停止 production approval。当前文档阶段的已知基线是 `d048fae2a593c72db3fe18927845478ed789323a`，但真实验证应以届时已合并 `main` 的 SHA 为准。
+把 full SHA 写入 evidence notes。运行前 worktree 应清楚说明是否 clean；若不是，保存 diff 并停止 production approval。Phase 4B 尚未提交，因此本文不预填未来 SHA；真实验证使用届时选定且已合并的 exact `main` commit。
 
 ## 3. Python / project environment
 
