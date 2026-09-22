@@ -648,10 +648,17 @@ ucx_version_is_compatible() {
 
 ucx_ready() {
   local version_output
-  command -v ucx_info >/dev/null 2>&1 &&
-    version_output="$(ucx_info -v 2>/dev/null)" &&
-    ucx_version_is_compatible "$version_output" &&
-    ucx_info -d 2>/dev/null | grep -qi cuda
+  local device_output
+
+  command -v ucx_info >/dev/null 2>&1 || return 1
+
+  version_output="$(ucx_info -v 2>/dev/null)" || return 1
+  ucx_version_is_compatible "$version_output" || return 1
+
+  # Avoid grep -q directly on ucx_info under pipefail:
+  # grep exits after the first match and can SIGPIPE ucx_info.
+  device_output="$(ucx_info -d 2>/dev/null)" || return 1
+  grep -qi cuda <<<"$device_output"
 }
 
 is_ucx_remote() {
