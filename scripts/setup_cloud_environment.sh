@@ -472,19 +472,27 @@ ensure_cosyvoice_environment() {
   ensure_uv_python "3.10" >/dev/null
   ensure_venv "$COSYVOICE_DIR/.venv" "3.10"
 
-  # openai-whisper==20231117 still imports pkg_resources while building.
-  # pkg_resources was removed from modern setuptools, so pin a compatible
-  # build-time setuptools version without modifying the upstream checkout.
   local build_constraints
+  local runtime_constraints
+
   build_constraints="$SETUP_STATE_DIR/cosyvoice-build-constraints.txt"
+  runtime_constraints="$SETUP_STATE_DIR/cosyvoice-runtime-constraints.txt"
 
   mkdir -p "$SETUP_STATE_DIR"
-  printf '%s\n' 'setuptools==80.10.2' >"$build_constraints"
+
+  printf '%s\n' \
+    'setuptools==80.10.2' \
+    >"$build_constraints"
+
+  printf '%s\n' \
+    'setuptools==80.10.2' \
+    >"$runtime_constraints"
 
   uv pip install \
     --python "$COSYVOICE_PYTHON" \
     --index-strategy unsafe-best-match \
     --build-constraint "$build_constraints" \
+    --constraint "$runtime_constraints" \
     -r "$COSYVOICE_DIR/requirements.txt"
 
   "$COSYVOICE_PYTHON" - <<'PY'
