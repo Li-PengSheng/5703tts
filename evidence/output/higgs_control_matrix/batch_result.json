@@ -1,0 +1,106 @@
+{
+  "backend": "higgs",
+  "backend_identity": {
+    "backend": "higgs",
+    "control_mapping": {
+      "implementation_id": "controlled_tts_v1_prod_1",
+      "mapping_version": "controlled_tts_v1",
+      "provenance": {
+        "contract_sha256": "4e787a5363d01e5454a8031c59bb1d4bb454ee37d44ccf262d471c7ce30ba799",
+        "source_commit": "7b005135e148fad8a142f39dc8be3144c3e5adcc",
+        "source_repository": "ginkgoyin/comp5703-tts-experiments"
+      },
+      "release_status": "PROVISIONAL_PRODUCTION_MAPPING_WEEK6_FREEZE"
+    },
+    "ffmpeg_bin": "ffmpeg",
+    "generation_profile": {
+      "max_new_tokens": 2048,
+      "response_format": "wav",
+      "speed": 1.0,
+      "stream": false,
+      "temperature": 0.8,
+      "top_k": 30,
+      "top_p": 0.8,
+      "voice": "default"
+    },
+    "host": "127.0.0.1",
+    "identity_complete": true,
+    "inference_timeout_seconds": 300,
+    "model_dir": "models/higgs-tts-3-4b",
+    "model_id": "bosonai/higgs-tts-3-4b",
+    "port": 18080,
+    "references": {},
+    "server_executable": "third_party/sglang-omni/.venv/bin/sgl-omni",
+    "startup_timeout_seconds": 900
+  },
+  "backend_identity_sha256": "2f61e6fa7b1c815d0426432744432d7327d59c6132913b91dc9ebacab5177392",
+  "batch_provenance": {
+    "controlled_tts": {
+      "contract_sha256": "4e787a5363d01e5454a8031c59bb1d4bb454ee37d44ccf262d471c7ce30ba799",
+      "implementation_id": "controlled_tts_v1_prod_1",
+      "mapping_name": "controlled_tts_v1",
+      "mapping_version": "controlled_tts_v1",
+      "release_status": "PROVISIONAL_PRODUCTION_MAPPING_WEEK6_FREEZE"
+    },
+    "exclusion_policy": {
+      "policy_sha256": null,
+      "schema_version": null
+    },
+    "input_containers": [
+      "evidence/input/higgs_control_matrix.json"
+    ],
+    "speaker_sidecar": {
+      "active_speakers_sha256": "3afe73567569f1c22390f9bef38ce34fef312909c21df48dd4d8b0562312e83b",
+      "assignment_sha256": "70ea913f65b4f0e12ea4d786a467c97b974232f2623a207245c5d10e3a649892",
+      "path": "evidence/input/higgs_control_matrix_sidecar.json",
+      "registry_sha256": "e30ba1a2477b5b35f493d5b9d8da54bcde7618d81dc38abf416b5b451eb2f691"
+    }
+  },
+  "config_path": "config/config_higgs_cloud.yaml",
+  "config_sha256": "1c2d8fb905dfba3d666136dea604fba33e49fff49511bbac24891fcb04171aaa",
+  "dialogues_excluded": 0,
+  "dialogues_failed": 1,
+  "dialogues_rendered": 0,
+  "dialogues_resumed": 0,
+  "dialogues_skipped": 0,
+  "dialogues_succeeded": 0,
+  "dialogues_total": 1,
+  "duration_seconds": 144.452,
+  "finished_at": "2026-09-22T10:55:11+00:00",
+  "input_failures": 0,
+  "input_root": "evidence/input/higgs_control_matrix.json",
+  "manifest_version": "2.0",
+  "output_root": "evidence/output/higgs_control_matrix",
+  "records_total": 1,
+  "results": [
+    {
+      "action": "render_failed",
+      "dialogue_id": "higgs_control_matrix_001",
+      "error": {
+        "message": "Final dialogue failed: Higgs synthesis request failed: RuntimeError: SGLang speech request returned HTTP 500: {\"error\":{\"message\":\"CUDA out of memory. Tried to allocate 120.00 MiB. GPU 0 has a total capacity of 22.11 GiB of which 104.19 MiB is free. Process 51858 has 816.00 MiB memory in use. Including non-PyTorch memory, this process has 21.20 GiB memory in use. Of the allocated memory 20.04 GiB is allocated by PyTorch, with 85.61 MiB allocated in private pools (e.g., CUDA Graphs), and 224.92 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)\",\"type\":\"server_error\",\"param\":null,\"code\":null}}",
+        "type": "RuntimeError"
+      },
+      "exclusion": null,
+      "output_dir": "/home/li_yanyupingsheng/5703tts/evidence/output/higgs_control_matrix/higgs_control_matrix_001",
+      "render_fingerprint": "48df049ff380b93c5ae95c581a9b1f28fe6a0c2563f45f213581a4509f9a25fc",
+      "source": {
+        "container_path": "evidence/input/higgs_control_matrix.json",
+        "format": "json",
+        "line_number": null,
+        "record_sha256": "9ce4822c123b9a1b3c88bd55802432152e1ae5e4fb2812a0134afff9db1b2a60"
+      },
+      "status": "failed"
+    }
+  ],
+  "resume_requested": false,
+  "started_at": "2026-09-22T10:52:47+00:00",
+  "status": "failure",
+  "summary": {
+    "excluded": 0,
+    "failed": 1,
+    "input_failures": 0,
+    "rendered": 0,
+    "resumed": 0,
+    "total_valid_records": 1
+  }
+}

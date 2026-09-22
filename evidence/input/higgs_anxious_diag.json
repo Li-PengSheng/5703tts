@@ -1,0 +1,144 @@
+{
+  "schema_version": "1.0",
+  "dialogue_id": "higgs_anxious_diag_001",
+  "scenario": {
+    "speakers": {
+      "caller": {"speaker_id": "C001"},
+      "counsellor": {"speaker_id": "L001"}
+    }
+  },
+  "turns": [
+    {
+      "turn_id": 1,
+      "speaker": "Listener",
+      "text": "I am listening.",
+      "labels": {"validation_case": "filler_baseline"},
+      "acoustic": {
+        "required": {
+          "rate": "normal",
+          "arousal": 2,
+          "affect": "neutral",
+          "pause_before": "none",
+          "pause_within": 0,
+          "hesitations": 0
+        },
+        "best_effort": {
+          "affect_fine": null,
+          "volume": null,
+          "flattened_affect": null,
+          "events": []
+        }
+      }
+    },
+    {
+      "turn_id": 2,
+      "speaker": "User",
+      "text": "I keep thinking something will go wrong. I cannot settle down.",
+      "labels": {"validation_case": "anxious_medium"},
+      "acoustic": {
+        "required": {
+          "rate": "normal",
+          "arousal": 2,
+          "affect": "anxious",
+          "pause_before": "none",
+          "pause_within": 0,
+          "hesitations": 0
+        },
+        "best_effort": {
+          "affect_fine": null,
+          "volume": null,
+          "flattened_affect": null,
+          "events": []
+        }
+      }
+    },
+    {
+      "turn_id": 3,
+      "speaker": "User",
+      "text": "I keep thinking something will go wrong. I cannot settle down.",
+      "labels": {"validation_case": "anxious_high"},
+      "acoustic": {
+        "required": {
+          "rate": "normal",
+          "arousal": 3,
+          "affect": "anxious",
+          "pause_before": "none",
+          "pause_within": 0,
+          "hesitations": 0
+        },
+        "best_effort": {
+          "affect_fine": null,
+          "volume": null,
+          "flattened_affect": null,
+          "events": []
+        }
+      }
+    },
+    {
+      "turn_id": 4,
+      "speaker": "User",
+      "text": "I keep thinking something will go wrong. I cannot settle down.",
+      "labels": {"validation_case": "anxious_high_pause"},
+      "acoustic": {
+        "required": {
+          "rate": "normal",
+          "arousal": 3,
+          "affect": "anxious",
+          "pause_before": "none",
+          "pause_within": 1,
+          "hesitations": 0
+        },
+        "best_effort": {
+          "affect_fine": null,
+          "volume": null,
+          "flattened_affect": null,
+          "events": []
+        }
+      }
+    },
+    {
+      "turn_id": 5,
+      "speaker": "User",
+      "text": "I keep thinking something will go wrong. I cannot settle down.",
+      "labels": {"validation_case": "anxious_high_hesitations"},
+      "acoustic": {
+        "required": {
+          "rate": "normal",
+          "arousal": 3,
+          "affect": "anxious",
+          "pause_before": "none",
+          "pause_within": 0,
+          "hesitations": 2
+        },
+        "best_effort": {
+          "affect_fine": null,
+          "volume": null,
+          "flattened_affect": null,
+          "events": []
+        }
+      }
+    },
+    {
+      "turn_id": 6,
+      "speaker": "User",
+      "text": "I keep thinking something will go wrong. I cannot settle down.",
+      "labels": {"validation_case": "anxious_full"},
+      "acoustic": {
+        "required": {
+          "rate": "normal",
+          "arousal": 3,
+          "affect": "anxious",
+          "pause_before": "short",
+          "pause_within": 1,
+          "hesitations": 2
+        },
+        "best_effort": {
+          "affect_fine": null,
+          "volume": null,
+          "flattened_affect": null,
+          "events": []
+        }
+      }
+    }
+  ]
+}

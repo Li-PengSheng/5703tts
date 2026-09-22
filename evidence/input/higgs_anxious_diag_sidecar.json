@@ -1,0 +1,59 @@
+{
+  "materialization_mode": "speaker_sidecar",
+  "source_records_rewritten": false,
+  "assignment_file": "evidence/input/higgs_anxious_diag_assignments.jsonl",
+  "assignment_sha256": "1db2ef2c63cfb716b099009ef884f91f56ab3de6df731e3259508676cc044390",
+  "registry_path": "evidence/input/speaker_registry.review-only.json",
+  "registry_version": "vctk_v0.1",
+  "registry_sha256": "e30ba1a2477b5b35f493d5b9d8da54bcde7618d81dc38abf416b5b451eb2f691",
+  "active_speakers_path": "data/speaker_pool/vctk_v0.1/active_speakers.json",
+  "active_speakers_sha256": "3afe73567569f1c22390f9bef38ce34fef312909c21df48dd4d8b0562312e83b",
+  "project_root": "/home/li_yanyupingsheng/5703tts",
+  "input_count": 1,
+  "backend_target": "higgs",
+  "speakers": {
+    "spk_001": {
+      "higgs_reference": {
+        "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_001_primary.wav",
+        "sha256": "eb7f8024d51eedaec2406773ef49aa7d6e96bee7c2bd5cdf65e043815cbc4d8f"
+      }
+    },
+    "spk_003": {
+      "higgs_reference": {
+        "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_003_primary.wav",
+        "sha256": "b1fff562d2c305b29992ed9a7f1c510135fb34c6101087b997a8e1dddb42314e"
+      }
+    }
+  },
+  "dialogues": [
+    {
+      "source": {
+        "container_path": "evidence/input/higgs_anxious_diag.json",
+        "format": "json",
+        "line_number": null,
+        "record_sha256": "16a5fe4be067f487f3491cf0086c3b7eb9216896d34609933ea933f72c570093"
+      },
+      "dialogue_id": "higgs_anxious_diag_001",
+      "roles": {
+        "caller": {
+          "upstream_role": "User",
+          "upstream_scenario_speaker_id": "C001",
+          "render_speaker_id": "spk_001",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_001_primary.wav",
+            "sha256": "eb7f8024d51eedaec2406773ef49aa7d6e96bee7c2bd5cdf65e043815cbc4d8f"
+          }
+        },
+        "counsellor": {
+          "upstream_role": "Listener",
+          "upstream_scenario_speaker_id": "L001",
+          "render_speaker_id": "spk_003",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_003_primary.wav",
+            "sha256": "b1fff562d2c305b29992ed9a7f1c510135fb34c6101087b997a8e1dddb42314e"
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,136 @@
+{
+  "schema_version": "1.0",
+  "dialogue_id": "higgs_control_matrix_001",
+  "scenario": {
+    "speakers": {
+      "caller": {
+        "speaker_id": "C001"
+      },
+      "counsellor": {
+        "speaker_id": "L001"
+      }
+    }
+  },
+  "turns": [
+    {
+      "turn_id": 1,
+      "speaker": "User",
+      "text": "I am trying to understand what happened today.",
+      "labels": {
+        "validation_case": "baseline"
+      },
+      "acoustic": {
+        "required": {
+          "rate": "normal",
+          "arousal": 2,
+          "affect": "neutral",
+          "pause_before": "none",
+          "pause_within": 0,
+          "hesitations": 0
+        },
+        "best_effort": {
+          "affect_fine": null,
+          "volume": null,
+          "flattened_affect": null,
+          "events": []
+        }
+      }
+    },
+    {
+      "turn_id": 2,
+      "speaker": "Listener",
+      "text": "We can take this slowly, and we can work through it together.",
+      "labels": {
+        "validation_case": "low_warm"
+      },
+      "acoustic": {
+        "required": {
+          "rate": "slow",
+          "arousal": 1,
+          "affect": "warm",
+          "pause_before": "short",
+          "pause_within": 0,
+          "hesitations": 1
+        },
+        "best_effort": {
+          "affect_fine": null,
+          "volume": null,
+          "flattened_affect": null,
+          "events": []
+        }
+      }
+    },
+    {
+      "turn_id": 3,
+      "speaker": "User",
+      "text": "I tried to explain. Then I stopped.",
+      "labels": {
+        "validation_case": "high_angry"
+      },
+      "acoustic": {
+        "required": {
+          "rate": "fast",
+          "arousal": 3,
+          "affect": "angry",
+          "pause_before": "long",
+          "pause_within": 1,
+          "hesitations": 2
+        },
+        "best_effort": {
+          "affect_fine": null,
+          "volume": null,
+          "flattened_affect": null,
+          "events": []
+        }
+      }
+    },
+    {
+      "turn_id": 4,
+      "speaker": "Listener",
+      "text": "I thought things would get better, but they did not.",
+      "labels": {
+        "validation_case": "sad"
+      },
+      "acoustic": {
+        "required": {
+          "rate": "normal",
+          "arousal": 1,
+          "affect": "sad",
+          "pause_before": "none",
+          "pause_within": 0,
+          "hesitations": 1
+        },
+        "best_effort": {
+          "affect_fine": null,
+          "volume": null,
+          "flattened_affect": null,
+          "events": []
+        }
+      }
+    },
+    {
+      "turn_id": 5,
+      "speaker": "User",
+      "text": "I keep thinking something will go wrong. I cannot settle down.",
+      "labels": {
+        "validation_case": "anxious"
+      },
+      "acoustic": {
+        "required": {
+          "rate": "normal",
+          "arousal": 3,
+          "affect": "anxious",
+          "pause_before": "short",
+          "pause_within": 1,
+          "hesitations": 2
+        },
+        "best_effort": {
+          "affect_fine": null,
+          "volume": null,
+          "flattened_affect": null,
+          "events": []
+        }
+      }
+    }
+  ]
+}
