@@ -1,4 +1,6 @@
-# 5703tts 生产流水线详细指南
+# 5703tts 生产流水线详细指南（归档）
+
+> Archived historical guide. 截至本文归档时的说明仅供历史参考；当前项目状态请查看 [../CURRENT_STATUS.md](../CURRENT_STATUS.md)。当前设计与运行请查看 [../ARCHITECTURE.md](../ARCHITECTURE.md)、[../DATA_CONTRACTS.md](../DATA_CONTRACTS.md) 和 [../RUNNING.md](../RUNNING.md)。
 
 ## 1. 项目目的
 
@@ -10,7 +12,7 @@
 
 它不负责生成上游语料，不修改最终源记录，也不把感知质量结论包装成结构化测试结论。
 
-## 3. 当前后端政策
+## 3. 截至本文归档时的后端政策
 
 - Higgs 是 production primary。
 - CosyVoice3 是显式选择的 backup/secondary。
@@ -158,7 +160,7 @@ Higgs 使用 frozen `map_turn_to_higgs()` / Controlled-TTS-v1 planner：
 
 ## 12. CosyVoice 控制计划
 
-CosyVoice3 的当前映射为：
+截至本文归档时，CosyVoice3 的映射为：
 
 - rate：slow `0.8`、normal `1.0`、fast `1.2`；
 - arousal/affect：provisional instruction mapping；
@@ -200,7 +202,7 @@ Worker 隔离 server lifecycle，负责启动、health polling、复用、SIGTER
 "references": [{"audio_path": "/resolved/reference.wav"}]
 ```
 
-真实 Cloud 上的 SGLang/Higgs protocol、reference conditioning 和感知质量仍待验证。
+截至本文归档时，真实 Cloud 上的 SGLang/Higgs protocol、reference conditioning 和感知质量仍待验证。
 
 ## 15. CosyVoice 运行时架构
 
@@ -315,7 +317,7 @@ Known issue 来自显式 exclusion policy，不写死在 renderer。Policy 严�
 
 ## 29. 已知限制
 
-- 当前 main 尚未完成真实 Higgs Cloud validation。
+- 截至本文归档时，main 尚未完成真实 Higgs Cloud validation。
 - Higgs reference candidate 必须实际审核后才能成为 approved reference。
 - 完整 model checkpoint/runtime environment 尚未 cryptographically pin。
 - `batch_result.json` 在 batch 完成时写，而非每 dialogue checkpoint。
@@ -326,15 +328,15 @@ Known issue 来自显式 exclusion policy，不写死在 renderer。Policy 严�
 - 不存在 automatic backend fallback。
 - 最终大规模 source corpus 未提交到 repository。
 
-## 30. 当前生产准备状态
+## 30. 截至本文归档时的生产准备状态
 
 Software/offline path 已强验证。Phase 3A 留有真实 CosyVoice mini-batch evidence：5 dialogues、30 turns、0 failures、identical resume 5/5，并通过 controlled corruption rerender 与 stale-turn cleanup 检查。这是 CosyVoice runtime evidence，不是 Higgs evidence，也不证明感知 fidelity。
 
-Higgs production integration 和 offline validation 已完成，但 reference-conditioned Cloud runtime、speaker separation、perceptual review、resource stability 与 performance gate 尚未通过。因此不能称 Higgs 已 production-ready。最终大语料 handoff 后仍需要 large-scale production rehearsal。
+截至本文归档时，Higgs production integration 和 offline validation 已完成，但 reference-conditioned Cloud runtime、speaker separation、perceptual review、resource stability 与 performance gate 尚未通过。因此不能称 Higgs 已 production-ready。最终大语料 handoff 后仍需要 large-scale production rehearsal。
 
 ## 31. Higgs Cloud 下一步
 
-以合并后的 exact `main` SHA 为基线，按 `HIGGS_CLOUD_VALIDATION.md` 的 evidence checklist 和 `HIGGS_PRODUCTION_RUNBOOK_CN.md` 的执行步骤：准备 runtime/model，审核 Higgs reference candidate，生成 review-only sidecar，跑 startup、单 turn、control matrix、双 speaker、小 batch、resume 和 shutdown/resource 检查，保存配置/环境/音频/metadata/QC/manifest evidence，最后由人工 reviewer 决定 production approval。
+以合并后的 exact `main` SHA 为基线，按 [`HIGGS_CLOUD_VALIDATION.md`](../HIGGS_CLOUD_VALIDATION.md) 的 evidence checklist 和 [`HIGGS_PRODUCTION_RUNBOOK_CN.md`](../HIGGS_PRODUCTION_RUNBOOK_CN.md) 的执行步骤：准备 runtime/model，审核 Higgs reference candidate，生成 review-only sidecar，跑 startup、单 turn、control matrix、双 speaker、小 batch、resume 和 shutdown/resource 检查，保存配置/环境/音频/metadata/QC/manifest evidence，最后由人工 reviewer 决定 production approval。
 
 ## 32. 按文件阅读地图
 
@@ -412,4 +414,4 @@ uv run 5703tts \
 - resume 未命中：比较 fingerprint、metadata identity、WAV readability 与 live reference SHA。
 - rerender cleanup 失败：检查 managed-name path 是否变成 directory 或 dialogue directory 是否为 symlink。
 - QC failed：查看 metadata 中 requested/planned/execution/timing 的分层，不把 structural failure 当作听感结论。
-- Higgs Cloud gate：以 `HIGGS_CLOUD_VALIDATION.md` 为正式 checklist，以中文 runbook 为执行步骤。
+- Higgs Cloud gate：以 [`HIGGS_CLOUD_VALIDATION.md`](../HIGGS_CLOUD_VALIDATION.md) 为正式 checklist，以 [`HIGGS_PRODUCTION_RUNBOOK_CN.md`](../HIGGS_PRODUCTION_RUNBOOK_CN.md) 为执行步骤。

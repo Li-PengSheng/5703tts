@@ -1,6 +1,6 @@
 # Production architecture
 
-This is the authoritative design summary. See the [detailed Chinese pipeline guide](PIPELINE_DETAILED_GUIDE_CN.md) for implementation-level handoff detail and [data contracts](DATA_CONTRACTS.md) for persisted/internal shapes.
+This is the design summary. See [DATA_CONTRACTS.md](DATA_CONTRACTS.md) for persisted/internal shapes, [CODE_READING_GUIDE.md](CODE_READING_GUIDE.md) for source order, and [CURRENT_STATUS.md](CURRENT_STATUS.md) for claims about evidence and readiness.
 
 ## Purpose and backend policy
 
@@ -57,7 +57,7 @@ The external sidecar binds source identities to render identities and selected r
 
 The main process communicates with a standard-library worker over JSON Lines. The worker owns and reaps one SGLang-Omni process group, routes server diagnostics through stderr, polls `GET /health`, and sends `POST /v1/audio/speech`. The parent continuously drains stderr and reuses the loaded server across turns. Reference conditioning is sent as `references: [{"audio_path": ...}]`.
 
-`FROZEN_GENERATION_FIELDS` includes model speed `1.0`. Semantic rate is postprocessing: slow FFmpeg `atempo=0.85`, normal no transform, fast `atempo=1.15`. Real Cloud validation is still required for actual runtime compatibility, reference conditioning, and perceptual quality.
+`FROZEN_GENERATION_FIELDS` includes model speed `1.0`. Semantic rate is postprocessing: slow FFmpeg `atempo=0.85`, normal no transform, fast `atempo=1.15`. This code path records request/output structure and does not embed an external runtime-environment attestation in per-dialogue metadata. Project-level GPU runtime evidence is tracked in [CURRENT_STATUS.md](CURRENT_STATUS.md) and dedicated evidence artefacts. Runtime execution does not by itself establish production reference approval, reference-conditioning quality, control fidelity, or perceptual quality.
 
 ### CosyVoice3
 
@@ -113,19 +113,10 @@ Manifest v2 records rendered, resumed, excluded, input-error, and render-failed 
 
 Known-issue exclusion is external policy data and occurs before sidecar/preparation requirements. Excluded records retain reason/provenance/policy SHA in the manifest but have no render output or fingerprint.
 
-## Evidence boundary
+## Scope boundary
 
-Offline tests validate parsing, mapping, plan invariants, request construction, lifecycle logic, assembly, metadata, structural QC, semantic resume, integrity checks, and cleanup security. Phase 3A also provides real CosyVoice evidence for 5 dialogues / 30 turns / 0 failures, resume 5/5, controlled-corruption rerender, and stale-turn cleanup.
-
-Neither evidence set proves Higgs reference-conditioned quality. Structural QC does not prove emotion accuracy, speaker similarity, naturalness, intelligibility, or clinical validity. Real Higgs Cloud validation and a final large-corpus rehearsal remain gates.
-
-## Known limitations
-
-- Real Higgs reference-conditioned Cloud validation is pending.
-- Higgs candidates require explicit approval.
-- Full checkpoint/runtime identity is not cryptographically pinned.
-- Manifest state is written at batch completion, not per dialogue.
-- CosyVoice positive pause-within is unsupported; affect/arousal mapping is provisional.
-- Telephone output is signal processing, not a phone codec/network simulation.
-- There is no automatic backend fallback.
-- The final large source corpus is not committed.
+This document describes ownership and data flow, not runtime readiness or
+perceptual evidence. Current evidence levels and remaining gates belong in
+[CURRENT_STATUS.md](CURRENT_STATUS.md). Structural QC is intentionally not
+perceptual QA, and the telephone-labelled output is intentionally not a full
+telephone-network simulation.

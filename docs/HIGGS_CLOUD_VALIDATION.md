@@ -1,9 +1,13 @@
 # Higgs Google Cloud validation gate
 
-Production integration is implemented and offline-validated. Real Higgs GPU
-runtime validation is still required. Higgs is the configured primary backend,
-but the checked-in paths are placeholders and it must not be treated as deployable
-until every required checkbox below passes and its evidence is reviewed.
+Production integration is implemented and offline-validated. Real Google Cloud
+Higgs3 GPU runtime execution has been achieved at project level. This checklist
+is still incomplete: runtime execution does not equal reference approval,
+control/perceptual validation, representative batch evidence, or
+production-scale validation. Higgs is the configured default backend.
+
+The runtime statement above is an operator-reported project status; this
+repository does not contain a complete attestation package for every gate below.
 
 ## Evidence boundary
 
@@ -18,10 +22,10 @@ Already proven by CPU/offline tests:
   `0`/`500`/`900 ms`; `pause_after` is fixed at `0`, and turn WAVs contain
   speech only.
 
-Still requiring real GPU evidence:
+Still requiring formal evidence or review:
 
-- production-worker startup against the chosen cloud stack;
-- reference-conditioned synthesis and speaker identity;
+- production-worker startup evidence bound to the exact current baseline;
+- reference-conditioned synthesis and speaker identity review;
 - perceptual quality and controlled-turn behaviour;
 - long-running cleanup, resource stability, and batch performance.
 
@@ -43,10 +47,15 @@ unconditioned technical smoke with:
 | HTTP endpoints | `GET /health`, `POST /v1/audio/speech` |
 | Observed output | 24 kHz mono WAV |
 
-These are experiment observations, not permanent production version
-requirements. A newer pinned stack is acceptable, but its exact versions,
-checkpoint identity, GPU, request result, and output metadata become a new
-evidence set. The old smoke did not verify reference-conditioned synthesis.
+These are observations from that historical evidence set, not a replacement for
+the current bootstrap identity. The currently supported bootstrap stack is the
+stack pinned by `scripts/setup_cloud_environment.sh`.
+
+A different model revision, checkpoint hash, SGLang version, UCX version or
+commit, CUDA identity, or other render-affecting runtime change creates a new
+runtime identity. The corresponding bootstrap pins and validation evidence must
+then be updated explicitly. The old smoke did not verify reference-conditioned
+synthesis.
 
 ## Evidence baseline
 
@@ -198,6 +207,4 @@ shutdown result, QC output, representative metadata JSON, batch summary, and
 failures/warnings. Do not commit checkpoints, generated corpora, caches,
 secrets, or routine full server logs.
 
-Backend selection remains explicit. There is no automatic fallback. Any future
-fallback must record `requested_backend`, `actual_backend`, `fallback_used`, and
-`fallback_reason`; that policy is not implemented here.
+One run selects one engine. There is no automatic fallback.

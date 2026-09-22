@@ -4,7 +4,11 @@
 
 开始前先按 [`INSTALLATION_AND_SETUP_CN.md`](INSTALLATION_AND_SETUP_CN.md) 完成 project、Higgs/SGLang runtime、model 与本地配置安装。
 
-真实 Higgs reference-conditioned Cloud runtime validation 尚未完成。Cloud validation 必须使用届时选定且已合并的 exact `main` commit；Production integration 与 offline validation 已完成，但 Cloud gate 通过前不能宣称 Higgs production-ready。
+Higgs3 已完成真实 Google Cloud GPU runtime execution。本文仍用于 formal
+validation checklist 的执行：production reference approval、control/perceptual
+review、representative batch/resource evidence 与 production-scale rehearsal
+尚未全部验收。必须使用实际执行的 exact `main` SHA 记录 evidence，不能把
+runtime success 写成整体 production approval。
 
 ## 1. Cloud machine 要求
 
@@ -12,7 +16,7 @@
 
 - NVIDIA GPU、匹配的 driver/CUDA userspace，显存足以加载实际 checkpoint；
 - 本地磁盘可容纳 repository、model、reference、outputs 与 evidence；
-- 能执行 `sgl-omni`、Python、`uv`、`ffmpeg`、`git`、`nvidia-smi`；
+- 能执行 bootstrap 路径 `third_party/sglang-omni/.venv/bin/sgl-omni`、Python、`uv`、`ffmpeg`、`git`、`nvidia-smi`；
 - loopback `127.0.0.1` 上有一个空闲端口，默认 18080；
 - output/evidence directory 可写；
 - 若下载依赖/model，使用项目批准的凭据与网络路径，不把 token 写入 config 或 log。
@@ -31,7 +35,7 @@ git status --short
 git log --oneline -5
 ```
 
-把 full SHA 写入 evidence notes。运行前 worktree 应清楚说明是否 clean；若不是，保存 diff 并停止 production approval。Phase 4B 尚未提交，因此本文不预填未来 SHA；真实验证使用届时选定且已合并的 exact `main` commit。
+把 full SHA 写入 evidence notes。运行前 worktree 应清楚说明是否 clean；若不是，保存 diff 并停止 approval。不要把历史开发 SHA 写成 fresh install 或当前 evidence 的固定要求。
 
 ## 3. Python / project environment
 
@@ -48,15 +52,15 @@ ffmpeg -version | head -1
 
 ## 4. Higgs / SGLang runtime
 
-安装或 provision 已批准的 SGLang-Omni runtime。Renderer 不负责下载它。确认 server executable 是普通 executable file：
+正常 production path 使用 `scripts/setup_cloud_environment.sh` 已安装并验证的
+SGLang-Omni 环境。不要用 PATH 中任意一个 `sgl-omni` 代替 reviewed runtime：
 
 ```bash
-command -v sgl-omni
-/absolute/path/to/sgl-omni --help
-sha256sum /absolute/path/to/sgl-omni
+third_party/sglang-omni/.venv/bin/sgl-omni --help
 ```
 
-Worker 会用该 executable 启动：
+bootstrap 会检查当前 pin 的 SGLang-Omni/SGLang、Torch/CUDA、GPU 和可执行文件。
+Worker 会使用 bootstrap 生成的 executable 启动：
 
 ```text
 sgl-omni serve --model-path <model_dir> --host 127.0.0.1 --port <port>
@@ -66,24 +70,47 @@ sgl-omni serve --model-path <model_dir> --host 127.0.0.1 --port <port>
 
 ## 5. Model path
 
-把 checkpoint 放在 Cloud local disk，并记录：model ID、absolute path、revision（若已知）、关键 artifact hash、总大小。至少确认目录存在且 worker user 可读：
+正常 production path 使用 bootstrap 下载并验证的本地目录：
 
-```bash
-test -d /absolute/path/to/higgs-model
-du -sh /absolute/path/to/higgs-model
-find /absolute/path/to/higgs-model -maxdepth 1 -type f -printf '%f %s bytes\n' | sort
-sha256sum /absolute/path/to/higgs-model/model.safetensors
+```text
+models/higgs-tts-3-4b
 ```
 
-若 checkpoint 分片，保存所有实际 shard 名称与 hash，或保存批准的 manifest。不要把 model 文件提交到 repository。
+`scripts/setup_cloud_environment.sh` 固定并检查 Higgs model revision、
+`model.safetensors` SHA-256 和必需文件。运行前记录脚本实际打印的 model
+identity；不要在 reviewed bootstrap workflow 中随意替换 checkpoint path，也
+不要把 model 文件提交到 repository。
+
+```bash
+test -d models/higgs-tts-3-4b
+du -sh models/higgs-tts-3-4b
+find models/higgs-tts-3-4b -maxdepth 1 -type f -printf '%f %s bytes\n' | sort
+sha256sum models/higgs-tts-3-4b/model.safetensors
+```
 
 ## 6. `config_higgs_cloud.yaml` 设置
 
-Repository 提供 `config/config.higgs.example.yaml`；复制为本地运行配置并填绝对路径：
+正常 production path 使用 bootstrap 创建并验证的：
+
+```text
+config/config_higgs_cloud.yaml
+```
+
+其 reviewed contract 使用 `third_party/sglang-omni/.venv/bin/sgl-omni`、
+`models/higgs-tts-3-4b`、`127.0.0.1:18080` 和脚本固定的 timeout/audio fields。
+运行 bootstrap 后不要把 `config/config.higgs.example.yaml` 复制覆盖
+`config/config_higgs_cloud.yaml`。example 文件只作为非-bootstrap custom
+environment 的 template/reference。
 
 ```bash
-cp config/config.higgs.example.yaml config/config_higgs_cloud.yaml
+test -f config/config_higgs_cloud.yaml
+sed -n '1,80p' config/config_higgs_cloud.yaml
+sha256sum config/config_higgs_cloud.yaml
 ```
+
+如果明确选择 custom absolute-path environment，它不属于当前 reviewed
+bootstrap contract；`setup_cloud_environment.sh --check` 的 Local Higgs config
+gate 不会把它认作标准配置。不要把 custom workflow 与 bootstrap workflow 混写。
 
 关键内容：
 
@@ -91,8 +118,8 @@ cp config/config.higgs.example.yaml config/config_higgs_cloud.yaml
 tts:
   engine: higgs
   higgs:
-    server_executable: /absolute/path/to/sgl-omni
-    model_dir: /absolute/path/to/higgs-model
+    server_executable: third_party/sglang-omni/.venv/bin/sgl-omni
+    model_dir: models/higgs-tts-3-4b
     host: 127.0.0.1
     port: 18080
     startup_timeout_seconds: 900
@@ -155,7 +182,7 @@ git status --short
 sha256sum config/config_higgs_cloud.yaml
 uv run python --version
 uv pip freeze
-/absolute/path/to/sgl-omni --version
+third_party/sglang-omni/.venv/bin/sgl-omni --help
 ffmpeg -version
 nvidia-smi
 nvidia-smi --query-gpu=name,uuid,driver_version,memory.total --format=csv

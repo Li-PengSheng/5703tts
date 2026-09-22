@@ -1,4 +1,6 @@
-# 5703tts 生产路径导读
+# 5703tts 生产路径导读（归档）
+
+> Archived historical walkthrough. For current documentation see [../CURRENT_STATUS.md](../CURRENT_STATUS.md), [../ARCHITECTURE.md](../ARCHITECTURE.md), and [../RUNNING.md](../RUNNING.md).
 
 ## 当前产品边界
 

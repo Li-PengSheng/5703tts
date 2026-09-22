@@ -1,6 +1,6 @@
 # Code reading guide
 
-Read the production path in this order. Each stop answers one question, states its ownership boundary, and points to the next file.
+Read the production path in this order. Each stop answers one question, states its ownership boundary, and points to the next file. For current evidence levels see [CURRENT_STATUS.md](CURRENT_STATUS.md); for persisted shapes see [DATA_CONTRACTS.md](DATA_CONTRACTS.md).
 
 ## 1. Input containers and source identity
 

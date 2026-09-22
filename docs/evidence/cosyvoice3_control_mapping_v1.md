@@ -1,5 +1,7 @@
 # CosyVoice3 Production Control Mapping v1
 
+> Historical/specialised mapping evidence. For the current cross-backend summary see [../CONTROLS_AND_BACKENDS.md](../CONTROLS_AND_BACKENDS.md); for current status see [../CURRENT_STATUS.md](../CURRENT_STATUS.md).
+
 ## Decision
 
 - Backup/secondary production backend: CosyVoice3

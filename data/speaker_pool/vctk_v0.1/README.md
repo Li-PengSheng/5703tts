@@ -66,8 +66,10 @@ VCTK candidates
    `speaker_id` values; the production renderer then resolves them through the
    speaker sidecar.
 
-Stages 1 to 7 are complete for v0.1. Real Higgs cloud/GPU validation remains a
-separate runtime gate.
+Stages 1 to 7 are complete for v0.1. Project status reports real Higgs3 GPU
+runtime execution, but this pool still has no production-approved
+`higgs_reference`; execution is not reference approval or perceptual validation.
+See [`docs/CURRENT_STATUS.md`](../../../docs/CURRENT_STATUS.md).
 
 ## Active pool v0.1
 

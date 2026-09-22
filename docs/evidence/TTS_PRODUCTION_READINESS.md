@@ -1,8 +1,16 @@
-# TTS production readiness
+# Historical TTS production-readiness snapshot
+
+> Historical evidence snapshot. For current status see [../CURRENT_STATUS.md](../CURRENT_STATUS.md).
+
+All status statements below refer to that historical snapshot, not the current
+project state.
 
 ## Current decision
 
-The software/offline path is strongly validated. CosyVoice3 has real mini-batch runtime evidence. Higgs production integration is implemented and offline-validated, but real reference-conditioned Cloud validation is still pending; Higgs must not be described as production-ready until that gate passes.
+This document preserves an earlier evidence snapshot. It predates the current
+project-level report that real Higgs3 and CosyVoice3 GPU runtime execution has
+been achieved. It remains useful for the evidence claims recorded at that time;
+it is not the current-state source of truth.
 
 Higgs remains the configured production primary. CosyVoice3 remains an explicitly selected backup/secondary. There is no automatic fallback.
 
@@ -60,7 +68,7 @@ Still pending on real Cloud hardware:
 - intelligibility, naturalness, artifacts, and controlled-turn behavior;
 - batch performance, long-running resource stability, and shutdown/GPU release.
 
-Use [HIGGS_CLOUD_VALIDATION.md](HIGGS_CLOUD_VALIDATION.md) as the formal evidence checklist and [HIGGS_PRODUCTION_RUNBOOK_CN.md](HIGGS_PRODUCTION_RUNBOOK_CN.md) as its execution guide.
+Use [HIGGS_CLOUD_VALIDATION.md](../HIGGS_CLOUD_VALIDATION.md) as the formal evidence checklist and [HIGGS_PRODUCTION_RUNBOOK_CN.md](../HIGGS_PRODUCTION_RUNBOOK_CN.md) as its execution guide.
 
 ## Evidence boundary
 
@@ -82,11 +90,11 @@ Manifest v2 is atomically written at batch completion, not checkpointed after ev
 4. Receive the real final source corpus; it is not committed in this repository.
 5. Run a large-scale production rehearsal on that final corpus and review failures, throughput, storage, resume, and handoff artifacts.
 
-Until these gates pass, the accurate claim is: software/offline path strongly validated; CosyVoice mini-batch runtime demonstrated; Higgs production integration implemented but real reference-conditioned Cloud validation pending.
+At the time of this historical snapshot, the accurate claim was: software/offline path strongly validated; CosyVoice mini-batch runtime demonstrated; Higgs production integration implemented but real reference-conditioned Cloud validation pending.
 
 ## Known limitations
 
-- Real Higgs Cloud validation is pending.
+- At snapshot time, real Higgs Cloud validation was pending.
 - Higgs reference candidates need actual approval.
 - Full model/runtime identity is not cryptographically pinned.
 - Batch result is written at batch completion rather than after each dialogue.

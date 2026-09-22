@@ -155,6 +155,14 @@ Canonical objects own source/render semantics but no backend-native fields. They
 - `pause_before_ms` — assembly-owned timing;
 - `approved_reference` — render speaker plus declared/resolved path and SHA.
 
+The internal/property names `approved_reference` and
+`approved_speaker_reference` mean the reference selected by the prepared render
+path and verified against its declared path/SHA. They do not by themselves mean
+that the speaker/reference completed the project's formal Higgs
+production-reference approval process. Formal backend-specific approval remains
+represented by the speaker registry/sidecar workflow and project evidence
+status.
+
 `CosyVoicePreparedTurn` contains source/speaker identity, selected prompt WAV/resolved path/text/SHA, and a validated cached plan. Its `worker_request(output_path)` exposes only cached text, prompt, speed, mode, optional instruction, and output path.
 
 Constructors call `validate_higgs_plan()` or `validate_cosyvoice_plan()` before publishing an object. Plans are deep-copied on construction and returned through defensive copies. Downstream execution, metadata, and QC must not remap or mutate them.
@@ -251,6 +259,13 @@ Metadata is written as `<dialogue_id>_metadata.json`. Representative shape:
 ```
 
 CosyVoice metadata uses `mode: "prepared_final"`, its mapping name/version/status, `model`, and prompt reference fields (`prompt_wav`, resolved prompt path, `prompt_text`, SHA). The exact `planned` object is backend-specific and is copied from the prepared turn.
+
+Both backend metadata paths currently write
+`runtime_verification: "not_runtime_verified"`. This field is deliberately
+unchanged in code: it says that one dialogue's metadata does not attest the
+external runtime environment. It does not say that the project has never
+executed Higgs3 or CosyVoice3 on a real GPU. Project-level runtime status belongs
+in [CURRENT_STATUS.md](CURRENT_STATUS.md) and evidence records.
 
 Resume artifact validation uses metadata dialogue/source identity, selected backend and implementation ID, turn order/IDs, labels, requested controls, timing, and expected turn/output filenames. It also decodes the live WAVs. Metadata-controlled arbitrary paths are never used for cleanup.
 
