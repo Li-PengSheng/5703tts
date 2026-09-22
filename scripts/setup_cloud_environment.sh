@@ -322,11 +322,16 @@ ensure_uv() {
     export PATH="$HOME/.local/bin:$PATH"
   fi
 
-  local path_line
-  path_line='export PATH="$HOME/.local/bin:$PATH"'
-  grep -qxF "$path_line" "$HOME/.profile" 2>/dev/null || \
+    local path_line
+    path_line='export PATH="$HOME/.local/bin:$PATH"'
+
+    grep -qxF "$path_line" "$HOME/.profile" 2>/dev/null || \
     printf '%s\n' "$path_line" >>"$HOME/.profile"
-  uv --version
+
+    grep -qxF "$path_line" "$HOME/.bashrc" 2>/dev/null || \
+    printf '%s\n' "$path_line" >>"$HOME/.bashrc"
+
+    uv --version
 }
 
 ensure_uv_python() {
