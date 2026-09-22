@@ -11,6 +11,7 @@ from __future__ import annotations
 import atexit
 import json
 import logging
+import os
 import subprocess
 import threading
 from collections import deque
@@ -22,6 +23,7 @@ logger = logging.getLogger("tts5703.tts_engine")
 
 _WORKER_SCRIPT = Path(__file__).resolve().with_name("cosyvoice_worker.py")
 _TERMINATE_TIMEOUT_SEC = 5
+_DEFAULT_COSYVOICE_CUDA_HOME = "/usr/local/cuda-12.1"
 
 
 def _project_root() -> Path:
@@ -64,6 +66,16 @@ def _worker_error(
     return "\n".join(stderr_tail) or fallback
 
 
+cuda_home = os.environ.get(
+    "COSYVOICE_CUDA_HOME",
+    _DEFAULT_COSYVOICE_CUDA_HOME,
+)
+
+env = os.environ.copy()
+env["CUDA_HOME"] = cuda_home
+env["PATH"] = f"{cuda_home}/bin:{env.get('PATH', '')}"
+
+
 @lru_cache(maxsize=1)
 def _get_worker(
     python_bin: str,
@@ -81,6 +93,7 @@ def _get_worker(
         stderr=subprocess.PIPE,
         text=True,
         bufsize=1,
+        env=env,
     )
     stderr_tail = _drain_stderr(proc)
     proc._cosyvoice_stderr_tail = stderr_tail
