@@ -1,0 +1,1 @@
+2026-09-22 09:49:45 | INFO     | tts5703.cli | event=final_batch_complete status=success rendered=0 resumed=1 excluded=0 failed=0 elapsed_sec=0.01 manifest=evidence/output/higgs_one_turn/batch_result.json

@@ -1,0 +1,50 @@
+{
+  "schema_version": "1.0",
+  "dialogue_id": "higgs_one_turn_001",
+  "scenario": {
+    "speakers": {
+      "caller": {
+        "speaker_id": "C001"
+      },
+      "counsellor": {
+        "speaker_id": "L001"
+      }
+    }
+  },
+  "turns": [
+    {
+      "turn_id": 1,
+      "speaker": "User",
+      "text": "I feel a little overwhelmed today.",
+      "labels": {},
+      "acoustic": {
+        "required": {
+          "rate": "normal",
+          "arousal": 2,
+          "affect": "neutral",
+          "pause_before": "none",
+          "pause_within": 0,
+          "hesitations": 0
+        },
+        "best_effort": {}
+      }
+    },
+    {
+      "turn_id": 2,
+      "speaker": "Listener",
+      "text": "I understand. We can work through it together.",
+      "labels": {},
+      "acoustic": {
+        "required": {
+          "rate": "normal",
+          "arousal": 2,
+          "affect": "neutral",
+          "pause_before": "short",
+          "pause_within": 0,
+          "hesitations": 0
+        },
+        "best_effort": {}
+      }
+    }
+  ]
+}
