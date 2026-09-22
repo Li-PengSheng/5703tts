@@ -472,6 +472,7 @@ ensure_cosyvoice_environment() {
   ensure_venv "$COSYVOICE_DIR/.venv" "3.10"
   uv pip install \
     --python "$COSYVOICE_PYTHON" \
+    --index-strategy unsafe-best-match \
     -r "$COSYVOICE_DIR/requirements.txt"
 
   "$COSYVOICE_PYTHON" - <<'PY'
