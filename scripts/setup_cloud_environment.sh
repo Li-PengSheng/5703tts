@@ -15,7 +15,8 @@ readonly HIGGS_MODEL_ID="bosonai/higgs-tts-3-4b"
 readonly HIGGS_MODEL_REVISION="0056125158f940389ab0808a581b8b2c590b32d4"
 readonly HIGGS_MODEL_SHA256="2f7965264c360b38180885006944aa16bd1de20f4e6cff79f6473bfcf8ae3d5a"
 readonly -a BASE_PACKAGES=(
-  git curl wget ca-certificates python3 ffmpeg sox libsndfile1
+  git curl wget ca-certificates python3 python3.10-dev
+  ffmpeg sox libsndfile1
   build-essential pkg-config iproute2 mokutil pciutils debconf
 )
 readonly -a UCX_PACKAGES=(
