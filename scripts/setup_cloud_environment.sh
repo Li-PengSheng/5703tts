@@ -16,7 +16,7 @@ readonly HIGGS_MODEL_REVISION="0056125158f940389ab0808a581b8b2c590b32d4"
 readonly HIGGS_MODEL_SHA256="2f7965264c360b38180885006944aa16bd1de20f4e6cff79f6473bfcf8ae3d5a"
 readonly -a BASE_PACKAGES=(
   git curl wget ca-certificates python3 ffmpeg sox libsndfile1
-  build-essential pkg-config iproute2 mokutil pciutils
+  build-essential pkg-config iproute2 mokutil pciutils debconf
 )
 readonly -a UCX_PACKAGES=(
   autoconf automake libtool make gcc g++ flex bison m4 libnuma-dev
@@ -114,6 +114,14 @@ git -C "$PROJECT_ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1 || \
 cd "$PROJECT_ROOT"
 export PATH="$HOME/.local/bin:$PATH"
 export PYTHONDONTWRITEBYTECODE=1
+
+# Keep package provisioning non-interactive on cloud/minimal Ubuntu.
+# sudo does not reliably preserve these variables, so root package/installer
+# commands below also pass them explicitly through `sudo env`.
+export DEBIAN_FRONTEND=noninteractive
+export DEBCONF_NONINTERACTIVE_SEEN=true
+export APT_LISTCHANGES_FRONTEND=none
+export NEEDRESTART_MODE=a
 
 readonly PROJECT_ROOT SCRIPT_DIR
 readonly PROJECT_PYTHON="$PROJECT_ROOT/.venv/bin/python"
@@ -227,14 +235,54 @@ disk_check() {
   fi
 }
 
+sudo_noninteractive() {
+  sudo env \
+    DEBIAN_FRONTEND=noninteractive \
+    DEBCONF_NONINTERACTIVE_SEEN=true \
+    APT_LISTCHANGES_FRONTEND=none \
+    NEEDRESTART_MODE=a \
+    "$@"
+}
+
+configure_keyboard_us() {
+  printf 'Configuring non-interactive US keyboard layout.\n'
+
+  # debconf-set-selections is supplied by debconf. Minimal images normally
+  # already contain it; bootstrap it explicitly if necessary.
+  if ! command -v debconf-set-selections >/dev/null 2>&1; then
+    sudo_noninteractive apt-get update
+    sudo_noninteractive apt-get install -y debconf
+  fi
+
+  sudo debconf-set-selections <<'EOF'
+keyboard-configuration keyboard-configuration/modelcode string pc105
+keyboard-configuration keyboard-configuration/layoutcode string us
+keyboard-configuration keyboard-configuration/variantcode string
+keyboard-configuration keyboard-configuration/optionscode string
+keyboard-configuration keyboard-configuration/store_defaults_in_debconf_db boolean true
+EOF
+
+  sudo mkdir -p /etc/default
+  sudo tee /etc/default/keyboard >/dev/null <<'EOF'
+XKBMODEL="pc105"
+XKBLAYOUT="us"
+XKBVARIANT=""
+XKBOPTIONS=""
+BACKSPACE="guess"
+EOF
+}
+
 install_base_packages() {
   stage 2 "Installing base packages and checking Secure Boot"
   command -v sudo >/dev/null 2>&1 || die "sudo is required"
+
+  configure_keyboard_us
+
   if packages_installed "${BASE_PACKAGES[@]}"; then
     printf 'Base packages already installed; skipping apt.\n'
   else
-    sudo apt-get update
-    sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    sudo_noninteractive apt-get update
+    sudo_noninteractive apt-get install -y \
       "${BASE_PACKAGES[@]}"
   fi
 
@@ -262,7 +310,7 @@ ensure_nvidia_driver() {
   sudo systemctl stop google-cloud-ops-agent 2>/dev/null || true
   printf 'The NVIDIA installer may reboot this VM.\n'
   print_resume_command
-  sudo python3 "$HOME/cuda_installer.pyz" install_driver \
+  sudo_noninteractive python3 "$HOME/cuda_installer.pyz" install_driver \
     --installation-mode=repo \
     --installation-branch=prod
   request_reboot "NVIDIA driver stage requested reboot."
@@ -560,7 +608,7 @@ ensure_cuda_toolkit() {
   ensure_cuda_installer
   printf 'The CUDA installer may reboot before installation completes. Rerun the same command after every reconnect.\n'
   print_resume_command
-  sudo python3 "$HOME/cuda_installer.pyz" install_cuda \
+  sudo_noninteractive python3 "$HOME/cuda_installer.pyz" install_cuda \
     --installation-mode=repo \
     --installation-branch=prod
   mkdir -p "$SETUP_STATE_DIR"
@@ -631,8 +679,8 @@ ensure_ucx() {
   if packages_installed "${UCX_PACKAGES[@]}"; then
     printf 'UCX build packages already installed; skipping apt.\n'
   else
-    sudo apt-get update
-    sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    sudo_noninteractive apt-get update
+    sudo_noninteractive apt-get install -y \
       "${UCX_PACKAGES[@]}"
   fi
 
