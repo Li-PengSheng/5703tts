@@ -33,7 +33,7 @@ path and hash before emitting the sidecar.
 **No production Higgs references are currently approved.** The existing VCTK
 primary WAVs may be tested as candidates in Google Cloud, but the registry must
 remain unchanged until real Higgs voice/quality review passes. See
-[`docs/HIGGS_CLOUD_VALIDATION.md`](../../../docs/HIGGS_CLOUD_VALIDATION.md).
+[`docs/VALIDATION.md`](../../../docs/VALIDATION.md).
 
 ## Lifecycle
 
@@ -69,7 +69,7 @@ VCTK candidates
 Stages 1 to 7 are complete for v0.1. Project status reports real Higgs3 GPU
 runtime execution, but this pool still has no production-approved
 `higgs_reference`; execution is not reference approval or perceptual validation.
-See [`docs/CURRENT_STATUS.md`](../../../docs/CURRENT_STATUS.md).
+See [`docs/VALIDATION.md`](../../../docs/VALIDATION.md).
 
 ## Active pool v0.1
 

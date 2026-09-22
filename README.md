@@ -1,52 +1,43 @@
 # 5703tts
 
 `5703tts` is the final dialogue-rendering stage of the COMP5703 / CS-28
-Controlled-TTS workflow. It accepts final nested JSON/JSONL dialogues and
-produces per-dialogue speech WAVs, a clean assembled WAV, a limited
-telephone-labelled WAV, provenance metadata, structural QC, and a manifest-v2
-batch state file.
+Controlled-TTS workflow. It turns final nested JSON/JSONL dialogues into
+speech-only turn WAVs, assembled clean and telephone-labelled WAVs, provenance
+metadata, structural QC, and manifest-v2 batch state.
 
 ```text
-InputRecord -> final validation -> exclusion policy + speaker sidecar
--> CanonicalDialogue -> one selected backend PreparedDialogue
--> whole-dialogue preflight -> synthesis -> assembly -> metadata/QC
--> manifest v2 -> semantic resume
+InputRecord -> validation/exclusion -> speaker sidecar -> canonical/prepared plan
+-> whole-dialogue preflight -> one backend -> assembly -> metadata/QC -> manifest/resume
 ```
 
 ## Current boundary
 
-The current baseline is commit `582464cbe17eadc852044f3cc923be3065a58135`
-(snapshot: 2026-09-22). Project-level reports state that Higgs3 and CosyVoice3
-have both achieved real Google Cloud GPU runtime execution. This does not by
-itself establish reference approval, control/perceptual fidelity,
-production-scale rendering, or downstream clinical usefulness.
+At baseline `8347253aff79aa542fcf19278cc1b80f0d2a816c` (2026-09-22), both
+Higgs3 and CosyVoice3 have achieved real Google Cloud GPU runtime execution.
+That does not establish production reference approval, control/perceptual
+fidelity, production-scale rendering, or clinical usefulness.
 
-Higgs3 is the configured default backend. CosyVoice3 is an explicitly selected
-secondary backend. Set `tts.engine` to choose exactly one backend for a run;
-there is no automatic Higgs-to-CosyVoice fallback.
+Higgs3 is the configured default backend. CosyVoice3 is explicitly selected as
+the secondary backend. Set `tts.engine` to choose one backend per run; there is
+no automatic fallback.
 
 ## Input and output
 
-Input is a `.json` file containing one dialogue or a `.jsonl` file containing one
-dialogue object per nonblank line. The final contract requires `dialogue_id`,
-`scenario.speakers`, turns, and the six required controls:
-`rate`, `arousal`, `affect`, `pause_before`, `pause_within`, and `hesitations`.
+Input is one final nested dialogue object in `.json`, or one object per nonblank
+line in `.jsonl`. Required controls are `rate`, `arousal`, `affect`,
+`pause_before`, `pause_within`, and `hesitations`. Source `User`/`Listener`
+roles and scenario IDs remain unchanged; a sidecar maps logical roles to
+production `spk_*` identities and backend-specific references.
 
-The renderer keeps upstream `User`/`Listener` and scenario IDs unchanged. A
-separate sidecar maps logical `caller`/`counsellor` roles to production
-`spk_*` IDs and to the selected backend's reference contract.
-
-## Start here
-
-For a fresh Google Cloud / Ubuntu host, the checked-in bootstrap is the main
-entry point:
+## Fresh Cloud quick start
 
 ```bash
 bash scripts/setup_cloud_environment.sh
 bash scripts/setup_cloud_environment.sh --check
 ```
 
-Select a backend in config, provide a matching sidecar, then run:
+After bootstrap, a Higgs render uses the generated
+`config/config_higgs_cloud.yaml`:
 
 ```bash
 uv run 5703tts \
@@ -57,25 +48,19 @@ uv run 5703tts \
   --resume
 ```
 
-After the Cloud bootstrap, the Higgs command uses the generated
-`config/config_higgs_cloud.yaml`. `config/config.yaml` is the repository
-template/documented shape and its Higgs paths remain placeholders. For an
-explicit CosyVoice run, use `config/config_cosyvoice.yaml`.
+`config/config.yaml` is a repository template with placeholder Higgs paths.
+For an explicit CosyVoice run, use `config/config_cosyvoice.yaml`. See
+[RUNNING.md](docs/RUNNING.md) for sidecar materialization, smoke tests, batch,
+resume, and troubleshooting.
 
-## Documentation map
+## Documentation
 
-- [Current status](docs/CURRENT_STATUS.md) — the only current-state source of truth.
-- [Architecture](docs/ARCHITECTURE.md) — ownership boundaries and execution design.
-- [Running](docs/RUNNING.md) — offline, Cloud, smoke, batch, resume, and troubleshooting.
-- [中文安装与运行](docs/INSTALLATION_AND_SETUP_CN.md)
-- [Data contracts](docs/DATA_CONTRACTS.md) — source, sidecar, prepared plans, metadata, manifest.
-- [Controls and backends](docs/CONTROLS_AND_BACKENDS.md) — cross-backend realization and evidence level.
-- [Code reading guide](docs/CODE_READING_GUIDE.md) — source order and call graph.
-- [Development](docs/DEVELOPMENT.md) — environments, tests, invariants, and change checklist.
-- [Higgs Cloud validation](docs/HIGGS_CLOUD_VALIDATION.md) and [Higgs runbook](docs/HIGGS_PRODUCTION_RUNBOOK_CN.md) — formal and operational evidence capture.
-- [Historical evidence](docs/evidence/) and [archived guides](docs/archive/).
+- [Pipeline](docs/PIPELINE.md) — architecture, contracts, controls, outputs, source map, and invariants.
+- [Running](docs/RUNNING.md) — offline checks, Cloud bootstrap, backend runs, batch, resume, and troubleshooting.
+- [Status and validation](docs/VALIDATION.md) — evidence levels, current runtime status, validation checklist, and remaining gates.
+- [VCTK speaker pool](data/speaker_pool/vctk_v0.1/README.md) — local speaker-pool and reference asset contract.
 
-## Development checks
+Development checks:
 
 ```bash
 uv run ruff check .

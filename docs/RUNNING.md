@@ -1,71 +1,72 @@
 # Running
 
-This is the operational guide. The current evidence boundary is in
-[CURRENT_STATUS.md](CURRENT_STATUS.md); this page does not turn a successful
-command into a production-approval claim.
+This is the single operational guide for local/offline checks and Google Cloud
+GPU rendering. Project status and formal evidence gates are in
+[VALIDATION.md](VALIDATION.md).
 
-## 1. Offline project environment
+## Requirements
 
-The project requires Python 3.11 and uses the repository `.venv`:
+Use a normal sudo-capable user on Ubuntu 22.04 or 24.04. The reviewed Google
+Cloud GPU bootstrap requires Secure Boot to be disabled. If it is enabled, the
+bootstrap stops before NVIDIA installation; it does not modify firmware or
+security settings. `--check` reports the condition as non-PASS/`WRONG_VERSION`.
 
-```bash
-uv sync
-uv run 5703tts --help
-uv run ruff check .
-uv run --with pytest pytest -q
+The repository `.venv` is Python 3.11. The backend environments are deliberately
+separate:
+
+```text
+.venv/                              Python 3.11, CLI and tests
+third_party/CosyVoice/.venv         Python 3.10, CosyVoice worker/model
+third_party/sglang-omni/.venv       Python 3.12, Higgs/SGLang worker/server
 ```
 
-The test suite is offline/static: it does not download models or require a GPU.
+## Fresh Cloud bootstrap
 
-## 2. Fresh Google Cloud / Ubuntu setup
-
-Run from the repository checkout as a normal sudo-capable user, not root:
+From a fresh checkout, run:
 
 ```bash
 bash scripts/setup_cloud_environment.sh
 bash scripts/setup_cloud_environment.sh --check
 ```
 
-Modes are:
+The modes are:
 
 | Mode | Scope |
 | --- | --- |
 | `--all` | Base, CosyVoice3, and Higgs3 (default) |
-| `--base` | Ubuntu/GPU/uv/project prerequisites only |
-| `--cosyvoice` | Verify base, then CosyVoice source/environment/model |
-| `--higgs` | Verify base, then CUDA/UCX/SGLang/Higgs model/config |
-| `--check` | Read-only status report; changes nothing |
+| `--base` | Ubuntu/GPU/uv/project prerequisites |
+| `--cosyvoice` | Base plus CosyVoice source/environment/model |
+| `--higgs` | Base plus CUDA/UCX/SGLang/Higgs model/config |
+| `--check` | Read-only status report |
 
-The current Google Cloud GPU bootstrap targets Ubuntu 22.04 or 24.04 and
-requires Secure Boot to be disabled. If Secure Boot is enabled, the bootstrap
-stops before NVIDIA installation; it does not modify firmware or security
-settings. `--check` reports the condition as non-PASS/`WRONG_VERSION` rather
-than silently changing it. The script accepts `--no-reboot` and returns exit
-`75` when a reboot is required. It checks project Python 3.11,
-CosyVoice Python 3.10, Higgs Python 3.12, CUDA 13, UCX with CUDA, SGLang-Omni,
-GPU availability, model revisions/SHA, and local Higgs config. Record the
-actual SHA and versions printed by the run for evidence.
+The script checks or installs project Python 3.11, CosyVoice Python 3.10,
+Higgs/SGLang Python 3.12, CUDA/UCX, pinned backend source and model revisions,
+GPU availability, and the local Higgs configuration. If a reboot is required,
+reconnect and rerun the same command (or use `--no-reboot`, which exits `75`).
+Record the actual repository SHA, pins, GPU, and model identity printed by the
+run for evidence.
 
-The three Python environments are intentionally separate:
+## Offline project checks
 
-```text
-project .venv                       Python 3.11, CLI/tests
-third_party/CosyVoice/.venv         Python 3.10, CosyVoice worker/model
-third_party/sglang-omni/.venv       Python 3.12, Higgs/SGLang worker/server
+```bash
+uv sync
+uv run 5703tts --help
+uv run ruff check .
+uv run --with pytest pytest -q
+git diff --check
 ```
 
-## 3. Prepare input and speakers
+These checks do not download models or establish GPU, reference, acoustic, or
+perceptual validation.
 
-Assign logical roles without editing source JSON:
+## Prepare the speaker sidecar
+
+Assignments do not rewrite source JSON:
 
 ```bash
 uv run python scripts/assign_dialogue_speakers.py \
   --input data/final/dialogues.jsonl
-```
 
-Materialize a backend-specific sidecar:
-
-```bash
 uv run python scripts/materialize_speaker_assignments.py \
   --input data/final/dialogues.jsonl \
   --assignments data/speaker_pool/vctk_v0.1/speaker_assignments.jsonl \
@@ -75,51 +76,48 @@ uv run python scripts/materialize_speaker_assignments.py \
   --backend cosyvoice
 ```
 
-Use `--backend higgs` only with a registry that has separately approved,
+Use `--backend higgs` only with a registry containing separately approved,
 hash-verified `higgs_reference` entries. `--backend both` emits both contracts.
+The current VCTK registry has no production-approved Higgs references;
 CosyVoice `primary_reference` is not Higgs approval.
 
-## 4. Select exactly one backend
+## Select one backend
 
-Higgs default template:
+`tts.engine` is `higgs` or `cosyvoice`. One run uses one backend and there is no
+automatic fallback.
 
-```yaml
-tts:
-  engine: higgs
+`config/config.yaml` is the repository template and its Higgs paths are
+placeholders. For CosyVoice, use `config/config_cosyvoice.yaml`.
+
+### Higgs3
+
+After the Higgs bootstrap, use only the generated and checked configuration:
+
+```text
+config/config_higgs_cloud.yaml
 ```
 
-CosyVoice explicit configuration:
+The reviewed bootstrap contract is:
+
+```text
+SGLang executable: third_party/sglang-omni/.venv/bin/sgl-omni
+model directory:   models/higgs-tts-3-4b
+host/port:         127.0.0.1:18080
+```
+
+Verify the executable with:
 
 ```bash
-cp config/config_cosyvoice.yaml /tmp/config_cosyvoice.yaml
+third_party/sglang-omni/.venv/bin/sgl-omni --help
 ```
 
-Then pass that config (or set the same values in a local config). There is no
-automatic fallback if the selected backend fails.
+Do not copy `config/config.higgs.example.yaml` over the generated cloud config.
+The example is a template/reference for non-bootstrap custom environments.
+Custom absolute-path configurations are outside the reviewed bootstrap
+contract, and `setup_cloud_environment.sh --check` will not treat them as the
+standard local Higgs configuration.
 
-## 5. CosyVoice3 run
-
-The checked-in CosyVoice config uses its own Python worker, repository, and
-model directory. Run a one-dialogue smoke first:
-
-```bash
-uv run 5703tts \
-  --input data/final/one_dialogue.json \
-  --speaker-sidecar data/speaker_sidecar.json \
-  --config config/config_cosyvoice.yaml \
-  --output data/output/cosyvoice-smoke \
-  --log-dir logs/cosyvoice-smoke \
-  --verbose
-```
-
-Positive `pause_within` fails during whole-dialogue preflight. A successful
-CosyVoice run proves execution and structural output, not affect/arousal
-fidelity or speaker/perceptual quality.
-
-## 6. Higgs3 run
-
-After `--higgs` setup, the script writes/verifies the local ignored
-`config/config_higgs_cloud.yaml`. Use an approved-reference sidecar:
+Run a one-dialogue smoke with a sidecar containing an approved Higgs reference:
 
 ```bash
 uv run 5703tts \
@@ -131,11 +129,27 @@ uv run 5703tts \
   --verbose
 ```
 
-The worker owns the SGLang process group, waits for health, reuses one loaded
-server across turns, and keeps stdout protocol-only. A real runtime success is
-not equivalent to reference approval or perceptual validation.
+Higgs model speed is fixed at `1.0`; semantic rate is FFmpeg `atempo=0.85`,
+no transform, or `1.15` for slow, normal, or fast. Runtime success is not
+reference approval or perceptual validation.
 
-## 7. Small batch and resume
+### CosyVoice3
+
+```bash
+uv run 5703tts \
+  --input data/final/one_dialogue.json \
+  --speaker-sidecar data/speaker_sidecar.json \
+  --config config/config_cosyvoice.yaml \
+  --output data/output/cosyvoice-smoke \
+  --log-dir logs/cosyvoice-smoke \
+  --verbose
+```
+
+CosyVoice3 uses its isolated worker and `text_frontend=False`; rate is
+`0.8/1.0/1.2`, affect/arousal instructions are provisional, and positive
+`pause_within` fails closed during whole-dialogue preflight.
+
+## Batch and resume
 
 ```bash
 uv run 5703tts \
@@ -155,38 +169,37 @@ uv run 5703tts \
 ```
 
 For a CosyVoice batch, use `config/config_cosyvoice.yaml` in both commands.
-
-Resume needs a successful prior manifest entry with the same semantic
+Resume requires a successful prior manifest entry with the same semantic
 fingerprint, readable metadata/WAV artifacts, and matching live selected
-reference bytes. A changed selected backend, selected reference, shared audio
-settings, source content, or relevant identity causes rerender. The manifest is
-written atomically at batch completion, not after every dialogue.
+reference bytes. A changed source, selected backend/reference, shared audio
+setting, or relevant identity causes rerender. Manifest v2 is atomically
+written at batch completion, not after every dialogue.
 
-## 8. Output and QC
+## Outputs
 
-Each dialogue directory contains speech-only `turn_NNN.wav`,
-`<dialogue_id>_clean.wav`, `<dialogue_id>_telephone.wav`, and metadata. The
-telephone-labelled file is only mono/resampling/high-pass/low-pass/level
-processing; it is not a codec or PSTN simulation. QC is structural/control
-integrity only.
+Each dialogue directory contains speech-only `turn_NNN.wav`, a clean assembled
+WAV, a telephone-labelled WAV, metadata, and structural QC. Telephone output is
+only mono/resampling/filtering/level processing, not PSTN or codec simulation.
 
-## 9. Troubleshooting
+## Troubleshooting
 
 | Symptom | First checks |
 | --- | --- |
-| setup exits `75` | Reboot, reconnect, rerun the same setup command |
-| backend paths missing | `scripts/setup_cloud_environment.sh --check`, config paths, executable/model presence |
-| Higgs port/startup failure | Port `18080`, worker stderr, `nvidia-smi`, SGLang compatibility |
-| reference mismatch | Sidecar selected field, resolved path, live SHA-256 |
-| CosyVoice preflight failure | `pause_within > 0`, prompt WAV/text, selected config |
-| QC failure | Metadata/planned plan, turn order, WAV readability, timing |
-| resume unexpectedly rerenders | Fingerprint, metadata/WAV integrity, selected reference SHA |
-| stale artifacts remain | Only managed direct-child names are cleaned; unmanaged files are retained |
+| Secure Boot gate fails | Disable Secure Boot in the VM/firmware setup, then rerun; the script will not change it |
+| Setup exits `75` | Reboot, reconnect, and rerun the same setup mode |
+| CUDA/UCX/GPU gate fails | Run `--check`, inspect `nvidia-smi`, driver/CUDA/UCX identity, and GPU visibility |
+| Higgs config mismatch | Use the generated `config/config_higgs_cloud.yaml`; do not overwrite it with the example |
+| Higgs worker startup/port failure | Check executable path, model directory, port `18080`, worker stderr, and `nvidia-smi` |
+| Wrong reference | Check sidecar field, resolved path, and live SHA-256 |
+| CosyVoice preflight failure | Check positive `pause_within`, prompt WAV/text, and selected config |
+| Corrupt output or unexpected rerender | Check metadata/WAV integrity, fingerprint, and selected reference SHA |
+| Stale artifacts remain | Only managed direct-child names are cleaned; unmanaged files are retained |
 
-## 10. Evidence capture
+## Runtime identity for evidence
 
-Record the exact repository SHA, config SHA, backend and mapping identity, model
-revision/SHA, Python/package/CUDA/GPU versions, reference IDs and hashes,
-startup/per-turn/batch timing, output WAV metadata, manifest, QC, resume and
-shutdown observations. Do not infer perceptual or clinical claims from HTTP
-success, QC, or runtime completion alone.
+Formal evidence must record the exact repository commit SHA, config SHA, selected
+backend and mapping identity, model revision/checkpoint SHA, Python/package/
+SGLang/UCX/CUDA/GPU identity, reference paths and hashes, startup and render
+observations, output WAV metadata, manifest, QC, resume, and shutdown/resource
+behavior. Do not infer control fidelity, perceptual quality, or clinical
+usefulness from runtime completion or structural QC.
