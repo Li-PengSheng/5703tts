@@ -1,0 +1,3373 @@
+{
+  "schema_family": "final_nested",
+  "dialogue_id": "corpus_v1_000010",
+  "clean_audio": "corpus_v1_000010_clean.wav",
+  "telephone_audio": "corpus_v1_000010_telephone.wav",
+  "tts": {
+    "engine": "higgs",
+    "mode": "prepared_controlled_tts_v1",
+    "backend_identity": {
+      "backend": "higgs",
+      "model_id": "bosonai/higgs-tts-3-4b",
+      "model_dir": "models/higgs-tts-3-4b",
+      "server_executable": "third_party/sglang-omni/.venv/bin/sgl-omni",
+      "ffmpeg_bin": "ffmpeg",
+      "host": "127.0.0.1",
+      "port": 18080,
+      "startup_timeout_seconds": 900,
+      "inference_timeout_seconds": 300,
+      "control_mapping": {
+        "mapping_version": "controlled_tts_v1",
+        "release_status": "PROVISIONAL_PRODUCTION_MAPPING_WEEK6_FREEZE",
+        "provenance": {
+          "source_repository": "ginkgoyin/comp5703-tts-experiments",
+          "source_commit": "7b005135e148fad8a142f39dc8be3144c3e5adcc",
+          "contract_sha256": "4e787a5363d01e5454a8031c59bb1d4bb454ee37d44ccf262d471c7ce30ba799"
+        },
+        "implementation_id": "controlled_tts_v1_prod_1"
+      },
+      "generation_profile": {
+        "voice": "default",
+        "response_format": "wav",
+        "speed": 1.0,
+        "stream": false,
+        "max_new_tokens": 2048,
+        "temperature": 0.8,
+        "top_p": 0.8,
+        "top_k": 30
+      },
+      "references": {
+        "spk_011": {
+          "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_011_primary.wav",
+          "sha256": "d91903d62d42310e90deb900115a5b69bc488198c1ee0aff10ff3c742700c139"
+        },
+        "spk_009": {
+          "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_009_primary.wav",
+          "sha256": "ee0c2ef451292f4b7d7bf35beaa6e630976457c27e02226e87d4f12762582315"
+        }
+      },
+      "identity_complete": true
+    },
+    "model_id": "bosonai/higgs-tts-3-4b",
+    "control_mapping": {
+      "mapping_version": "controlled_tts_v1",
+      "release_status": "PROVISIONAL_PRODUCTION_MAPPING_WEEK6_FREEZE",
+      "provenance": {
+        "source_repository": "ginkgoyin/comp5703-tts-experiments",
+        "source_commit": "7b005135e148fad8a142f39dc8be3144c3e5adcc",
+        "contract_sha256": "4e787a5363d01e5454a8031c59bb1d4bb454ee37d44ccf262d471c7ce30ba799"
+      },
+      "implementation_id": "controlled_tts_v1_prod_1"
+    },
+    "generation_profile": {
+      "voice": "default",
+      "response_format": "wav",
+      "speed": 1.0,
+      "stream": false,
+      "max_new_tokens": 2048,
+      "temperature": 0.8,
+      "top_p": 0.8,
+      "top_k": 30
+    },
+    "runtime": {
+      "server_executable": "third_party/sglang-omni/.venv/bin/sgl-omni",
+      "host": "127.0.0.1",
+      "port": 18080,
+      "startup_timeout_seconds": 900,
+      "inference_timeout_seconds": 300,
+      "ffmpeg_bin": "ffmpeg"
+    },
+    "runtime_verification": "not_runtime_verified",
+    "references": {
+      "spk_011": {
+        "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_011_primary.wav",
+        "sha256": "d91903d62d42310e90deb900115a5b69bc488198c1ee0aff10ff3c742700c139"
+      },
+      "spk_009": {
+        "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_009_primary.wav",
+        "sha256": "ee0c2ef451292f4b7d7bf35beaa6e630976457c27e02226e87d4f12762582315"
+      }
+    },
+    "control_support": {
+      "required": {
+        "rate": {
+          "support": "pipeline_postprocess",
+          "realization": "ffmpeg_atempo"
+        },
+        "arousal": {
+          "support": "model_control",
+          "realization": "higgs_model_control"
+        },
+        "affect": {
+          "support": "model_control",
+          "realization": "higgs_model_control"
+        },
+        "pause_before": {
+          "support": "pipeline_timing",
+          "realization": "prepared_dialogue_assembly"
+        },
+        "pause_within": {
+          "support": "model_control",
+          "realization": "native_higgs_pause_token_planner"
+        },
+        "hesitations": {
+          "support": "model_control",
+          "realization": "lexical_planner"
+        }
+      },
+      "best_effort": {
+        "affect_fine": {
+          "support": "conditional_joint_realization",
+          "possible_statuses": [
+            "jointly_realized",
+            "not_realized",
+            "unsupported"
+          ]
+        },
+        "volume": {
+          "support": "unsupported",
+          "possible_statuses": [
+            "not_realized",
+            "unsupported"
+          ]
+        },
+        "flattened_affect": {
+          "support": "unsupported",
+          "possible_statuses": [
+            "not_realized",
+            "unsupported"
+          ]
+        },
+        "events": {
+          "support": "unsupported",
+          "possible_statuses": [
+            "not_realized",
+            "unsupported"
+          ]
+        }
+      }
+    }
+  },
+  "provenance": {
+    "record_sha256": "59e2536b4bb17c34840b7020a5050caafdfcb38bd79cb5f670653dac1050dd35",
+    "assignment_sha256": "1e4fa078e83c8bef67e3e719459d927f4911c9825d081c1551389d11dd4e53ea",
+    "registry_sha256": "6fc3ab7918b670fade009f1e2d1bbcf80fc8e8b2e1b87ac9efb8d714bc3e42c2",
+    "active_speakers_sha256": "3afe73567569f1c22390f9bef38ce34fef312909c21df48dd4d8b0562312e83b",
+    "mapping_version": "controlled_tts_v1",
+    "release_status": "PROVISIONAL_PRODUCTION_MAPPING_WEEK6_FREEZE",
+    "contract_sha256": "4e787a5363d01e5454a8031c59bb1d4bb454ee37d44ccf262d471c7ce30ba799",
+    "implementation_id": "controlled_tts_v1_prod_1"
+  },
+  "turns": [
+    {
+      "source_identity": {
+        "ordinal": 1,
+        "source_turn_id": 0,
+        "upstream_role": "User",
+        "logical_role": "caller",
+        "upstream_scenario_speaker_id": "C012",
+        "render_speaker_id": "spk_011"
+      },
+      "labels": [],
+      "requested": {
+        "acoustic": {
+          "required": {
+            "rate": "normal",
+            "arousal": 2,
+            "affect": "neutral",
+            "pause_before": "none",
+            "pause_within": 0,
+            "hesitations": 0
+          },
+          "best_effort": {
+            "affect_fine": null,
+            "volume": "normal",
+            "flattened_affect": false,
+            "events": []
+          }
+        }
+      },
+      "planned": {
+        "mapping_version": "controlled_tts_v1",
+        "release_status": "PROVISIONAL_PRODUCTION_MAPPING_WEEK6_FREEZE",
+        "source": {
+          "dialogue_id": "corpus_v1_000010",
+          "turn_id": 0
+        },
+        "logical_speaker": {
+          "upstream_role": "User",
+          "role": "caller",
+          "speaker_id": "C012"
+        },
+        "requested": {
+          "required": {
+            "rate": "normal",
+            "arousal": 2,
+            "affect": "neutral",
+            "pause_before": "none",
+            "pause_within": 0,
+            "hesitations": 0
+          },
+          "best_effort": {
+            "affect_fine": null,
+            "volume": "normal",
+            "flattened_affect": false,
+            "events": []
+          }
+        },
+        "normalized": {
+          "role": "caller",
+          "rate": "normal",
+          "arousal": "medium",
+          "coarse_affect": "neutral",
+          "pause_before": "none",
+          "pause_within_count": 0,
+          "hesitation_count": 0
+        },
+        "higgs": {
+          "prefix_tokens": [],
+          "text": "Hi. I need to talk about something that happened with a guy in my class. He keeps sending me stuff I don’t want and I don’t know what to do.",
+          "model_input": "Hi. I need to talk about something that happened with a guy in my class. He keeps sending me stuff I don’t want and I don’t know what to do.",
+          "native_rate_tokens": [],
+          "native_pause_token_count": 0,
+          "synthesis_call_count": 1
+        },
+        "postprocess": {
+          "order": [
+            "ffmpeg_atempo",
+            "prepend_pause_before"
+          ],
+          "atempo_factor": null,
+          "pause_before_ms": 0,
+          "atempo": {
+            "enabled": false,
+            "factor": null,
+            "processor": "ffmpeg_atempo"
+          },
+          "pause_before": {
+            "enabled": false,
+            "duration_ms": 0,
+            "sample_rate_hz": "actual_final_audio_sample_rate",
+            "sample_count_formula": "(duration_ms * sample_rate_hz + 500) // 1000"
+          }
+        },
+        "realization": {
+          "speaking_rate": {
+            "requested": "normal",
+            "status": "fully_realized",
+            "native_token": null,
+            "atempo_factor": null
+          },
+          "arousal": {
+            "requested": "medium",
+            "status": "operational_baseline",
+            "token": null
+          },
+          "coarse_affect": {
+            "requested": "neutral",
+            "status": "operational_baseline",
+            "token": null
+          },
+          "pause_before": {
+            "requested": "none",
+            "status": "fully_realized",
+            "milliseconds": 0
+          },
+          "pause_within_count": {
+            "requested": 0,
+            "status": "operational_baseline",
+            "inserted_native_pause_tokens": 0,
+            "caveat": "planned native tokens are not an exact total audible pause count"
+          },
+          "hesitation_count": {
+            "requested": 0,
+            "status": "operational_baseline",
+            "inserted_events": 0,
+            "caveat": "generic placement semantics remain provisional"
+          }
+        },
+        "combination_override": null,
+        "validation_status": "unvalidated_combination",
+        "planner": {
+          "hesitation": {
+            "text": "Hi. I need to talk about something that happened with a guy in my class. He keeps sending me stuff I don’t want and I don’t know what to do.",
+            "requested_count": 0,
+            "inserted_count": 0,
+            "events": [],
+            "used_fallback": false,
+            "status": "operational_baseline",
+            "warnings": []
+          },
+          "pause_within": {
+            "text": "Hi. I need to talk about something that happened with a guy in my class. He keeps sending me stuff I don’t want and I don’t know what to do.",
+            "requested_count": 0,
+            "inserted_count": 0,
+            "events": [],
+            "used_fallback": false,
+            "status": "operational_baseline",
+            "warnings": []
+          }
+        },
+        "best_effort": {
+          "requested": {
+            "affect_fine": null,
+            "volume": "normal",
+            "flattened_affect": false,
+            "events": []
+          },
+          "fields": {
+            "affect_fine": {
+              "source_present": true,
+              "requested": null,
+              "status": "not_realized",
+              "realization": null
+            },
+            "volume": {
+              "source_present": true,
+              "requested": "normal",
+              "status": "unsupported",
+              "realization": null
+            },
+            "flattened_affect": {
+              "source_present": true,
+              "requested": false,
+              "status": "not_realized",
+              "realization": null
+            },
+            "events": {
+              "source_present": true,
+              "requested": [],
+              "status": "not_realized",
+              "realization": null
+            }
+          }
+        },
+        "provenance": {},
+        "warnings": [
+          {
+            "code": "unvalidated_combination",
+            "control": "arousal+coarse_affect",
+            "message": "No explicit canonical combination override or combination-level evidence classification exists."
+          }
+        ]
+      },
+      "approved_speaker_reference": {
+        "render_speaker_id": "spk_011",
+        "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_011_primary.wav",
+        "resolved_reference_wav": "/home/li_yanyupingsheng/5703tts/data/speaker_pool/vctk_v0.1/references/spk_011_primary.wav",
+        "sha256": "d91903d62d42310e90deb900115a5b69bc488198c1ee0aff10ff3c742700c139"
+      },
+      "execution": {
+        "synthesis_status": "synthesized",
+        "rate_status": "not_required",
+        "turn_audio": "turn_001.wav"
+      },
+      "timing": {
+        "ordinal": 1,
+        "source_turn_id": 0,
+        "pause_before_ms": 0,
+        "pause_after_ms": 0,
+        "start_sec": 0.0,
+        "end_sec": 8.68
+      }
+    },
+    {
+      "source_identity": {
+        "ordinal": 2,
+        "source_turn_id": 1,
+        "upstream_role": "Listener",
+        "logical_role": "counsellor",
+        "upstream_scenario_speaker_id": "L009",
+        "render_speaker_id": "spk_009"
+      },
+      "labels": [],
+      "requested": {
+        "acoustic": {
+          "required": {
+            "rate": "normal",
+            "arousal": 2,
+            "affect": "warm",
+            "pause_before": "none",
+            "pause_within": 0,
+            "hesitations": 0
+          },
+          "best_effort": {
+            "affect_fine": null,
+            "volume": "normal",
+            "flattened_affect": false,
+            "events": []
+          }
+        }
+      },
+      "planned": {
+        "mapping_version": "controlled_tts_v1",
+        "release_status": "PROVISIONAL_PRODUCTION_MAPPING_WEEK6_FREEZE",
+        "source": {
+          "dialogue_id": "corpus_v1_000010",
+          "turn_id": 1
+        },
+        "logical_speaker": {
+          "upstream_role": "Listener",
+          "role": "counsellor",
+          "speaker_id": "L009"
+        },
+        "requested": {
+          "required": {
+            "rate": "normal",
+            "arousal": 2,
+            "affect": "warm",
+            "pause_before": "none",
+            "pause_within": 0,
+            "hesitations": 0
+          },
+          "best_effort": {
+            "affect_fine": null,
+            "volume": "normal",
+            "flattened_affect": false,
+            "events": []
+          }
+        },
+        "normalized": {
+          "role": "counsellor",
+          "rate": "normal",
+          "arousal": "medium",
+          "coarse_affect": "warm",
+          "pause_before": "none",
+          "pause_within_count": 0,
+          "hesitation_count": 0
+        },
+        "higgs": {
+          "prefix_tokens": [
+            "<|emotion:affection|>"
+          ],
+          "text": "You’re in the right place. Can you tell me a bit about what he’s been sending and how it’s been affecting you?",
+          "model_input": "<|emotion:affection|>You’re in the right place. Can you tell me a bit about what he’s been sending and how it’s been affecting you?",
+          "native_rate_tokens": [],
+          "native_pause_token_count": 0,
+          "synthesis_call_count": 1
+        },
+        "postprocess": {
+          "order": [
+            "ffmpeg_atempo",
+            "prepend_pause_before"
+          ],
+          "atempo_factor": null,
+          "pause_before_ms": 0,
+          "atempo": {
+            "enabled": false,
+            "factor": null,
+            "processor": "ffmpeg_atempo"
+          },
+          "pause_before": {
+            "enabled": false,
+            "duration_ms": 0,
+            "sample_rate_hz": "actual_final_audio_sample_rate",
+            "sample_count_formula": "(duration_ms * sample_rate_hz + 500) // 1000"
+          }
+        },
+        "realization": {
+          "speaking_rate": {
+            "requested": "normal",
+            "status": "fully_realized",
+            "native_token": null,
+            "atempo_factor": null
+          },
+          "arousal": {
+            "requested": "medium",
+            "status": "operational_baseline",
+            "token": null
+          },
+          "coarse_affect": {
+            "requested": "warm",
+            "status": "fully_realized",
+            "token": "<|emotion:affection|>"
+          },
+          "pause_before": {
+            "requested": "none",
+            "status": "fully_realized",
+            "milliseconds": 0
+          },
+          "pause_within_count": {
+            "requested": 0,
+            "status": "operational_baseline",
+            "inserted_native_pause_tokens": 0,
+            "caveat": "planned native tokens are not an exact total audible pause count"
+          },
+          "hesitation_count": {
+            "requested": 0,
+            "status": "operational_baseline",
+            "inserted_events": 0,
+            "caveat": "generic placement semantics remain provisional"
+          }
+        },
+        "combination_override": null,
+        "validation_status": "unvalidated_combination",
+        "planner": {
+          "hesitation": {
+            "text": "You’re in the right place. Can you tell me a bit about what he’s been sending and how it’s been affecting you?",
+            "requested_count": 0,
+            "inserted_count": 0,
+            "events": [],
+            "used_fallback": false,
+            "status": "operational_baseline",
+            "warnings": []
+          },
+          "pause_within": {
+            "text": "You’re in the right place. Can you tell me a bit about what he’s been sending and how it’s been affecting you?",
+            "requested_count": 0,
+            "inserted_count": 0,
+            "events": [],
+            "used_fallback": false,
+            "status": "operational_baseline",
+            "warnings": []
+          }
+        },
+        "best_effort": {
+          "requested": {
+            "affect_fine": null,
+            "volume": "normal",
+            "flattened_affect": false,
+            "events": []
+          },
+          "fields": {
+            "affect_fine": {
+              "source_present": true,
+              "requested": null,
+              "status": "not_realized",
+              "realization": null
+            },
+            "volume": {
+              "source_present": true,
+              "requested": "normal",
+              "status": "unsupported",
+              "realization": null
+            },
+            "flattened_affect": {
+              "source_present": true,
+              "requested": false,
+              "status": "not_realized",
+              "realization": null
+            },
+            "events": {
+              "source_present": true,
+              "requested": [],
+              "status": "not_realized",
+              "realization": null
+            }
+          }
+        },
+        "provenance": {},
+        "warnings": [
+          {
+            "code": "unvalidated_combination",
+            "control": "arousal+coarse_affect",
+            "message": "No explicit canonical combination override or combination-level evidence classification exists."
+          }
+        ]
+      },
+      "approved_speaker_reference": {
+        "render_speaker_id": "spk_009",
+        "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_009_primary.wav",
+        "resolved_reference_wav": "/home/li_yanyupingsheng/5703tts/data/speaker_pool/vctk_v0.1/references/spk_009_primary.wav",
+        "sha256": "ee0c2ef451292f4b7d7bf35beaa6e630976457c27e02226e87d4f12762582315"
+      },
+      "execution": {
+        "synthesis_status": "synthesized",
+        "rate_status": "not_required",
+        "turn_audio": "turn_002.wav"
+      },
+      "timing": {
+        "ordinal": 2,
+        "source_turn_id": 1,
+        "pause_before_ms": 0,
+        "pause_after_ms": 0,
+        "start_sec": 8.68,
+        "end_sec": 13.96
+      }
+    },
+    {
+      "source_identity": {
+        "ordinal": 3,
+        "source_turn_id": 2,
+        "upstream_role": "User",
+        "logical_role": "caller",
+        "upstream_scenario_speaker_id": "C012",
+        "render_speaker_id": "spk_011"
+      },
+      "labels": [],
+      "requested": {
+        "acoustic": {
+          "required": {
+            "rate": "normal",
+            "arousal": 2,
+            "affect": "neutral",
+            "pause_before": "none",
+            "pause_within": 0,
+            "hesitations": 0
+          },
+          "best_effort": {
+            "affect_fine": null,
+            "volume": "normal",
+            "flattened_affect": false,
+            "events": []
+          }
+        }
+      },
+      "planned": {
+        "mapping_version": "controlled_tts_v1",
+        "release_status": "PROVISIONAL_PRODUCTION_MAPPING_WEEK6_FREEZE",
+        "source": {
+          "dialogue_id": "corpus_v1_000010",
+          "turn_id": 2
+        },
+        "logical_speaker": {
+          "upstream_role": "User",
+          "role": "caller",
+          "speaker_id": "C012"
+        },
+        "requested": {
+          "required": {
+            "rate": "normal",
+            "arousal": 2,
+            "affect": "neutral",
+            "pause_before": "none",
+            "pause_within": 0,
+            "hesitations": 0
+          },
+          "best_effort": {
+            "affect_fine": null,
+            "volume": "normal",
+            "flattened_affect": false,
+            "events": []
+          }
+        },
+        "normalized": {
+          "role": "caller",
+          "rate": "normal",
+          "arousal": "medium",
+          "coarse_affect": "neutral",
+          "pause_before": "none",
+          "pause_within_count": 0,
+          "hesitation_count": 0
+        },
+        "higgs": {
+          "prefix_tokens": [],
+          "text": "It’s stuff that makes me uncomfortable. I’ve asked him to stop a few times and he keeps it up.",
+          "model_input": "It’s stuff that makes me uncomfortable. I’ve asked him to stop a few times and he keeps it up.",
+          "native_rate_tokens": [],
+          "native_pause_token_count": 0,
+          "synthesis_call_count": 1
+        },
+        "postprocess": {
+          "order": [
+            "ffmpeg_atempo",
+            "prepend_pause_before"
+          ],
+          "atempo_factor": null,
+          "pause_before_ms": 0,
+          "atempo": {
+            "enabled": false,
+            "factor": null,
+            "processor": "ffmpeg_atempo"
+          },
+          "pause_before": {
+            "enabled": false,
+            "duration_ms": 0,
+            "sample_rate_hz": "actual_final_audio_sample_rate",
+            "sample_count_formula": "(duration_ms * sample_rate_hz + 500) // 1000"
+          }
+        },
+        "realization": {
+          "speaking_rate": {
+            "requested": "normal",
+            "status": "fully_realized",
+            "native_token": null,
+            "atempo_factor": null
+          },
+          "arousal": {
+            "requested": "medium",
+            "status": "operational_baseline",
+            "token": null
+          },
+          "coarse_affect": {
+            "requested": "neutral",
+            "status": "operational_baseline",
+            "token": null
+          },
+          "pause_before": {
+            "requested": "none",
+            "status": "fully_realized",
+            "milliseconds": 0
+          },
+          "pause_within_count": {
+            "requested": 0,
+            "status": "operational_baseline",
+            "inserted_native_pause_tokens": 0,
+            "caveat": "planned native tokens are not an exact total audible pause count"
+          },
+          "hesitation_count": {
+            "requested": 0,
+            "status": "operational_baseline",
+            "inserted_events": 0,
+            "caveat": "generic placement semantics remain provisional"
+          }
+        },
+        "combination_override": null,
+        "validation_status": "unvalidated_combination",
+        "planner": {
+          "hesitation": {
+            "text": "It’s stuff that makes me uncomfortable. I’ve asked him to stop a few times and he keeps it up.",
+            "requested_count": 0,
+            "inserted_count": 0,
+            "events": [],
+            "used_fallback": false,
+            "status": "operational_baseline",
+            "warnings": []
+          },
+          "pause_within": {
+            "text": "It’s stuff that makes me uncomfortable. I’ve asked him to stop a few times and he keeps it up.",
+            "requested_count": 0,
+            "inserted_count": 0,
+            "events": [],
+            "used_fallback": false,
+            "status": "operational_baseline",
+            "warnings": []
+          }
+        },
+        "best_effort": {
+          "requested": {
+            "affect_fine": null,
+            "volume": "normal",
+            "flattened_affect": false,
+            "events": []
+          },
+          "fields": {
+            "affect_fine": {
+              "source_present": true,
+              "requested": null,
+              "status": "not_realized",
+              "realization": null
+            },
+            "volume": {
+              "source_present": true,
+              "requested": "normal",
+              "status": "unsupported",
+              "realization": null
+            },
+            "flattened_affect": {
+              "source_present": true,
+              "requested": false,
+              "status": "not_realized",
+              "realization": null
+            },
+            "events": {
+              "source_present": true,
+              "requested": [],
+              "status": "not_realized",
+              "realization": null
+            }
+          }
+        },
+        "provenance": {},
+        "warnings": [
+          {
+            "code": "unvalidated_combination",
+            "control": "arousal+coarse_affect",
+            "message": "No explicit canonical combination override or combination-level evidence classification exists."
+          }
+        ]
+      },
+      "approved_speaker_reference": {
+        "render_speaker_id": "spk_011",
+        "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_011_primary.wav",
+        "resolved_reference_wav": "/home/li_yanyupingsheng/5703tts/data/speaker_pool/vctk_v0.1/references/spk_011_primary.wav",
+        "sha256": "d91903d62d42310e90deb900115a5b69bc488198c1ee0aff10ff3c742700c139"
+      },
+      "execution": {
+        "synthesis_status": "synthesized",
+        "rate_status": "not_required",
+        "turn_audio": "turn_003.wav"
+      },
+      "timing": {
+        "ordinal": 3,
+        "source_turn_id": 2,
+        "pause_before_ms": 0,
+        "pause_after_ms": 0,
+        "start_sec": 13.96,
+        "end_sec": 20.04
+      }
+    },
+    {
+      "source_identity": {
+        "ordinal": 4,
+        "source_turn_id": 3,
+        "upstream_role": "Listener",
+        "logical_role": "counsellor",
+        "upstream_scenario_speaker_id": "L009",
+        "render_speaker_id": "spk_009"
+      },
+      "labels": [],
+      "requested": {
+        "acoustic": {
+          "required": {
+            "rate": "normal",
+            "arousal": 2,
+            "affect": "warm",
+            "pause_before": "none",
+            "pause_within": 0,
+            "hesitations": 0
+          },
+          "best_effort": {
+            "affect_fine": null,
+            "volume": "normal",
+            "flattened_affect": false,
+            "events": []
+          }
+        }
+      },
+      "planned": {
+        "mapping_version": "controlled_tts_v1",
+        "release_status": "PROVISIONAL_PRODUCTION_MAPPING_WEEK6_FREEZE",
+        "source": {
+          "dialogue_id": "corpus_v1_000010",
+          "turn_id": 3
+        },
+        "logical_speaker": {
+          "upstream_role": "Listener",
+          "role": "counsellor",
+          "speaker_id": "L009"
+        },
+        "requested": {
+          "required": {
+            "rate": "normal",
+            "arousal": 2,
+            "affect": "warm",
+            "pause_before": "none",
+            "pause_within": 0,
+            "hesitations": 0
+          },
+          "best_effort": {
+            "affect_fine": null,
+            "volume": "normal",
+            "flattened_affect": false,
+            "events": []
+          }
+        },
+        "normalized": {
+          "role": "counsellor",
+          "rate": "normal",
+          "arousal": "medium",
+          "coarse_affect": "warm",
+          "pause_before": "none",
+          "pause_within_count": 0,
+          "hesitation_count": 0
+        },
+        "higgs": {
+          "prefix_tokens": [
+            "<|emotion:affection|>"
+          ],
+          "text": "That’s a lot to carry. Are the messages on a platform we can access, or is it something private? And are you safe with him right now?",
+          "model_input": "<|emotion:affection|>That’s a lot to carry. Are the messages on a platform we can access, or is it something private? And are you safe with him right now?",
+          "native_rate_tokens": [],
+          "native_pause_token_count": 0,
+          "synthesis_call_count": 1
+        },
+        "postprocess": {
+          "order": [
+            "ffmpeg_atempo",
+            "prepend_pause_before"
+          ],
+          "atempo_factor": null,
+          "pause_before_ms": 0,
+          "atempo": {
+            "enabled": false,
+            "factor": null,
+            "processor": "ffmpeg_atempo"
+          },
+          "pause_before": {
+            "enabled": false,
+            "duration_ms": 0,
+            "sample_rate_hz": "actual_final_audio_sample_rate",
+            "sample_count_formula": "(duration_ms * sample_rate_hz + 500) // 1000"
+          }
+        },
+        "realization": {
+          "speaking_rate": {
+            "requested": "normal",
+            "status": "fully_realized",
+            "native_token": null,
+            "atempo_factor": null
+          },
+          "arousal": {
+            "requested": "medium",
+            "status": "operational_baseline",
+            "token": null
+          },
+          "coarse_affect": {
+            "requested": "warm",
+            "status": "fully_realized",
+            "token": "<|emotion:affection|>"
+          },
+          "pause_before": {
+            "requested": "none",
+            "status": "fully_realized",
+            "milliseconds": 0
+          },
+          "pause_within_count": {
+            "requested": 0,
+            "status": "operational_baseline",
+            "inserted_native_pause_tokens": 0,
+            "caveat": "planned native tokens are not an exact total audible pause count"
+          },
+          "hesitation_count": {
+            "requested": 0,
+            "status": "operational_baseline",
+            "inserted_events": 0,
+            "caveat": "generic placement semantics remain provisional"
+          }
+        },
+        "combination_override": null,
+        "validation_status": "unvalidated_combination",
+        "planner": {
+          "hesitation": {
+            "text": "That’s a lot to carry. Are the messages on a platform we can access, or is it something private? And are you safe with him right now?",
+            "requested_count": 0,
+            "inserted_count": 0,
+            "events": [],
+            "used_fallback": false,
+            "status": "operational_baseline",
+            "warnings": []
+          },
+          "pause_within": {
+            "text": "That’s a lot to carry. Are the messages on a platform we can access, or is it something private? And are you safe with him right now?",
+            "requested_count": 0,
+            "inserted_count": 0,
+            "events": [],
+            "used_fallback": false,
+            "status": "operational_baseline",
+            "warnings": []
+          }
+        },
+        "best_effort": {
+          "requested": {
+            "affect_fine": null,
+            "volume": "normal",
+            "flattened_affect": false,
+            "events": []
+          },
+          "fields": {
+            "affect_fine": {
+              "source_present": true,
+              "requested": null,
+              "status": "not_realized",
+              "realization": null
+            },
+            "volume": {
+              "source_present": true,
+              "requested": "normal",
+              "status": "unsupported",
+              "realization": null
+            },
+            "flattened_affect": {
+              "source_present": true,
+              "requested": false,
+              "status": "not_realized",
+              "realization": null
+            },
+            "events": {
+              "source_present": true,
+              "requested": [],
+              "status": "not_realized",
+              "realization": null
+            }
+          }
+        },
+        "provenance": {},
+        "warnings": [
+          {
+            "code": "unvalidated_combination",
+            "control": "arousal+coarse_affect",
+            "message": "No explicit canonical combination override or combination-level evidence classification exists."
+          }
+        ]
+      },
+      "approved_speaker_reference": {
+        "render_speaker_id": "spk_009",
+        "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_009_primary.wav",
+        "resolved_reference_wav": "/home/li_yanyupingsheng/5703tts/data/speaker_pool/vctk_v0.1/references/spk_009_primary.wav",
+        "sha256": "ee0c2ef451292f4b7d7bf35beaa6e630976457c27e02226e87d4f12762582315"
+      },
+      "execution": {
+        "synthesis_status": "synthesized",
+        "rate_status": "not_required",
+        "turn_audio": "turn_004.wav"
+      },
+      "timing": {
+        "ordinal": 4,
+        "source_turn_id": 3,
+        "pause_before_ms": 0,
+        "pause_after_ms": 0,
+        "start_sec": 20.04,
+        "end_sec": 27.2
+      }
+    },
+    {
+      "source_identity": {
+        "ordinal": 5,
+        "source_turn_id": 4,
+        "upstream_role": "User",
+        "logical_role": "caller",
+        "upstream_scenario_speaker_id": "C012",
+        "render_speaker_id": "spk_011"
+      },
+      "labels": [
+        "alert_ongoing"
+      ],
+      "requested": {
+        "acoustic": {
+          "required": {
+            "rate": "slow",
+            "arousal": 1,
+            "affect": "sad",
+            "pause_before": "short",
+            "pause_within": 0,
+            "hesitations": 0
+          },
+          "best_effort": {
+            "affect_fine": null,
+            "volume": "soft",
+            "flattened_affect": false,
+            "events": []
+          }
+        }
+      },
+      "planned": {
+        "mapping_version": "controlled_tts_v1",
+        "release_status": "PROVISIONAL_PRODUCTION_MAPPING_WEEK6_FREEZE",
+        "source": {
+          "dialogue_id": "corpus_v1_000010",
+          "turn_id": 4
+        },
+        "logical_speaker": {
+          "upstream_role": "User",
+          "role": "caller",
+          "speaker_id": "C012"
+        },
+        "requested": {
+          "required": {
+            "rate": "slow",
+            "arousal": 1,
+            "affect": "sad",
+            "pause_before": "short",
+            "pause_within": 0,
+            "hesitations": 0
+          },
+          "best_effort": {
+            "affect_fine": null,
+            "volume": "soft",
+            "flattened_affect": false,
+            "events": []
+          }
+        },
+        "normalized": {
+          "role": "caller",
+          "rate": "slow",
+          "arousal": "low",
+          "coarse_affect": "sad",
+          "pause_before": "short",
+          "pause_within_count": 0,
+          "hesitation_count": 0
+        },
+        "higgs": {
+          "prefix_tokens": [
+            "<|prosody:expressive_low|>",
+            "<|emotion:helplessness|>"
+          ],
+          "text": "I blocked him. I don’t know what I’m supposed to do. It’s like he just won’t get the hint.",
+          "model_input": "<|prosody:expressive_low|><|emotion:helplessness|>I blocked him. I don’t know what I’m supposed to do. It’s like he just won’t get the hint.",
+          "native_rate_tokens": [],
+          "native_pause_token_count": 0,
+          "synthesis_call_count": 1
+        },
+        "postprocess": {
+          "order": [
+            "ffmpeg_atempo",
+            "prepend_pause_before"
+          ],
+          "atempo_factor": 0.85,
+          "pause_before_ms": 500,
+          "atempo": {
+            "enabled": true,
+            "factor": 0.85,
+            "processor": "ffmpeg_atempo"
+          },
+          "pause_before": {
+            "enabled": true,
+            "duration_ms": 500,
+            "sample_rate_hz": "actual_final_audio_sample_rate",
+            "sample_count_formula": "(duration_ms * sample_rate_hz + 500) // 1000"
+          }
+        },
+        "realization": {
+          "speaking_rate": {
+            "requested": "slow",
+            "status": "fully_realized",
+            "native_token": null,
+            "atempo_factor": 0.85
+          },
+          "arousal": {
+            "requested": "low",
+            "status": "best_effort_related_proxy",
+            "token": "<|prosody:expressive_low|>"
+          },
+          "coarse_affect": {
+            "requested": "sad",
+            "status": "best_effort_related_proxy",
+            "token": "<|emotion:helplessness|>"
+          },
+          "pause_before": {
+            "requested": "short",
+            "status": "fully_realized",
+            "milliseconds": 500
+          },
+          "pause_within_count": {
+            "requested": 0,
+            "status": "operational_baseline",
+            "inserted_native_pause_tokens": 0,
+            "caveat": "planned native tokens are not an exact total audible pause count"
+          },
+          "hesitation_count": {
+            "requested": 0,
+            "status": "operational_baseline",
+            "inserted_events": 0,
+            "caveat": "generic placement semantics remain provisional"
+          }
+        },
+        "combination_override": null,
+        "validation_status": "unvalidated_combination",
+        "planner": {
+          "hesitation": {
+            "text": "I blocked him. I don’t know what I’m supposed to do. It’s like he just won’t get the hint.",
+            "requested_count": 0,
+            "inserted_count": 0,
+            "events": [],
+            "used_fallback": false,
+            "status": "operational_baseline",
+            "warnings": []
+          },
+          "pause_within": {
+            "text": "I blocked him. I don’t know what I’m supposed to do. It’s like he just won’t get the hint.",
+            "requested_count": 0,
+            "inserted_count": 0,
+            "events": [],
+            "used_fallback": false,
+            "status": "operational_baseline",
+            "warnings": []
+          }
+        },
+        "best_effort": {
+          "requested": {
+            "affect_fine": null,
+            "volume": "soft",
+            "flattened_affect": false,
+            "events": []
+          },
+          "fields": {
+            "affect_fine": {
+              "source_present": true,
+              "requested": null,
+              "status": "not_realized",
+              "realization": null
+            },
+            "volume": {
+              "source_present": true,
+              "requested": "soft",
+              "status": "unsupported",
+              "realization": null
+            },
+            "flattened_affect": {
+              "source_present": true,
+              "requested": false,
+              "status": "not_realized",
+              "realization": null
+            },
+            "events": {
+              "source_present": true,
+              "requested": [],
+              "status": "not_realized",
+              "realization": null
+            }
+          }
+        },
+        "provenance": {},
+        "warnings": [
+          {
+            "code": "unvalidated_combination",
+            "control": "arousal+coarse_affect",
+            "message": "No explicit canonical combination override or combination-level evidence classification exists."
+          }
+        ]
+      },
+      "approved_speaker_reference": {
+        "render_speaker_id": "spk_011",
+        "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_011_primary.wav",
+        "resolved_reference_wav": "/home/li_yanyupingsheng/5703tts/data/speaker_pool/vctk_v0.1/references/spk_011_primary.wav",
+        "sha256": "d91903d62d42310e90deb900115a5b69bc488198c1ee0aff10ff3c742700c139"
+      },
+      "execution": {
+        "synthesis_status": "synthesized",
+        "rate_status": "executed",
+        "turn_audio": "turn_005.wav"
+      },
+      "timing": {
+        "ordinal": 5,
+        "source_turn_id": 4,
+        "pause_before_ms": 500,
+        "pause_after_ms": 0,
+        "start_sec": 27.7,
+        "end_sec": 34.658
+      }
+    },
+    {
+      "source_identity": {
+        "ordinal": 6,
+        "source_turn_id": 5,
+        "upstream_role": "Listener",
+        "logical_role": "counsellor",
+        "upstream_scenario_speaker_id": "L009",
+        "render_speaker_id": "spk_009"
+      },
+      "labels": [],
+      "requested": {
+        "acoustic": {
+          "required": {
+            "rate": "slow",
+            "arousal": 2,
+            "affect": "warm",
+            "pause_before": "none",
+            "pause_within": 0,
+            "hesitations": 0
+          },
+          "best_effort": {
+            "affect_fine": null,
+            "volume": "normal",
+            "flattened_affect": false,
+            "events": []
+          }
+        }
+      },
+      "planned": {
+        "mapping_version": "controlled_tts_v1",
+        "release_status": "PROVISIONAL_PRODUCTION_MAPPING_WEEK6_FREEZE",
+        "source": {
+          "dialogue_id": "corpus_v1_000010",
+          "turn_id": 5
+        },
+        "logical_speaker": {
+          "upstream_role": "Listener",
+          "role": "counsellor",
+          "speaker_id": "L009"
+        },
+        "requested": {
+          "required": {
+            "rate": "slow",
+            "arousal": 2,
+            "affect": "warm",
+            "pause_before": "none",
+            "pause_within": 0,
+            "hesitations": 0
+          },
+          "best_effort": {
+            "affect_fine": null,
+            "volume": "normal",
+            "flattened_affect": false,
+            "events": []
+          }
+        },
+        "normalized": {
+          "role": "counsellor",
+          "rate": "slow",
+          "arousal": "medium",
+          "coarse_affect": "warm",
+          "pause_before": "none",
+          "pause_within_count": 0,
+          "hesitation_count": 0
+        },
+        "higgs": {
+          "prefix_tokens": [
+            "<|emotion:affection|>"
+          ],
+          "text": "Thanks for sharing that. When you say “stuff,” are you talking about sexual messages, explicit images, or something else, and are you comfortable naming it?",
+          "model_input": "<|emotion:affection|>Thanks for sharing that. When you say “stuff,” are you talking about sexual messages, explicit images, or something else, and are you comfortable naming it?",
+          "native_rate_tokens": [],
+          "native_pause_token_count": 0,
+          "synthesis_call_count": 1
+        },
+        "postprocess": {
+          "order": [
+            "ffmpeg_atempo",
+            "prepend_pause_before"
+          ],
+          "atempo_factor": 0.85,
+          "pause_before_ms": 0,
+          "atempo": {
+            "enabled": true,
+            "factor": 0.85,
+            "processor": "ffmpeg_atempo"
+          },
+          "pause_before": {
+            "enabled": false,
+            "duration_ms": 0,
+            "sample_rate_hz": "actual_final_audio_sample_rate",
+            "sample_count_formula": "(duration_ms * sample_rate_hz + 500) // 1000"
+          }
+        },
+        "realization": {
+          "speaking_rate": {
+            "requested": "slow",
+            "status": "fully_realized",
+            "native_token": null,
+            "atempo_factor": 0.85
+          },
+          "arousal": {
+            "requested": "medium",
+            "status": "operational_baseline",
+            "token": null
+          },
+          "coarse_affect": {
+            "requested": "warm",
+            "status": "fully_realized",
+            "token": "<|emotion:affection|>"
+          },
+          "pause_before": {
+            "requested": "none",
+            "status": "fully_realized",
+            "milliseconds": 0
+          },
+          "pause_within_count": {
+            "requested": 0,
+            "status": "operational_baseline",
+            "inserted_native_pause_tokens": 0,
+            "caveat": "planned native tokens are not an exact total audible pause count"
+          },
+          "hesitation_count": {
+            "requested": 0,
+            "status": "operational_baseline",
+            "inserted_events": 0,
+            "caveat": "generic placement semantics remain provisional"
+          }
+        },
+        "combination_override": null,
+        "validation_status": "unvalidated_combination",
+        "planner": {
+          "hesitation": {
+            "text": "Thanks for sharing that. When you say “stuff,” are you talking about sexual messages, explicit images, or something else, and are you comfortable naming it?",
+            "requested_count": 0,
+            "inserted_count": 0,
+            "events": [],
+            "used_fallback": false,
+            "status": "operational_baseline",
+            "warnings": []
+          },
+          "pause_within": {
+            "text": "Thanks for sharing that. When you say “stuff,” are you talking about sexual messages, explicit images, or something else, and are you comfortable naming it?",
+            "requested_count": 0,
+            "inserted_count": 0,
+            "events": [],
+            "used_fallback": false,
+            "status": "operational_baseline",
+            "warnings": []
+          }
+        },
+        "best_effort": {
+          "requested": {
+            "affect_fine": null,
+            "volume": "normal",
+            "flattened_affect": false,
+            "events": []
+          },
+          "fields": {
+            "affect_fine": {
+              "source_present": true,
+              "requested": null,
+              "status": "not_realized",
+              "realization": null
+            },
+            "volume": {
+              "source_present": true,
+              "requested": "normal",
+              "status": "unsupported",
+              "realization": null
+            },
+            "flattened_affect": {
+              "source_present": true,
+              "requested": false,
+              "status": "not_realized",
+              "realization": null
+            },
+            "events": {
+              "source_present": true,
+              "requested": [],
+              "status": "not_realized",
+              "realization": null
+            }
+          }
+        },
+        "provenance": {},
+        "warnings": [
+          {
+            "code": "unvalidated_combination",
+            "control": "arousal+coarse_affect",
+            "message": "No explicit canonical combination override or combination-level evidence classification exists."
+          }
+        ]
+      },
+      "approved_speaker_reference": {
+        "render_speaker_id": "spk_009",
+        "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_009_primary.wav",
+        "resolved_reference_wav": "/home/li_yanyupingsheng/5703tts/data/speaker_pool/vctk_v0.1/references/spk_009_primary.wav",
+        "sha256": "ee0c2ef451292f4b7d7bf35beaa6e630976457c27e02226e87d4f12762582315"
+      },
+      "execution": {
+        "synthesis_status": "synthesized",
+        "rate_status": "executed",
+        "turn_audio": "turn_006.wav"
+      },
+      "timing": {
+        "ordinal": 6,
+        "source_turn_id": 5,
+        "pause_before_ms": 0,
+        "pause_after_ms": 0,
+        "start_sec": 34.658,
+        "end_sec": 44.951
+      }
+    },
+    {
+      "source_identity": {
+        "ordinal": 7,
+        "source_turn_id": 6,
+        "upstream_role": "User",
+        "logical_role": "caller",
+        "upstream_scenario_speaker_id": "C012",
+        "render_speaker_id": "spk_011"
+      },
+      "labels": [
+        "confirm_RA_ongoing"
+      ],
+      "requested": {
+        "acoustic": {
+          "required": {
+            "rate": "normal",
+            "arousal": 1,
+            "affect": "sad",
+            "pause_before": "long",
+            "pause_within": 0,
+            "hesitations": 0
+          },
+          "best_effort": {
+            "affect_fine": null,
+            "volume": "soft",
+            "flattened_affect": false,
+            "events": []
+          }
+        }
+      },
+      "planned": {
+        "mapping_version": "controlled_tts_v1",
+        "release_status": "PROVISIONAL_PRODUCTION_MAPPING_WEEK6_FREEZE",
+        "source": {
+          "dialogue_id": "corpus_v1_000010",
+          "turn_id": 6
+        },
+        "logical_speaker": {
+          "upstream_role": "User",
+          "role": "caller",
+          "speaker_id": "C012"
+        },
+        "requested": {
+          "required": {
+            "rate": "normal",
+            "arousal": 1,
+            "affect": "sad",
+            "pause_before": "long",
+            "pause_within": 0,
+            "hesitations": 0
+          },
+          "best_effort": {
+            "affect_fine": null,
+            "volume": "soft",
+            "flattened_affect": false,
+            "events": []
+          }
+        },
+        "normalized": {
+          "role": "caller",
+          "rate": "normal",
+          "arousal": "low",
+          "coarse_affect": "sad",
+          "pause_before": "long",
+          "pause_within_count": 0,
+          "hesitation_count": 0
+        },
+        "higgs": {
+          "prefix_tokens": [
+            "<|prosody:expressive_low|>",
+            "<|emotion:helplessness|>"
+          ],
+          "text": "It’s sexual stuff. I’ve told him I don’t want it and he keeps sending it. I’ve blocked him, and I’ve reported the last messages, but he still keeps texting me.",
+          "model_input": "<|prosody:expressive_low|><|emotion:helplessness|>It’s sexual stuff. I’ve told him I don’t want it and he keeps sending it. I’ve blocked him, and I’ve reported the last messages, but he still keeps texting me.",
+          "native_rate_tokens": [],
+          "native_pause_token_count": 0,
+          "synthesis_call_count": 1
+        },
+        "postprocess": {
+          "order": [
+            "ffmpeg_atempo",
+            "prepend_pause_before"
+          ],
+          "atempo_factor": null,
+          "pause_before_ms": 900,
+          "atempo": {
+            "enabled": false,
+            "factor": null,
+            "processor": "ffmpeg_atempo"
+          },
+          "pause_before": {
+            "enabled": true,
+            "duration_ms": 900,
+            "sample_rate_hz": "actual_final_audio_sample_rate",
+            "sample_count_formula": "(duration_ms * sample_rate_hz + 500) // 1000"
+          }
+        },
+        "realization": {
+          "speaking_rate": {
+            "requested": "normal",
+            "status": "fully_realized",
+            "native_token": null,
+            "atempo_factor": null
+          },
+          "arousal": {
+            "requested": "low",
+            "status": "best_effort_related_proxy",
+            "token": "<|prosody:expressive_low|>"
+          },
+          "coarse_affect": {
+            "requested": "sad",
+            "status": "best_effort_related_proxy",
+            "token": "<|emotion:helplessness|>"
+          },
+          "pause_before": {
+            "requested": "long",
+            "status": "fully_realized",
+            "milliseconds": 900
+          },
+          "pause_within_count": {
+            "requested": 0,
+            "status": "operational_baseline",
+            "inserted_native_pause_tokens": 0,
+            "caveat": "planned native tokens are not an exact total audible pause count"
+          },
+          "hesitation_count": {
+            "requested": 0,
+            "status": "operational_baseline",
+            "inserted_events": 0,
+            "caveat": "generic placement semantics remain provisional"
+          }
+        },
+        "combination_override": null,
+        "validation_status": "unvalidated_combination",
+        "planner": {
+          "hesitation": {
+            "text": "It’s sexual stuff. I’ve told him I don’t want it and he keeps sending it. I’ve blocked him, and I’ve reported the last messages, but he still keeps texting me.",
+            "requested_count": 0,
+            "inserted_count": 0,
+            "events": [],
+            "used_fallback": false,
+            "status": "operational_baseline",
+            "warnings": []
+          },
+          "pause_within": {
+            "text": "It’s sexual stuff. I’ve told him I don’t want it and he keeps sending it. I’ve blocked him, and I’ve reported the last messages, but he still keeps texting me.",
+            "requested_count": 0,
+            "inserted_count": 0,
+            "events": [],
+            "used_fallback": false,
+            "status": "operational_baseline",
+            "warnings": []
+          }
+        },
+        "best_effort": {
+          "requested": {
+            "affect_fine": null,
+            "volume": "soft",
+            "flattened_affect": false,
+            "events": []
+          },
+          "fields": {
+            "affect_fine": {
+              "source_present": true,
+              "requested": null,
+              "status": "not_realized",
+              "realization": null
+            },
+            "volume": {
+              "source_present": true,
+              "requested": "soft",
+              "status": "unsupported",
+              "realization": null
+            },
+            "flattened_affect": {
+              "source_present": true,
+              "requested": false,
+              "status": "not_realized",
+              "realization": null
+            },
+            "events": {
+              "source_present": true,
+              "requested": [],
+              "status": "not_realized",
+              "realization": null
+            }
+          }
+        },
+        "provenance": {},
+        "warnings": [
+          {
+            "code": "unvalidated_combination",
+            "control": "arousal+coarse_affect",
+            "message": "No explicit canonical combination override or combination-level evidence classification exists."
+          }
+        ]
+      },
+      "approved_speaker_reference": {
+        "render_speaker_id": "spk_011",
+        "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_011_primary.wav",
+        "resolved_reference_wav": "/home/li_yanyupingsheng/5703tts/data/speaker_pool/vctk_v0.1/references/spk_011_primary.wav",
+        "sha256": "d91903d62d42310e90deb900115a5b69bc488198c1ee0aff10ff3c742700c139"
+      },
+      "execution": {
+        "synthesis_status": "synthesized",
+        "rate_status": "not_required",
+        "turn_audio": "turn_007.wav"
+      },
+      "timing": {
+        "ordinal": 7,
+        "source_turn_id": 6,
+        "pause_before_ms": 900,
+        "pause_after_ms": 0,
+        "start_sec": 45.851,
+        "end_sec": 56.131
+      }
+    },
+    {
+      "source_identity": {
+        "ordinal": 8,
+        "source_turn_id": 7,
+        "upstream_role": "Listener",
+        "logical_role": "counsellor",
+        "upstream_scenario_speaker_id": "L009",
+        "render_speaker_id": "spk_009"
+      },
+      "labels": [],
+      "requested": {
+        "acoustic": {
+          "required": {
+            "rate": "slow",
+            "arousal": 2,
+            "affect": "warm",
+            "pause_before": "none",
+            "pause_within": 0,
+            "hesitations": 0
+          },
+          "best_effort": {
+            "affect_fine": null,
+            "volume": "normal",
+            "flattened_affect": false,
+            "events": []
+          }
+        }
+      },
+      "planned": {
+        "mapping_version": "controlled_tts_v1",
+        "release_status": "PROVISIONAL_PRODUCTION_MAPPING_WEEK6_FREEZE",
+        "source": {
+          "dialogue_id": "corpus_v1_000010",
+          "turn_id": 7
+        },
+        "logical_speaker": {
+          "upstream_role": "Listener",
+          "role": "counsellor",
+          "speaker_id": "L009"
+        },
+        "requested": {
+          "required": {
+            "rate": "slow",
+            "arousal": 2,
+            "affect": "warm",
+            "pause_before": "none",
+            "pause_within": 0,
+            "hesitations": 0
+          },
+          "best_effort": {
+            "affect_fine": null,
+            "volume": "normal",
+            "flattened_affect": false,
+            "events": []
+          }
+        },
+        "normalized": {
+          "role": "counsellor",
+          "rate": "slow",
+          "arousal": "medium",
+          "coarse_affect": "warm",
+          "pause_before": "none",
+          "pause_within_count": 0,
+          "hesitation_count": 0
+        },
+        "higgs": {
+          "prefix_tokens": [
+            "<|emotion:affection|>"
+          ],
+          "text": "Thank you for saying that directly. I’ll document the reports and blocks. Are you receiving any messages from him right now, or has it mostly been past reports? Are you safe where you are at the moment?",
+          "model_input": "<|emotion:affection|>Thank you for saying that directly. I’ll document the reports and blocks. Are you receiving any messages from him right now, or has it mostly been past reports? Are you safe where you are at the moment?",
+          "native_rate_tokens": [],
+          "native_pause_token_count": 0,
+          "synthesis_call_count": 1
+        },
+        "postprocess": {
+          "order": [
+            "ffmpeg_atempo",
+            "prepend_pause_before"
+          ],
+          "atempo_factor": 0.85,
+          "pause_before_ms": 0,
+          "atempo": {
+            "enabled": true,
+            "factor": 0.85,
+            "processor": "ffmpeg_atempo"
+          },
+          "pause_before": {
+            "enabled": false,
+            "duration_ms": 0,
+            "sample_rate_hz": "actual_final_audio_sample_rate",
+            "sample_count_formula": "(duration_ms * sample_rate_hz + 500) // 1000"
+          }
+        },
+        "realization": {
+          "speaking_rate": {
+            "requested": "slow",
+            "status": "fully_realized",
+            "native_token": null,
+            "atempo_factor": 0.85
+          },
+          "arousal": {
+            "requested": "medium",
+            "status": "operational_baseline",
+            "token": null
+          },
+          "coarse_affect": {
+            "requested": "warm",
+            "status": "fully_realized",
+            "token": "<|emotion:affection|>"
+          },
+          "pause_before": {
+            "requested": "none",
+            "status": "fully_realized",
+            "milliseconds": 0
+          },
+          "pause_within_count": {
+            "requested": 0,
+            "status": "operational_baseline",
+            "inserted_native_pause_tokens": 0,
+            "caveat": "planned native tokens are not an exact total audible pause count"
+          },
+          "hesitation_count": {
+            "requested": 0,
+            "status": "operational_baseline",
+            "inserted_events": 0,
+            "caveat": "generic placement semantics remain provisional"
+          }
+        },
+        "combination_override": null,
+        "validation_status": "unvalidated_combination",
+        "planner": {
+          "hesitation": {
+            "text": "Thank you for saying that directly. I’ll document the reports and blocks. Are you receiving any messages from him right now, or has it mostly been past reports? Are you safe where you are at the moment?",
+            "requested_count": 0,
+            "inserted_count": 0,
+            "events": [],
+            "used_fallback": false,
+            "status": "operational_baseline",
+            "warnings": []
+          },
+          "pause_within": {
+            "text": "Thank you for saying that directly. I’ll document the reports and blocks. Are you receiving any messages from him right now, or has it mostly been past reports? Are you safe where you are at the moment?",
+            "requested_count": 0,
+            "inserted_count": 0,
+            "events": [],
+            "used_fallback": false,
+            "status": "operational_baseline",
+            "warnings": []
+          }
+        },
+        "best_effort": {
+          "requested": {
+            "affect_fine": null,
+            "volume": "normal",
+            "flattened_affect": false,
+            "events": []
+          },
+          "fields": {
+            "affect_fine": {
+              "source_present": true,
+              "requested": null,
+              "status": "not_realized",
+              "realization": null
+            },
+            "volume": {
+              "source_present": true,
+              "requested": "normal",
+              "status": "unsupported",
+              "realization": null
+            },
+            "flattened_affect": {
+              "source_present": true,
+              "requested": false,
+              "status": "not_realized",
+              "realization": null
+            },
+            "events": {
+              "source_present": true,
+              "requested": [],
+              "status": "not_realized",
+              "realization": null
+            }
+          }
+        },
+        "provenance": {},
+        "warnings": [
+          {
+            "code": "unvalidated_combination",
+            "control": "arousal+coarse_affect",
+            "message": "No explicit canonical combination override or combination-level evidence classification exists."
+          }
+        ]
+      },
+      "approved_speaker_reference": {
+        "render_speaker_id": "spk_009",
+        "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_009_primary.wav",
+        "resolved_reference_wav": "/home/li_yanyupingsheng/5703tts/data/speaker_pool/vctk_v0.1/references/spk_009_primary.wav",
+        "sha256": "ee0c2ef451292f4b7d7bf35beaa6e630976457c27e02226e87d4f12762582315"
+      },
+      "execution": {
+        "synthesis_status": "synthesized",
+        "rate_status": "executed",
+        "turn_audio": "turn_008.wav"
+      },
+      "timing": {
+        "ordinal": 8,
+        "source_turn_id": 7,
+        "pause_before_ms": 0,
+        "pause_after_ms": 0,
+        "start_sec": 56.131,
+        "end_sec": 69.527
+      }
+    },
+    {
+      "source_identity": {
+        "ordinal": 9,
+        "source_turn_id": 8,
+        "upstream_role": "User",
+        "logical_role": "caller",
+        "upstream_scenario_speaker_id": "C012",
+        "render_speaker_id": "spk_011"
+      },
+      "labels": [],
+      "requested": {
+        "acoustic": {
+          "required": {
+            "rate": "normal",
+            "arousal": 1,
+            "affect": "sad",
+            "pause_before": "none",
+            "pause_within": 0,
+            "hesitations": 0
+          },
+          "best_effort": {
+            "affect_fine": null,
+            "volume": "normal",
+            "flattened_affect": false,
+            "events": []
+          }
+        }
+      },
+      "planned": {
+        "mapping_version": "controlled_tts_v1",
+        "release_status": "PROVISIONAL_PRODUCTION_MAPPING_WEEK6_FREEZE",
+        "source": {
+          "dialogue_id": "corpus_v1_000010",
+          "turn_id": 8
+        },
+        "logical_speaker": {
+          "upstream_role": "User",
+          "role": "caller",
+          "speaker_id": "C012"
+        },
+        "requested": {
+          "required": {
+            "rate": "normal",
+            "arousal": 1,
+            "affect": "sad",
+            "pause_before": "none",
+            "pause_within": 0,
+            "hesitations": 0
+          },
+          "best_effort": {
+            "affect_fine": null,
+            "volume": "normal",
+            "flattened_affect": false,
+            "events": []
+          }
+        },
+        "normalized": {
+          "role": "caller",
+          "rate": "normal",
+          "arousal": "low",
+          "coarse_affect": "sad",
+          "pause_before": "none",
+          "pause_within_count": 0,
+          "hesitation_count": 0
+        },
+        "higgs": {
+          "prefix_tokens": [
+            "<|prosody:expressive_low|>",
+            "<|emotion:helplessness|>"
+          ],
+          "text": "It’s mostly past reports. I’m safe right now. It’s just frustrating and creepy, and I don’t want it to keep happening.",
+          "model_input": "<|prosody:expressive_low|><|emotion:helplessness|>It’s mostly past reports. I’m safe right now. It’s just frustrating and creepy, and I don’t want it to keep happening.",
+          "native_rate_tokens": [],
+          "native_pause_token_count": 0,
+          "synthesis_call_count": 1
+        },
+        "postprocess": {
+          "order": [
+            "ffmpeg_atempo",
+            "prepend_pause_before"
+          ],
+          "atempo_factor": null,
+          "pause_before_ms": 0,
+          "atempo": {
+            "enabled": false,
+            "factor": null,
+            "processor": "ffmpeg_atempo"
+          },
+          "pause_before": {
+            "enabled": false,
+            "duration_ms": 0,
+            "sample_rate_hz": "actual_final_audio_sample_rate",
+            "sample_count_formula": "(duration_ms * sample_rate_hz + 500) // 1000"
+          }
+        },
+        "realization": {
+          "speaking_rate": {
+            "requested": "normal",
+            "status": "fully_realized",
+            "native_token": null,
+            "atempo_factor": null
+          },
+          "arousal": {
+            "requested": "low",
+            "status": "best_effort_related_proxy",
+            "token": "<|prosody:expressive_low|>"
+          },
+          "coarse_affect": {
+            "requested": "sad",
+            "status": "best_effort_related_proxy",
+            "token": "<|emotion:helplessness|>"
+          },
+          "pause_before": {
+            "requested": "none",
+            "status": "fully_realized",
+            "milliseconds": 0
+          },
+          "pause_within_count": {
+            "requested": 0,
+            "status": "operational_baseline",
+            "inserted_native_pause_tokens": 0,
+            "caveat": "planned native tokens are not an exact total audible pause count"
+          },
+          "hesitation_count": {
+            "requested": 0,
+            "status": "operational_baseline",
+            "inserted_events": 0,
+            "caveat": "generic placement semantics remain provisional"
+          }
+        },
+        "combination_override": null,
+        "validation_status": "unvalidated_combination",
+        "planner": {
+          "hesitation": {
+            "text": "It’s mostly past reports. I’m safe right now. It’s just frustrating and creepy, and I don’t want it to keep happening.",
+            "requested_count": 0,
+            "inserted_count": 0,
+            "events": [],
+            "used_fallback": false,
+            "status": "operational_baseline",
+            "warnings": []
+          },
+          "pause_within": {
+            "text": "It’s mostly past reports. I’m safe right now. It’s just frustrating and creepy, and I don’t want it to keep happening.",
+            "requested_count": 0,
+            "inserted_count": 0,
+            "events": [],
+            "used_fallback": false,
+            "status": "operational_baseline",
+            "warnings": []
+          }
+        },
+        "best_effort": {
+          "requested": {
+            "affect_fine": null,
+            "volume": "normal",
+            "flattened_affect": false,
+            "events": []
+          },
+          "fields": {
+            "affect_fine": {
+              "source_present": true,
+              "requested": null,
+              "status": "not_realized",
+              "realization": null
+            },
+            "volume": {
+              "source_present": true,
+              "requested": "normal",
+              "status": "unsupported",
+              "realization": null
+            },
+            "flattened_affect": {
+              "source_present": true,
+              "requested": false,
+              "status": "not_realized",
+              "realization": null
+            },
+            "events": {
+              "source_present": true,
+              "requested": [],
+              "status": "not_realized",
+              "realization": null
+            }
+          }
+        },
+        "provenance": {},
+        "warnings": [
+          {
+            "code": "unvalidated_combination",
+            "control": "arousal+coarse_affect",
+            "message": "No explicit canonical combination override or combination-level evidence classification exists."
+          }
+        ]
+      },
+      "approved_speaker_reference": {
+        "render_speaker_id": "spk_011",
+        "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_011_primary.wav",
+        "resolved_reference_wav": "/home/li_yanyupingsheng/5703tts/data/speaker_pool/vctk_v0.1/references/spk_011_primary.wav",
+        "sha256": "d91903d62d42310e90deb900115a5b69bc488198c1ee0aff10ff3c742700c139"
+      },
+      "execution": {
+        "synthesis_status": "synthesized",
+        "rate_status": "not_required",
+        "turn_audio": "turn_009.wav"
+      },
+      "timing": {
+        "ordinal": 9,
+        "source_turn_id": 8,
+        "pause_before_ms": 0,
+        "pause_after_ms": 0,
+        "start_sec": 69.527,
+        "end_sec": 77.927
+      }
+    },
+    {
+      "source_identity": {
+        "ordinal": 10,
+        "source_turn_id": 9,
+        "upstream_role": "Listener",
+        "logical_role": "counsellor",
+        "upstream_scenario_speaker_id": "L009",
+        "render_speaker_id": "spk_009"
+      },
+      "labels": [],
+      "requested": {
+        "acoustic": {
+          "required": {
+            "rate": "slow",
+            "arousal": 2,
+            "affect": "warm",
+            "pause_before": "none",
+            "pause_within": 0,
+            "hesitations": 0
+          },
+          "best_effort": {
+            "affect_fine": null,
+            "volume": "normal",
+            "flattened_affect": false,
+            "events": []
+          }
+        }
+      },
+      "planned": {
+        "mapping_version": "controlled_tts_v1",
+        "release_status": "PROVISIONAL_PRODUCTION_MAPPING_WEEK6_FREEZE",
+        "source": {
+          "dialogue_id": "corpus_v1_000010",
+          "turn_id": 9
+        },
+        "logical_speaker": {
+          "upstream_role": "Listener",
+          "role": "counsellor",
+          "speaker_id": "L009"
+        },
+        "requested": {
+          "required": {
+            "rate": "slow",
+            "arousal": 2,
+            "affect": "warm",
+            "pause_before": "none",
+            "pause_within": 0,
+            "hesitations": 0
+          },
+          "best_effort": {
+            "affect_fine": null,
+            "volume": "normal",
+            "flattened_affect": false,
+            "events": []
+          }
+        },
+        "normalized": {
+          "role": "counsellor",
+          "rate": "slow",
+          "arousal": "medium",
+          "coarse_affect": "warm",
+          "pause_before": "none",
+          "pause_within_count": 0,
+          "hesitation_count": 0
+        },
+        "higgs": {
+          "prefix_tokens": [
+            "<|emotion:affection|>"
+          ],
+          "text": "Understood. I can take further action on the platform, and I’ll add a non-consensual sexual messages report to your case. For safety, you can delete messages, don’t open attachments, and avoid engaging with him. We can also set up more support—would that help?",
+          "model_input": "<|emotion:affection|>Understood. I can take further action on the platform, and I’ll add a non-consensual sexual messages report to your case. For safety, you can delete messages, don’t open attachments, and avoid engaging with him. We can also set up more support—would that help?",
+          "native_rate_tokens": [],
+          "native_pause_token_count": 0,
+          "synthesis_call_count": 1
+        },
+        "postprocess": {
+          "order": [
+            "ffmpeg_atempo",
+            "prepend_pause_before"
+          ],
+          "atempo_factor": 0.85,
+          "pause_before_ms": 0,
+          "atempo": {
+            "enabled": true,
+            "factor": 0.85,
+            "processor": "ffmpeg_atempo"
+          },
+          "pause_before": {
+            "enabled": false,
+            "duration_ms": 0,
+            "sample_rate_hz": "actual_final_audio_sample_rate",
+            "sample_count_formula": "(duration_ms * sample_rate_hz + 500) // 1000"
+          }
+        },
+        "realization": {
+          "speaking_rate": {
+            "requested": "slow",
+            "status": "fully_realized",
+            "native_token": null,
+            "atempo_factor": 0.85
+          },
+          "arousal": {
+            "requested": "medium",
+            "status": "operational_baseline",
+            "token": null
+          },
+          "coarse_affect": {
+            "requested": "warm",
+            "status": "fully_realized",
+            "token": "<|emotion:affection|>"
+          },
+          "pause_before": {
+            "requested": "none",
+            "status": "fully_realized",
+            "milliseconds": 0
+          },
+          "pause_within_count": {
+            "requested": 0,
+            "status": "operational_baseline",
+            "inserted_native_pause_tokens": 0,
+            "caveat": "planned native tokens are not an exact total audible pause count"
+          },
+          "hesitation_count": {
+            "requested": 0,
+            "status": "operational_baseline",
+            "inserted_events": 0,
+            "caveat": "generic placement semantics remain provisional"
+          }
+        },
+        "combination_override": null,
+        "validation_status": "unvalidated_combination",
+        "planner": {
+          "hesitation": {
+            "text": "Understood. I can take further action on the platform, and I’ll add a non-consensual sexual messages report to your case. For safety, you can delete messages, don’t open attachments, and avoid engaging with him. We can also set up more support—would that help?",
+            "requested_count": 0,
+            "inserted_count": 0,
+            "events": [],
+            "used_fallback": false,
+            "status": "operational_baseline",
+            "warnings": []
+          },
+          "pause_within": {
+            "text": "Understood. I can take further action on the platform, and I’ll add a non-consensual sexual messages report to your case. For safety, you can delete messages, don’t open attachments, and avoid engaging with him. We can also set up more support—would that help?",
+            "requested_count": 0,
+            "inserted_count": 0,
+            "events": [],
+            "used_fallback": false,
+            "status": "operational_baseline",
+            "warnings": []
+          }
+        },
+        "best_effort": {
+          "requested": {
+            "affect_fine": null,
+            "volume": "normal",
+            "flattened_affect": false,
+            "events": []
+          },
+          "fields": {
+            "affect_fine": {
+              "source_present": true,
+              "requested": null,
+              "status": "not_realized",
+              "realization": null
+            },
+            "volume": {
+              "source_present": true,
+              "requested": "normal",
+              "status": "unsupported",
+              "realization": null
+            },
+            "flattened_affect": {
+              "source_present": true,
+              "requested": false,
+              "status": "not_realized",
+              "realization": null
+            },
+            "events": {
+              "source_present": true,
+              "requested": [],
+              "status": "not_realized",
+              "realization": null
+            }
+          }
+        },
+        "provenance": {},
+        "warnings": [
+          {
+            "code": "unvalidated_combination",
+            "control": "arousal+coarse_affect",
+            "message": "No explicit canonical combination override or combination-level evidence classification exists."
+          }
+        ]
+      },
+      "approved_speaker_reference": {
+        "render_speaker_id": "spk_009",
+        "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_009_primary.wav",
+        "resolved_reference_wav": "/home/li_yanyupingsheng/5703tts/data/speaker_pool/vctk_v0.1/references/spk_009_primary.wav",
+        "sha256": "ee0c2ef451292f4b7d7bf35beaa6e630976457c27e02226e87d4f12762582315"
+      },
+      "execution": {
+        "synthesis_status": "synthesized",
+        "rate_status": "executed",
+        "turn_audio": "turn_010.wav"
+      },
+      "timing": {
+        "ordinal": 10,
+        "source_turn_id": 9,
+        "pause_before_ms": 0,
+        "pause_after_ms": 0,
+        "start_sec": 77.927,
+        "end_sec": 96.217
+      }
+    },
+    {
+      "source_identity": {
+        "ordinal": 11,
+        "source_turn_id": 10,
+        "upstream_role": "User",
+        "logical_role": "caller",
+        "upstream_scenario_speaker_id": "C012",
+        "render_speaker_id": "spk_011"
+      },
+      "labels": [],
+      "requested": {
+        "acoustic": {
+          "required": {
+            "rate": "normal",
+            "arousal": 1,
+            "affect": "sad",
+            "pause_before": "none",
+            "pause_within": 0,
+            "hesitations": 0
+          },
+          "best_effort": {
+            "affect_fine": null,
+            "volume": "normal",
+            "flattened_affect": false,
+            "events": []
+          }
+        }
+      },
+      "planned": {
+        "mapping_version": "controlled_tts_v1",
+        "release_status": "PROVISIONAL_PRODUCTION_MAPPING_WEEK6_FREEZE",
+        "source": {
+          "dialogue_id": "corpus_v1_000010",
+          "turn_id": 10
+        },
+        "logical_speaker": {
+          "upstream_role": "User",
+          "role": "caller",
+          "speaker_id": "C012"
+        },
+        "requested": {
+          "required": {
+            "rate": "normal",
+            "arousal": 1,
+            "affect": "sad",
+            "pause_before": "none",
+            "pause_within": 0,
+            "hesitations": 0
+          },
+          "best_effort": {
+            "affect_fine": null,
+            "volume": "normal",
+            "flattened_affect": false,
+            "events": []
+          }
+        },
+        "normalized": {
+          "role": "caller",
+          "rate": "normal",
+          "arousal": "low",
+          "coarse_affect": "sad",
+          "pause_before": "none",
+          "pause_within_count": 0,
+          "hesitation_count": 0
+        },
+        "higgs": {
+          "prefix_tokens": [
+            "<|prosody:expressive_low|>",
+            "<|emotion:helplessness|>"
+          ],
+          "text": "Yeah, deleting and blocking makes sense. I just want him to stop, and I want to be able to move on.",
+          "model_input": "<|prosody:expressive_low|><|emotion:helplessness|>Yeah, deleting and blocking makes sense. I just want him to stop, and I want to be able to move on.",
+          "native_rate_tokens": [],
+          "native_pause_token_count": 0,
+          "synthesis_call_count": 1
+        },
+        "postprocess": {
+          "order": [
+            "ffmpeg_atempo",
+            "prepend_pause_before"
+          ],
+          "atempo_factor": null,
+          "pause_before_ms": 0,
+          "atempo": {
+            "enabled": false,
+            "factor": null,
+            "processor": "ffmpeg_atempo"
+          },
+          "pause_before": {
+            "enabled": false,
+            "duration_ms": 0,
+            "sample_rate_hz": "actual_final_audio_sample_rate",
+            "sample_count_formula": "(duration_ms * sample_rate_hz + 500) // 1000"
+          }
+        },
+        "realization": {
+          "speaking_rate": {
+            "requested": "normal",
+            "status": "fully_realized",
+            "native_token": null,
+            "atempo_factor": null
+          },
+          "arousal": {
+            "requested": "low",
+            "status": "best_effort_related_proxy",
+            "token": "<|prosody:expressive_low|>"
+          },
+          "coarse_affect": {
+            "requested": "sad",
+            "status": "best_effort_related_proxy",
+            "token": "<|emotion:helplessness|>"
+          },
+          "pause_before": {
+            "requested": "none",
+            "status": "fully_realized",
+            "milliseconds": 0
+          },
+          "pause_within_count": {
+            "requested": 0,
+            "status": "operational_baseline",
+            "inserted_native_pause_tokens": 0,
+            "caveat": "planned native tokens are not an exact total audible pause count"
+          },
+          "hesitation_count": {
+            "requested": 0,
+            "status": "operational_baseline",
+            "inserted_events": 0,
+            "caveat": "generic placement semantics remain provisional"
+          }
+        },
+        "combination_override": null,
+        "validation_status": "unvalidated_combination",
+        "planner": {
+          "hesitation": {
+            "text": "Yeah, deleting and blocking makes sense. I just want him to stop, and I want to be able to move on.",
+            "requested_count": 0,
+            "inserted_count": 0,
+            "events": [],
+            "used_fallback": false,
+            "status": "operational_baseline",
+            "warnings": []
+          },
+          "pause_within": {
+            "text": "Yeah, deleting and blocking makes sense. I just want him to stop, and I want to be able to move on.",
+            "requested_count": 0,
+            "inserted_count": 0,
+            "events": [],
+            "used_fallback": false,
+            "status": "operational_baseline",
+            "warnings": []
+          }
+        },
+        "best_effort": {
+          "requested": {
+            "affect_fine": null,
+            "volume": "normal",
+            "flattened_affect": false,
+            "events": []
+          },
+          "fields": {
+            "affect_fine": {
+              "source_present": true,
+              "requested": null,
+              "status": "not_realized",
+              "realization": null
+            },
+            "volume": {
+              "source_present": true,
+              "requested": "normal",
+              "status": "unsupported",
+              "realization": null
+            },
+            "flattened_affect": {
+              "source_present": true,
+              "requested": false,
+              "status": "not_realized",
+              "realization": null
+            },
+            "events": {
+              "source_present": true,
+              "requested": [],
+              "status": "not_realized",
+              "realization": null
+            }
+          }
+        },
+        "provenance": {},
+        "warnings": [
+          {
+            "code": "unvalidated_combination",
+            "control": "arousal+coarse_affect",
+            "message": "No explicit canonical combination override or combination-level evidence classification exists."
+          }
+        ]
+      },
+      "approved_speaker_reference": {
+        "render_speaker_id": "spk_011",
+        "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_011_primary.wav",
+        "resolved_reference_wav": "/home/li_yanyupingsheng/5703tts/data/speaker_pool/vctk_v0.1/references/spk_011_primary.wav",
+        "sha256": "d91903d62d42310e90deb900115a5b69bc488198c1ee0aff10ff3c742700c139"
+      },
+      "execution": {
+        "synthesis_status": "synthesized",
+        "rate_status": "not_required",
+        "turn_audio": "turn_011.wav"
+      },
+      "timing": {
+        "ordinal": 11,
+        "source_turn_id": 10,
+        "pause_before_ms": 0,
+        "pause_after_ms": 0,
+        "start_sec": 96.217,
+        "end_sec": 102.297
+      }
+    },
+    {
+      "source_identity": {
+        "ordinal": 12,
+        "source_turn_id": 11,
+        "upstream_role": "Listener",
+        "logical_role": "counsellor",
+        "upstream_scenario_speaker_id": "L009",
+        "render_speaker_id": "spk_009"
+      },
+      "labels": [],
+      "requested": {
+        "acoustic": {
+          "required": {
+            "rate": "normal",
+            "arousal": 2,
+            "affect": "warm",
+            "pause_before": "none",
+            "pause_within": 0,
+            "hesitations": 0
+          },
+          "best_effort": {
+            "affect_fine": null,
+            "volume": "normal",
+            "flattened_affect": false,
+            "events": []
+          }
+        }
+      },
+      "planned": {
+        "mapping_version": "controlled_tts_v1",
+        "release_status": "PROVISIONAL_PRODUCTION_MAPPING_WEEK6_FREEZE",
+        "source": {
+          "dialogue_id": "corpus_v1_000010",
+          "turn_id": 11
+        },
+        "logical_speaker": {
+          "upstream_role": "Listener",
+          "role": "counsellor",
+          "speaker_id": "L009"
+        },
+        "requested": {
+          "required": {
+            "rate": "normal",
+            "arousal": 2,
+            "affect": "warm",
+            "pause_before": "none",
+            "pause_within": 0,
+            "hesitations": 0
+          },
+          "best_effort": {
+            "affect_fine": null,
+            "volume": "normal",
+            "flattened_affect": false,
+            "events": []
+          }
+        },
+        "normalized": {
+          "role": "counsellor",
+          "rate": "normal",
+          "arousal": "medium",
+          "coarse_affect": "warm",
+          "pause_before": "none",
+          "pause_within_count": 0,
+          "hesitation_count": 0
+        },
+        "higgs": {
+          "prefix_tokens": [
+            "<|emotion:affection|>"
+          ],
+          "text": "We’ll focus on that. You’re allowed to delete messages and reports, and I’ll keep the platform team updated. We’ll also add a note to keep you safe if he reaches out again.",
+          "model_input": "<|emotion:affection|>We’ll focus on that. You’re allowed to delete messages and reports, and I’ll keep the platform team updated. We’ll also add a note to keep you safe if he reaches out again.",
+          "native_rate_tokens": [],
+          "native_pause_token_count": 0,
+          "synthesis_call_count": 1
+        },
+        "postprocess": {
+          "order": [
+            "ffmpeg_atempo",
+            "prepend_pause_before"
+          ],
+          "atempo_factor": null,
+          "pause_before_ms": 0,
+          "atempo": {
+            "enabled": false,
+            "factor": null,
+            "processor": "ffmpeg_atempo"
+          },
+          "pause_before": {
+            "enabled": false,
+            "duration_ms": 0,
+            "sample_rate_hz": "actual_final_audio_sample_rate",
+            "sample_count_formula": "(duration_ms * sample_rate_hz + 500) // 1000"
+          }
+        },
+        "realization": {
+          "speaking_rate": {
+            "requested": "normal",
+            "status": "fully_realized",
+            "native_token": null,
+            "atempo_factor": null
+          },
+          "arousal": {
+            "requested": "medium",
+            "status": "operational_baseline",
+            "token": null
+          },
+          "coarse_affect": {
+            "requested": "warm",
+            "status": "fully_realized",
+            "token": "<|emotion:affection|>"
+          },
+          "pause_before": {
+            "requested": "none",
+            "status": "fully_realized",
+            "milliseconds": 0
+          },
+          "pause_within_count": {
+            "requested": 0,
+            "status": "operational_baseline",
+            "inserted_native_pause_tokens": 0,
+            "caveat": "planned native tokens are not an exact total audible pause count"
+          },
+          "hesitation_count": {
+            "requested": 0,
+            "status": "operational_baseline",
+            "inserted_events": 0,
+            "caveat": "generic placement semantics remain provisional"
+          }
+        },
+        "combination_override": null,
+        "validation_status": "unvalidated_combination",
+        "planner": {
+          "hesitation": {
+            "text": "We’ll focus on that. You’re allowed to delete messages and reports, and I’ll keep the platform team updated. We’ll also add a note to keep you safe if he reaches out again.",
+            "requested_count": 0,
+            "inserted_count": 0,
+            "events": [],
+            "used_fallback": false,
+            "status": "operational_baseline",
+            "warnings": []
+          },
+          "pause_within": {
+            "text": "We’ll focus on that. You’re allowed to delete messages and reports, and I’ll keep the platform team updated. We’ll also add a note to keep you safe if he reaches out again.",
+            "requested_count": 0,
+            "inserted_count": 0,
+            "events": [],
+            "used_fallback": false,
+            "status": "operational_baseline",
+            "warnings": []
+          }
+        },
+        "best_effort": {
+          "requested": {
+            "affect_fine": null,
+            "volume": "normal",
+            "flattened_affect": false,
+            "events": []
+          },
+          "fields": {
+            "affect_fine": {
+              "source_present": true,
+              "requested": null,
+              "status": "not_realized",
+              "realization": null
+            },
+            "volume": {
+              "source_present": true,
+              "requested": "normal",
+              "status": "unsupported",
+              "realization": null
+            },
+            "flattened_affect": {
+              "source_present": true,
+              "requested": false,
+              "status": "not_realized",
+              "realization": null
+            },
+            "events": {
+              "source_present": true,
+              "requested": [],
+              "status": "not_realized",
+              "realization": null
+            }
+          }
+        },
+        "provenance": {},
+        "warnings": [
+          {
+            "code": "unvalidated_combination",
+            "control": "arousal+coarse_affect",
+            "message": "No explicit canonical combination override or combination-level evidence classification exists."
+          }
+        ]
+      },
+      "approved_speaker_reference": {
+        "render_speaker_id": "spk_009",
+        "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_009_primary.wav",
+        "resolved_reference_wav": "/home/li_yanyupingsheng/5703tts/data/speaker_pool/vctk_v0.1/references/spk_009_primary.wav",
+        "sha256": "ee0c2ef451292f4b7d7bf35beaa6e630976457c27e02226e87d4f12762582315"
+      },
+      "execution": {
+        "synthesis_status": "synthesized",
+        "rate_status": "not_required",
+        "turn_audio": "turn_012.wav"
+      },
+      "timing": {
+        "ordinal": 12,
+        "source_turn_id": 11,
+        "pause_before_ms": 0,
+        "pause_after_ms": 0,
+        "start_sec": 102.297,
+        "end_sec": 112.217
+      }
+    },
+    {
+      "source_identity": {
+        "ordinal": 13,
+        "source_turn_id": 12,
+        "upstream_role": "User",
+        "logical_role": "caller",
+        "upstream_scenario_speaker_id": "C012",
+        "render_speaker_id": "spk_011"
+      },
+      "labels": [],
+      "requested": {
+        "acoustic": {
+          "required": {
+            "rate": "normal",
+            "arousal": 2,
+            "affect": "neutral",
+            "pause_before": "none",
+            "pause_within": 0,
+            "hesitations": 0
+          },
+          "best_effort": {
+            "affect_fine": null,
+            "volume": "normal",
+            "flattened_affect": false,
+            "events": []
+          }
+        }
+      },
+      "planned": {
+        "mapping_version": "controlled_tts_v1",
+        "release_status": "PROVISIONAL_PRODUCTION_MAPPING_WEEK6_FREEZE",
+        "source": {
+          "dialogue_id": "corpus_v1_000010",
+          "turn_id": 12
+        },
+        "logical_speaker": {
+          "upstream_role": "User",
+          "role": "caller",
+          "speaker_id": "C012"
+        },
+        "requested": {
+          "required": {
+            "rate": "normal",
+            "arousal": 2,
+            "affect": "neutral",
+            "pause_before": "none",
+            "pause_within": 0,
+            "hesitations": 0
+          },
+          "best_effort": {
+            "affect_fine": null,
+            "volume": "normal",
+            "flattened_affect": false,
+            "events": []
+          }
+        },
+        "normalized": {
+          "role": "caller",
+          "rate": "normal",
+          "arousal": "medium",
+          "coarse_affect": "neutral",
+          "pause_before": "none",
+          "pause_within_count": 0,
+          "hesitation_count": 0
+        },
+        "higgs": {
+          "prefix_tokens": [],
+          "text": "Okay. Can we also talk about something else—about him texting me a lot? I just wanted to mention it.",
+          "model_input": "Okay. Can we also talk about something else—about him texting me a lot? I just wanted to mention it.",
+          "native_rate_tokens": [],
+          "native_pause_token_count": 0,
+          "synthesis_call_count": 1
+        },
+        "postprocess": {
+          "order": [
+            "ffmpeg_atempo",
+            "prepend_pause_before"
+          ],
+          "atempo_factor": null,
+          "pause_before_ms": 0,
+          "atempo": {
+            "enabled": false,
+            "factor": null,
+            "processor": "ffmpeg_atempo"
+          },
+          "pause_before": {
+            "enabled": false,
+            "duration_ms": 0,
+            "sample_rate_hz": "actual_final_audio_sample_rate",
+            "sample_count_formula": "(duration_ms * sample_rate_hz + 500) // 1000"
+          }
+        },
+        "realization": {
+          "speaking_rate": {
+            "requested": "normal",
+            "status": "fully_realized",
+            "native_token": null,
+            "atempo_factor": null
+          },
+          "arousal": {
+            "requested": "medium",
+            "status": "operational_baseline",
+            "token": null
+          },
+          "coarse_affect": {
+            "requested": "neutral",
+            "status": "operational_baseline",
+            "token": null
+          },
+          "pause_before": {
+            "requested": "none",
+            "status": "fully_realized",
+            "milliseconds": 0
+          },
+          "pause_within_count": {
+            "requested": 0,
+            "status": "operational_baseline",
+            "inserted_native_pause_tokens": 0,
+            "caveat": "planned native tokens are not an exact total audible pause count"
+          },
+          "hesitation_count": {
+            "requested": 0,
+            "status": "operational_baseline",
+            "inserted_events": 0,
+            "caveat": "generic placement semantics remain provisional"
+          }
+        },
+        "combination_override": null,
+        "validation_status": "unvalidated_combination",
+        "planner": {
+          "hesitation": {
+            "text": "Okay. Can we also talk about something else—about him texting me a lot? I just wanted to mention it.",
+            "requested_count": 0,
+            "inserted_count": 0,
+            "events": [],
+            "used_fallback": false,
+            "status": "operational_baseline",
+            "warnings": []
+          },
+          "pause_within": {
+            "text": "Okay. Can we also talk about something else—about him texting me a lot? I just wanted to mention it.",
+            "requested_count": 0,
+            "inserted_count": 0,
+            "events": [],
+            "used_fallback": false,
+            "status": "operational_baseline",
+            "warnings": []
+          }
+        },
+        "best_effort": {
+          "requested": {
+            "affect_fine": null,
+            "volume": "normal",
+            "flattened_affect": false,
+            "events": []
+          },
+          "fields": {
+            "affect_fine": {
+              "source_present": true,
+              "requested": null,
+              "status": "not_realized",
+              "realization": null
+            },
+            "volume": {
+              "source_present": true,
+              "requested": "normal",
+              "status": "unsupported",
+              "realization": null
+            },
+            "flattened_affect": {
+              "source_present": true,
+              "requested": false,
+              "status": "not_realized",
+              "realization": null
+            },
+            "events": {
+              "source_present": true,
+              "requested": [],
+              "status": "not_realized",
+              "realization": null
+            }
+          }
+        },
+        "provenance": {},
+        "warnings": [
+          {
+            "code": "unvalidated_combination",
+            "control": "arousal+coarse_affect",
+            "message": "No explicit canonical combination override or combination-level evidence classification exists."
+          }
+        ]
+      },
+      "approved_speaker_reference": {
+        "render_speaker_id": "spk_011",
+        "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_011_primary.wav",
+        "resolved_reference_wav": "/home/li_yanyupingsheng/5703tts/data/speaker_pool/vctk_v0.1/references/spk_011_primary.wav",
+        "sha256": "d91903d62d42310e90deb900115a5b69bc488198c1ee0aff10ff3c742700c139"
+      },
+      "execution": {
+        "synthesis_status": "synthesized",
+        "rate_status": "not_required",
+        "turn_audio": "turn_013.wav"
+      },
+      "timing": {
+        "ordinal": 13,
+        "source_turn_id": 12,
+        "pause_before_ms": 0,
+        "pause_after_ms": 0,
+        "start_sec": 112.217,
+        "end_sec": 119.217
+      }
+    },
+    {
+      "source_identity": {
+        "ordinal": 14,
+        "source_turn_id": 13,
+        "upstream_role": "Listener",
+        "logical_role": "counsellor",
+        "upstream_scenario_speaker_id": "L009",
+        "render_speaker_id": "spk_009"
+      },
+      "labels": [],
+      "requested": {
+        "acoustic": {
+          "required": {
+            "rate": "normal",
+            "arousal": 2,
+            "affect": "warm",
+            "pause_before": "none",
+            "pause_within": 0,
+            "hesitations": 0
+          },
+          "best_effort": {
+            "affect_fine": null,
+            "volume": "normal",
+            "flattened_affect": false,
+            "events": []
+          }
+        }
+      },
+      "planned": {
+        "mapping_version": "controlled_tts_v1",
+        "release_status": "PROVISIONAL_PRODUCTION_MAPPING_WEEK6_FREEZE",
+        "source": {
+          "dialogue_id": "corpus_v1_000010",
+          "turn_id": 13
+        },
+        "logical_speaker": {
+          "upstream_role": "Listener",
+          "role": "counsellor",
+          "speaker_id": "L009"
+        },
+        "requested": {
+          "required": {
+            "rate": "normal",
+            "arousal": 2,
+            "affect": "warm",
+            "pause_before": "none",
+            "pause_within": 0,
+            "hesitations": 0
+          },
+          "best_effort": {
+            "affect_fine": null,
+            "volume": "normal",
+            "flattened_affect": false,
+            "events": []
+          }
+        },
+        "normalized": {
+          "role": "counsellor",
+          "rate": "normal",
+          "arousal": "medium",
+          "coarse_affect": "warm",
+          "pause_before": "none",
+          "pause_within_count": 0,
+          "hesitation_count": 0
+        },
+        "higgs": {
+          "prefix_tokens": [
+            "<|emotion:affection|>"
+          ],
+          "text": "Absolutely. I’ll note that and we’ll keep your report separate from other reports for safety. We’ll prioritize your privacy and any concerns about unwanted communication.",
+          "model_input": "<|emotion:affection|>Absolutely. I’ll note that and we’ll keep your report separate from other reports for safety. We’ll prioritize your privacy and any concerns about unwanted communication.",
+          "native_rate_tokens": [],
+          "native_pause_token_count": 0,
+          "synthesis_call_count": 1
+        },
+        "postprocess": {
+          "order": [
+            "ffmpeg_atempo",
+            "prepend_pause_before"
+          ],
+          "atempo_factor": null,
+          "pause_before_ms": 0,
+          "atempo": {
+            "enabled": false,
+            "factor": null,
+            "processor": "ffmpeg_atempo"
+          },
+          "pause_before": {
+            "enabled": false,
+            "duration_ms": 0,
+            "sample_rate_hz": "actual_final_audio_sample_rate",
+            "sample_count_formula": "(duration_ms * sample_rate_hz + 500) // 1000"
+          }
+        },
+        "realization": {
+          "speaking_rate": {
+            "requested": "normal",
+            "status": "fully_realized",
+            "native_token": null,
+            "atempo_factor": null
+          },
+          "arousal": {
+            "requested": "medium",
+            "status": "operational_baseline",
+            "token": null
+          },
+          "coarse_affect": {
+            "requested": "warm",
+            "status": "fully_realized",
+            "token": "<|emotion:affection|>"
+          },
+          "pause_before": {
+            "requested": "none",
+            "status": "fully_realized",
+            "milliseconds": 0
+          },
+          "pause_within_count": {
+            "requested": 0,
+            "status": "operational_baseline",
+            "inserted_native_pause_tokens": 0,
+            "caveat": "planned native tokens are not an exact total audible pause count"
+          },
+          "hesitation_count": {
+            "requested": 0,
+            "status": "operational_baseline",
+            "inserted_events": 0,
+            "caveat": "generic placement semantics remain provisional"
+          }
+        },
+        "combination_override": null,
+        "validation_status": "unvalidated_combination",
+        "planner": {
+          "hesitation": {
+            "text": "Absolutely. I’ll note that and we’ll keep your report separate from other reports for safety. We’ll prioritize your privacy and any concerns about unwanted communication.",
+            "requested_count": 0,
+            "inserted_count": 0,
+            "events": [],
+            "used_fallback": false,
+            "status": "operational_baseline",
+            "warnings": []
+          },
+          "pause_within": {
+            "text": "Absolutely. I’ll note that and we’ll keep your report separate from other reports for safety. We’ll prioritize your privacy and any concerns about unwanted communication.",
+            "requested_count": 0,
+            "inserted_count": 0,
+            "events": [],
+            "used_fallback": false,
+            "status": "operational_baseline",
+            "warnings": []
+          }
+        },
+        "best_effort": {
+          "requested": {
+            "affect_fine": null,
+            "volume": "normal",
+            "flattened_affect": false,
+            "events": []
+          },
+          "fields": {
+            "affect_fine": {
+              "source_present": true,
+              "requested": null,
+              "status": "not_realized",
+              "realization": null
+            },
+            "volume": {
+              "source_present": true,
+              "requested": "normal",
+              "status": "unsupported",
+              "realization": null
+            },
+            "flattened_affect": {
+              "source_present": true,
+              "requested": false,
+              "status": "not_realized",
+              "realization": null
+            },
+            "events": {
+              "source_present": true,
+              "requested": [],
+              "status": "not_realized",
+              "realization": null
+            }
+          }
+        },
+        "provenance": {},
+        "warnings": [
+          {
+            "code": "unvalidated_combination",
+            "control": "arousal+coarse_affect",
+            "message": "No explicit canonical combination override or combination-level evidence classification exists."
+          }
+        ]
+      },
+      "approved_speaker_reference": {
+        "render_speaker_id": "spk_009",
+        "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_009_primary.wav",
+        "resolved_reference_wav": "/home/li_yanyupingsheng/5703tts/data/speaker_pool/vctk_v0.1/references/spk_009_primary.wav",
+        "sha256": "ee0c2ef451292f4b7d7bf35beaa6e630976457c27e02226e87d4f12762582315"
+      },
+      "execution": {
+        "synthesis_status": "synthesized",
+        "rate_status": "not_required",
+        "turn_audio": "turn_014.wav"
+      },
+      "timing": {
+        "ordinal": 14,
+        "source_turn_id": 13,
+        "pause_before_ms": 0,
+        "pause_after_ms": 0,
+        "start_sec": 119.217,
+        "end_sec": 129.057
+      }
+    },
+    {
+      "source_identity": {
+        "ordinal": 15,
+        "source_turn_id": 14,
+        "upstream_role": "User",
+        "logical_role": "caller",
+        "upstream_scenario_speaker_id": "C012",
+        "render_speaker_id": "spk_011"
+      },
+      "labels": [],
+      "requested": {
+        "acoustic": {
+          "required": {
+            "rate": "normal",
+            "arousal": 2,
+            "affect": "neutral",
+            "pause_before": "none",
+            "pause_within": 0,
+            "hesitations": 0
+          },
+          "best_effort": {
+            "affect_fine": null,
+            "volume": "normal",
+            "flattened_affect": false,
+            "events": []
+          }
+        }
+      },
+      "planned": {
+        "mapping_version": "controlled_tts_v1",
+        "release_status": "PROVISIONAL_PRODUCTION_MAPPING_WEEK6_FREEZE",
+        "source": {
+          "dialogue_id": "corpus_v1_000010",
+          "turn_id": 14
+        },
+        "logical_speaker": {
+          "upstream_role": "User",
+          "role": "caller",
+          "speaker_id": "C012"
+        },
+        "requested": {
+          "required": {
+            "rate": "normal",
+            "arousal": 2,
+            "affect": "neutral",
+            "pause_before": "none",
+            "pause_within": 0,
+            "hesitations": 0
+          },
+          "best_effort": {
+            "affect_fine": null,
+            "volume": "normal",
+            "flattened_affect": false,
+            "events": []
+          }
+        },
+        "normalized": {
+          "role": "caller",
+          "rate": "normal",
+          "arousal": "medium",
+          "coarse_affect": "neutral",
+          "pause_before": "none",
+          "pause_within_count": 0,
+          "hesitation_count": 0
+        },
+        "higgs": {
+          "prefix_tokens": [],
+          "text": "Thanks. I just want it to stop and to feel like I can breathe again.",
+          "model_input": "Thanks. I just want it to stop and to feel like I can breathe again.",
+          "native_rate_tokens": [],
+          "native_pause_token_count": 0,
+          "synthesis_call_count": 1
+        },
+        "postprocess": {
+          "order": [
+            "ffmpeg_atempo",
+            "prepend_pause_before"
+          ],
+          "atempo_factor": null,
+          "pause_before_ms": 0,
+          "atempo": {
+            "enabled": false,
+            "factor": null,
+            "processor": "ffmpeg_atempo"
+          },
+          "pause_before": {
+            "enabled": false,
+            "duration_ms": 0,
+            "sample_rate_hz": "actual_final_audio_sample_rate",
+            "sample_count_formula": "(duration_ms * sample_rate_hz + 500) // 1000"
+          }
+        },
+        "realization": {
+          "speaking_rate": {
+            "requested": "normal",
+            "status": "fully_realized",
+            "native_token": null,
+            "atempo_factor": null
+          },
+          "arousal": {
+            "requested": "medium",
+            "status": "operational_baseline",
+            "token": null
+          },
+          "coarse_affect": {
+            "requested": "neutral",
+            "status": "operational_baseline",
+            "token": null
+          },
+          "pause_before": {
+            "requested": "none",
+            "status": "fully_realized",
+            "milliseconds": 0
+          },
+          "pause_within_count": {
+            "requested": 0,
+            "status": "operational_baseline",
+            "inserted_native_pause_tokens": 0,
+            "caveat": "planned native tokens are not an exact total audible pause count"
+          },
+          "hesitation_count": {
+            "requested": 0,
+            "status": "operational_baseline",
+            "inserted_events": 0,
+            "caveat": "generic placement semantics remain provisional"
+          }
+        },
+        "combination_override": null,
+        "validation_status": "unvalidated_combination",
+        "planner": {
+          "hesitation": {
+            "text": "Thanks. I just want it to stop and to feel like I can breathe again.",
+            "requested_count": 0,
+            "inserted_count": 0,
+            "events": [],
+            "used_fallback": false,
+            "status": "operational_baseline",
+            "warnings": []
+          },
+          "pause_within": {
+            "text": "Thanks. I just want it to stop and to feel like I can breathe again.",
+            "requested_count": 0,
+            "inserted_count": 0,
+            "events": [],
+            "used_fallback": false,
+            "status": "operational_baseline",
+            "warnings": []
+          }
+        },
+        "best_effort": {
+          "requested": {
+            "affect_fine": null,
+            "volume": "normal",
+            "flattened_affect": false,
+            "events": []
+          },
+          "fields": {
+            "affect_fine": {
+              "source_present": true,
+              "requested": null,
+              "status": "not_realized",
+              "realization": null
+            },
+            "volume": {
+              "source_present": true,
+              "requested": "normal",
+              "status": "unsupported",
+              "realization": null
+            },
+            "flattened_affect": {
+              "source_present": true,
+              "requested": false,
+              "status": "not_realized",
+              "realization": null
+            },
+            "events": {
+              "source_present": true,
+              "requested": [],
+              "status": "not_realized",
+              "realization": null
+            }
+          }
+        },
+        "provenance": {},
+        "warnings": [
+          {
+            "code": "unvalidated_combination",
+            "control": "arousal+coarse_affect",
+            "message": "No explicit canonical combination override or combination-level evidence classification exists."
+          }
+        ]
+      },
+      "approved_speaker_reference": {
+        "render_speaker_id": "spk_011",
+        "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_011_primary.wav",
+        "resolved_reference_wav": "/home/li_yanyupingsheng/5703tts/data/speaker_pool/vctk_v0.1/references/spk_011_primary.wav",
+        "sha256": "d91903d62d42310e90deb900115a5b69bc488198c1ee0aff10ff3c742700c139"
+      },
+      "execution": {
+        "synthesis_status": "synthesized",
+        "rate_status": "not_required",
+        "turn_audio": "turn_015.wav"
+      },
+      "timing": {
+        "ordinal": 15,
+        "source_turn_id": 14,
+        "pause_before_ms": 0,
+        "pause_after_ms": 0,
+        "start_sec": 129.057,
+        "end_sec": 133.057
+      }
+    }
+  ]
+}
