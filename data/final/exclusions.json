@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0",
+  "exclusions": [
+    {
+      "dialogue_id": "corpus_v1_000685",
+      "reason": "Upstream content-safety exclusion: sexual content addressed to a self-identified minor",
+      "provenance": {
+        "source": "5703_tut27/data/corpus_v1/known_issues.json",
+        "severity": "content_safety"
+      }
+    }
+  ]
+}
