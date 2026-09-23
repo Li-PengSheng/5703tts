@@ -1,0 +1,308 @@
+{
+  "speaker_pool_version": "vctk_v0.1",
+  "status": "descriptive_qa_only",
+  "assignment_seed": 5703,
+  "input_dialogue_count": 1000,
+  "active_speaker_count": 10,
+  "active_speaker_ids": [
+    "spk_001",
+    "spk_003",
+    "spk_004",
+    "spk_006",
+    "spk_007",
+    "spk_008",
+    "spk_009",
+    "spk_010",
+    "spk_011",
+    "spk_012"
+  ],
+  "excluded_from_active_pool": [
+    {
+      "speaker_id": "spk_002",
+      "reason": "Multiple tested references retained undesirable uncontrolled pause / leading-silence behaviour."
+    },
+    {
+      "speaker_id": "spk_005",
+      "reason": "Multiple tested references retained undesirable uncontrolled pause behaviour."
+    }
+  ],
+  "speaker_usage": {
+    "spk_001": 200,
+    "spk_003": 200,
+    "spk_004": 200,
+    "spk_006": 200,
+    "spk_007": 200,
+    "spk_008": 200,
+    "spk_009": 200,
+    "spk_010": 200,
+    "spk_011": 200,
+    "spk_012": 200
+  },
+  "dialogues_per_speaker": {
+    "spk_001": 200,
+    "spk_003": 200,
+    "spk_004": 200,
+    "spk_006": 200,
+    "spk_007": 200,
+    "spk_008": 200,
+    "spk_009": 200,
+    "spk_010": 200,
+    "spk_011": 200,
+    "spk_012": 200
+  },
+  "role_usage": {
+    "caller": {
+      "spk_001": 100,
+      "spk_003": 100,
+      "spk_004": 100,
+      "spk_006": 100,
+      "spk_007": 100,
+      "spk_008": 100,
+      "spk_009": 100,
+      "spk_010": 100,
+      "spk_011": 100,
+      "spk_012": 100
+    },
+    "counsellor": {
+      "spk_001": 100,
+      "spk_003": 100,
+      "spk_004": 100,
+      "spk_006": 100,
+      "spk_007": 100,
+      "spk_008": 100,
+      "spk_009": 100,
+      "spk_010": 100,
+      "spk_011": 100,
+      "spk_012": 100
+    }
+  },
+  "label_exposure": {
+    "spk_001": {
+      "unspecified": 1597
+    },
+    "spk_003": {
+      "unspecified": 1593
+    },
+    "spk_004": {
+      "unspecified": 1592
+    },
+    "spk_006": {
+      "unspecified": 1581
+    },
+    "spk_007": {
+      "unspecified": 1594
+    },
+    "spk_008": {
+      "unspecified": 1592
+    },
+    "spk_009": {
+      "unspecified": 1590
+    },
+    "spk_010": {
+      "unspecified": 1598
+    },
+    "spk_011": {
+      "unspecified": 1601
+    },
+    "spk_012": {
+      "unspecified": 1596
+    }
+  },
+  "acoustic_exposure": {
+    "spk_001": {
+      "rate": {
+        "fast": 1,
+        "normal": 1313,
+        "slow": 283
+      },
+      "arousal": {
+        "1": 242,
+        "2": 1333,
+        "3": 22
+      },
+      "affect": {
+        "angry": 16,
+        "anxious": 42,
+        "neutral": 525,
+        "sad": 270,
+        "warm": 744
+      }
+    },
+    "spk_003": {
+      "rate": {
+        "fast": 0,
+        "normal": 1278,
+        "slow": 315
+      },
+      "arousal": {
+        "1": 242,
+        "2": 1329,
+        "3": 22
+      },
+      "affect": {
+        "angry": 10,
+        "anxious": 52,
+        "neutral": 517,
+        "sad": 283,
+        "warm": 731
+      }
+    },
+    "spk_004": {
+      "rate": {
+        "fast": 0,
+        "normal": 1309,
+        "slow": 283
+      },
+      "arousal": {
+        "1": 227,
+        "2": 1325,
+        "3": 40
+      },
+      "affect": {
+        "angry": 14,
+        "anxious": 51,
+        "neutral": 544,
+        "sad": 251,
+        "warm": 732
+      }
+    },
+    "spk_006": {
+      "rate": {
+        "fast": 1,
+        "normal": 1288,
+        "slow": 292
+      },
+      "arousal": {
+        "1": 265,
+        "2": 1297,
+        "3": 19
+      },
+      "affect": {
+        "angry": 13,
+        "anxious": 41,
+        "neutral": 510,
+        "sad": 285,
+        "warm": 732
+      }
+    },
+    "spk_007": {
+      "rate": {
+        "fast": 1,
+        "normal": 1265,
+        "slow": 328
+      },
+      "arousal": {
+        "1": 253,
+        "2": 1327,
+        "3": 14
+      },
+      "affect": {
+        "angry": 12,
+        "anxious": 56,
+        "neutral": 519,
+        "sad": 291,
+        "warm": 716
+      }
+    },
+    "spk_008": {
+      "rate": {
+        "fast": 0,
+        "normal": 1306,
+        "slow": 286
+      },
+      "arousal": {
+        "1": 242,
+        "2": 1334,
+        "3": 16
+      },
+      "affect": {
+        "angry": 8,
+        "anxious": 50,
+        "neutral": 531,
+        "sad": 262,
+        "warm": 741
+      }
+    },
+    "spk_009": {
+      "rate": {
+        "fast": 2,
+        "normal": 1288,
+        "slow": 300
+      },
+      "arousal": {
+        "1": 254,
+        "2": 1316,
+        "3": 20
+      },
+      "affect": {
+        "angry": 11,
+        "anxious": 50,
+        "neutral": 516,
+        "sad": 280,
+        "warm": 733
+      }
+    },
+    "spk_010": {
+      "rate": {
+        "fast": 0,
+        "normal": 1317,
+        "slow": 281
+      },
+      "arousal": {
+        "1": 270,
+        "2": 1311,
+        "3": 17
+      },
+      "affect": {
+        "angry": 9,
+        "anxious": 54,
+        "neutral": 505,
+        "sad": 282,
+        "warm": 748
+      }
+    },
+    "spk_011": {
+      "rate": {
+        "fast": 0,
+        "normal": 1325,
+        "slow": 276
+      },
+      "arousal": {
+        "1": 258,
+        "2": 1328,
+        "3": 15
+      },
+      "affect": {
+        "angry": 14,
+        "anxious": 36,
+        "neutral": 540,
+        "sad": 274,
+        "warm": 737
+      }
+    },
+    "spk_012": {
+      "rate": {
+        "fast": 3,
+        "normal": 1315,
+        "slow": 278
+      },
+      "arousal": {
+        "1": 218,
+        "2": 1361,
+        "3": 17
+      },
+      "affect": {
+        "angry": 11,
+        "anxious": 58,
+        "neutral": 558,
+        "sad": 238,
+        "warm": 731
+      }
+    }
+  },
+  "notes": [
+    "Descriptive QA only. Assignments were not adjusted from these counts.",
+    "Do not treat a small sample as evidence of statistical balance.",
+    "Speaker assignment does not use labels or acoustic conditions as input."
+  ]
+}

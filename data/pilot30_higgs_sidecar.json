@@ -1,0 +1,948 @@
+{
+  "materialization_mode": "speaker_sidecar",
+  "source_records_rewritten": false,
+  "assignment_file": "data/pilot30_assignments.jsonl",
+  "assignment_sha256": "1e4fa078e83c8bef67e3e719459d927f4911c9825d081c1551389d11dd4e53ea",
+  "registry_path": "data/final/speaker_registry.higgs-review.json",
+  "registry_version": "vctk_v0.1",
+  "registry_sha256": "6fc3ab7918b670fade009f1e2d1bbcf80fc8e8b2e1b87ac9efb8d714bc3e42c2",
+  "active_speakers_path": "data/speaker_pool/vctk_v0.1/active_speakers.json",
+  "active_speakers_sha256": "3afe73567569f1c22390f9bef38ce34fef312909c21df48dd4d8b0562312e83b",
+  "project_root": "/home/li_yanyupingsheng/5703tts",
+  "input_count": 30,
+  "backend_target": "higgs",
+  "speakers": {
+    "spk_001": {
+      "higgs_reference": {
+        "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_001_primary.wav",
+        "sha256": "eb7f8024d51eedaec2406773ef49aa7d6e96bee7c2bd5cdf65e043815cbc4d8f"
+      }
+    },
+    "spk_003": {
+      "higgs_reference": {
+        "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_003_primary.wav",
+        "sha256": "b1fff562d2c305b29992ed9a7f1c510135fb34c6101087b997a8e1dddb42314e"
+      }
+    },
+    "spk_004": {
+      "higgs_reference": {
+        "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_004_primary.wav",
+        "sha256": "1e3bc1e3733507394c0beeb59656e5dd5280bc7a46537e2110681b7e588a060c"
+      }
+    },
+    "spk_006": {
+      "higgs_reference": {
+        "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_006_primary.wav",
+        "sha256": "650c0fe63ac79d987f784e1752479c414862936973c23a0891b8142c2cdf1d5d"
+      }
+    },
+    "spk_007": {
+      "higgs_reference": {
+        "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_007_primary.wav",
+        "sha256": "8889c52d7d07209930f8dd29fc8bf0c8d6c2a94d8f54e452316ce21556a6cc6a"
+      }
+    },
+    "spk_008": {
+      "higgs_reference": {
+        "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_008_primary.wav",
+        "sha256": "3789926b9af6e94a28cbc615d726093b47aafbe1539f5ec2f841c2cb2e2fad6a"
+      }
+    },
+    "spk_009": {
+      "higgs_reference": {
+        "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_009_primary.wav",
+        "sha256": "ee0c2ef451292f4b7d7bf35beaa6e630976457c27e02226e87d4f12762582315"
+      }
+    },
+    "spk_010": {
+      "higgs_reference": {
+        "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_010_primary.wav",
+        "sha256": "4680b885c7f4b6701c8394de1320dfad4c2f4d21e65e44d9610b070f93c2a375"
+      }
+    },
+    "spk_011": {
+      "higgs_reference": {
+        "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_011_primary.wav",
+        "sha256": "d91903d62d42310e90deb900115a5b69bc488198c1ee0aff10ff3c742700c139"
+      }
+    },
+    "spk_012": {
+      "higgs_reference": {
+        "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_012_primary.wav",
+        "sha256": "3c4d2b063ce4802e43a08316553f1a0f9b271fbeba5559060befd5c51a21680e"
+      }
+    }
+  },
+  "dialogues": [
+    {
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 1,
+        "record_sha256": "1599eaf6a70b4ae794f340371176c5e4e6df2f734089b0b69cc94eec8fe0a544"
+      },
+      "dialogue_id": "corpus_v1_000000",
+      "roles": {
+        "caller": {
+          "upstream_role": "User",
+          "upstream_scenario_speaker_id": "C008",
+          "render_speaker_id": "spk_001",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_001_primary.wav",
+            "sha256": "eb7f8024d51eedaec2406773ef49aa7d6e96bee7c2bd5cdf65e043815cbc4d8f"
+          }
+        },
+        "counsellor": {
+          "upstream_role": "Listener",
+          "upstream_scenario_speaker_id": "L001",
+          "render_speaker_id": "spk_004",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_004_primary.wav",
+            "sha256": "1e3bc1e3733507394c0beeb59656e5dd5280bc7a46537e2110681b7e588a060c"
+          }
+        }
+      }
+    },
+    {
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 2,
+        "record_sha256": "94fed9586dbc8729a362ed3474f35a62af15b6338410b6e8cdfbd034892f5573"
+      },
+      "dialogue_id": "corpus_v1_000001",
+      "roles": {
+        "caller": {
+          "upstream_role": "User",
+          "upstream_scenario_speaker_id": "C003",
+          "render_speaker_id": "spk_008",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_008_primary.wav",
+            "sha256": "3789926b9af6e94a28cbc615d726093b47aafbe1539f5ec2f841c2cb2e2fad6a"
+          }
+        },
+        "counsellor": {
+          "upstream_role": "Listener",
+          "upstream_scenario_speaker_id": "L008",
+          "render_speaker_id": "spk_006",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_006_primary.wav",
+            "sha256": "650c0fe63ac79d987f784e1752479c414862936973c23a0891b8142c2cdf1d5d"
+          }
+        }
+      }
+    },
+    {
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 3,
+        "record_sha256": "951b8e0f4f6b175c20c378de1b954c6fb1e2c082bbe15a0639d13a4a1b0dfd2f"
+      },
+      "dialogue_id": "corpus_v1_000002",
+      "roles": {
+        "caller": {
+          "upstream_role": "User",
+          "upstream_scenario_speaker_id": "C038",
+          "render_speaker_id": "spk_009",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_009_primary.wav",
+            "sha256": "ee0c2ef451292f4b7d7bf35beaa6e630976457c27e02226e87d4f12762582315"
+          }
+        },
+        "counsellor": {
+          "upstream_role": "Listener",
+          "upstream_scenario_speaker_id": "L004",
+          "render_speaker_id": "spk_007",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_007_primary.wav",
+            "sha256": "8889c52d7d07209930f8dd29fc8bf0c8d6c2a94d8f54e452316ce21556a6cc6a"
+          }
+        }
+      }
+    },
+    {
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 4,
+        "record_sha256": "7f1eb8ec38c138c93e9f6a641acbf97caf8cc1cc08c5d23ef5eb99df879535f9"
+      },
+      "dialogue_id": "corpus_v1_000003",
+      "roles": {
+        "caller": {
+          "upstream_role": "User",
+          "upstream_scenario_speaker_id": "C043",
+          "render_speaker_id": "spk_012",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_012_primary.wav",
+            "sha256": "3c4d2b063ce4802e43a08316553f1a0f9b271fbeba5559060befd5c51a21680e"
+          }
+        },
+        "counsellor": {
+          "upstream_role": "Listener",
+          "upstream_scenario_speaker_id": "L008",
+          "render_speaker_id": "spk_011",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_011_primary.wav",
+            "sha256": "d91903d62d42310e90deb900115a5b69bc488198c1ee0aff10ff3c742700c139"
+          }
+        }
+      }
+    },
+    {
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 5,
+        "record_sha256": "fa0ba629c30e28ad26f0c2c8df5c96ead0f0dbb80084244fa762083796b10f98"
+      },
+      "dialogue_id": "corpus_v1_000004",
+      "roles": {
+        "caller": {
+          "upstream_role": "User",
+          "upstream_scenario_speaker_id": "C033",
+          "render_speaker_id": "spk_010",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_010_primary.wav",
+            "sha256": "4680b885c7f4b6701c8394de1320dfad4c2f4d21e65e44d9610b070f93c2a375"
+          }
+        },
+        "counsellor": {
+          "upstream_role": "Listener",
+          "upstream_scenario_speaker_id": "L007",
+          "render_speaker_id": "spk_003",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_003_primary.wav",
+            "sha256": "b1fff562d2c305b29992ed9a7f1c510135fb34c6101087b997a8e1dddb42314e"
+          }
+        }
+      }
+    },
+    {
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 6,
+        "record_sha256": "99ee9022864fe2e09f4cf6e263a7e17bcceea8348137448fb8d47fd6cc028597"
+      },
+      "dialogue_id": "corpus_v1_000005",
+      "roles": {
+        "caller": {
+          "upstream_role": "User",
+          "upstream_scenario_speaker_id": "C040",
+          "render_speaker_id": "spk_006",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_006_primary.wav",
+            "sha256": "650c0fe63ac79d987f784e1752479c414862936973c23a0891b8142c2cdf1d5d"
+          }
+        },
+        "counsellor": {
+          "upstream_role": "Listener",
+          "upstream_scenario_speaker_id": "L007",
+          "render_speaker_id": "spk_010",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_010_primary.wav",
+            "sha256": "4680b885c7f4b6701c8394de1320dfad4c2f4d21e65e44d9610b070f93c2a375"
+          }
+        }
+      }
+    },
+    {
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 7,
+        "record_sha256": "33792f8f9ffdc6054dfa12701c32fec0b51ae1d054a888c33bf934dc73ceaf72"
+      },
+      "dialogue_id": "corpus_v1_000006",
+      "roles": {
+        "caller": {
+          "upstream_role": "User",
+          "upstream_scenario_speaker_id": "C047",
+          "render_speaker_id": "spk_003",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_003_primary.wav",
+            "sha256": "b1fff562d2c305b29992ed9a7f1c510135fb34c6101087b997a8e1dddb42314e"
+          }
+        },
+        "counsellor": {
+          "upstream_role": "Listener",
+          "upstream_scenario_speaker_id": "L004",
+          "render_speaker_id": "spk_001",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_001_primary.wav",
+            "sha256": "eb7f8024d51eedaec2406773ef49aa7d6e96bee7c2bd5cdf65e043815cbc4d8f"
+          }
+        }
+      }
+    },
+    {
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 8,
+        "record_sha256": "4d891116de9a088a82a2c5d5544056c817b37842cd2d4197e0ca0c80a185cf2f"
+      },
+      "dialogue_id": "corpus_v1_000007",
+      "roles": {
+        "caller": {
+          "upstream_role": "User",
+          "upstream_scenario_speaker_id": "C031",
+          "render_speaker_id": "spk_004",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_004_primary.wav",
+            "sha256": "1e3bc1e3733507394c0beeb59656e5dd5280bc7a46537e2110681b7e588a060c"
+          }
+        },
+        "counsellor": {
+          "upstream_role": "Listener",
+          "upstream_scenario_speaker_id": "L010",
+          "render_speaker_id": "spk_009",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_009_primary.wav",
+            "sha256": "ee0c2ef451292f4b7d7bf35beaa6e630976457c27e02226e87d4f12762582315"
+          }
+        }
+      }
+    },
+    {
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 9,
+        "record_sha256": "09d3a7ea295509fe072c55358ab56414e0014fc1797b197f9273d3ce091f12e6"
+      },
+      "dialogue_id": "corpus_v1_000008",
+      "roles": {
+        "caller": {
+          "upstream_role": "User",
+          "upstream_scenario_speaker_id": "C042",
+          "render_speaker_id": "spk_011",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_011_primary.wav",
+            "sha256": "d91903d62d42310e90deb900115a5b69bc488198c1ee0aff10ff3c742700c139"
+          }
+        },
+        "counsellor": {
+          "upstream_role": "Listener",
+          "upstream_scenario_speaker_id": "L002",
+          "render_speaker_id": "spk_008",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_008_primary.wav",
+            "sha256": "3789926b9af6e94a28cbc615d726093b47aafbe1539f5ec2f841c2cb2e2fad6a"
+          }
+        }
+      }
+    },
+    {
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 10,
+        "record_sha256": "2d94fb91d938550022a9de3f6f1b38ac899254891bcb80a3c2309cb3132f5415"
+      },
+      "dialogue_id": "corpus_v1_000009",
+      "roles": {
+        "caller": {
+          "upstream_role": "User",
+          "upstream_scenario_speaker_id": "C001",
+          "render_speaker_id": "spk_007",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_007_primary.wav",
+            "sha256": "8889c52d7d07209930f8dd29fc8bf0c8d6c2a94d8f54e452316ce21556a6cc6a"
+          }
+        },
+        "counsellor": {
+          "upstream_role": "Listener",
+          "upstream_scenario_speaker_id": "L007",
+          "render_speaker_id": "spk_012",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_012_primary.wav",
+            "sha256": "3c4d2b063ce4802e43a08316553f1a0f9b271fbeba5559060befd5c51a21680e"
+          }
+        }
+      }
+    },
+    {
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 11,
+        "record_sha256": "59e2536b4bb17c34840b7020a5050caafdfcb38bd79cb5f670653dac1050dd35"
+      },
+      "dialogue_id": "corpus_v1_000010",
+      "roles": {
+        "caller": {
+          "upstream_role": "User",
+          "upstream_scenario_speaker_id": "C012",
+          "render_speaker_id": "spk_011",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_011_primary.wav",
+            "sha256": "d91903d62d42310e90deb900115a5b69bc488198c1ee0aff10ff3c742700c139"
+          }
+        },
+        "counsellor": {
+          "upstream_role": "Listener",
+          "upstream_scenario_speaker_id": "L009",
+          "render_speaker_id": "spk_009",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_009_primary.wav",
+            "sha256": "ee0c2ef451292f4b7d7bf35beaa6e630976457c27e02226e87d4f12762582315"
+          }
+        }
+      }
+    },
+    {
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 12,
+        "record_sha256": "29a0cbc6eb4f75e8576a196103017b213fabc3ffe7787d014433a4c55a82a2a5"
+      },
+      "dialogue_id": "corpus_v1_000011",
+      "roles": {
+        "caller": {
+          "upstream_role": "User",
+          "upstream_scenario_speaker_id": "C025",
+          "render_speaker_id": "spk_003",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_003_primary.wav",
+            "sha256": "b1fff562d2c305b29992ed9a7f1c510135fb34c6101087b997a8e1dddb42314e"
+          }
+        },
+        "counsellor": {
+          "upstream_role": "Listener",
+          "upstream_scenario_speaker_id": "L006",
+          "render_speaker_id": "spk_006",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_006_primary.wav",
+            "sha256": "650c0fe63ac79d987f784e1752479c414862936973c23a0891b8142c2cdf1d5d"
+          }
+        }
+      }
+    },
+    {
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 13,
+        "record_sha256": "085bb60ed3839a26c41e89d6965c54631909485e3936ad4fe8fcf725f7a331d7"
+      },
+      "dialogue_id": "corpus_v1_000012",
+      "roles": {
+        "caller": {
+          "upstream_role": "User",
+          "upstream_scenario_speaker_id": "C018",
+          "render_speaker_id": "spk_007",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_007_primary.wav",
+            "sha256": "8889c52d7d07209930f8dd29fc8bf0c8d6c2a94d8f54e452316ce21556a6cc6a"
+          }
+        },
+        "counsellor": {
+          "upstream_role": "Listener",
+          "upstream_scenario_speaker_id": "L003",
+          "render_speaker_id": "spk_012",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_012_primary.wav",
+            "sha256": "3c4d2b063ce4802e43a08316553f1a0f9b271fbeba5559060befd5c51a21680e"
+          }
+        }
+      }
+    },
+    {
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 14,
+        "record_sha256": "17f0e46b8f40aa0c5e6a15eedc71551a583d57b0787481d7ddd16a5a19de9329"
+      },
+      "dialogue_id": "corpus_v1_000013",
+      "roles": {
+        "caller": {
+          "upstream_role": "User",
+          "upstream_scenario_speaker_id": "C031",
+          "render_speaker_id": "spk_008",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_008_primary.wav",
+            "sha256": "3789926b9af6e94a28cbc615d726093b47aafbe1539f5ec2f841c2cb2e2fad6a"
+          }
+        },
+        "counsellor": {
+          "upstream_role": "Listener",
+          "upstream_scenario_speaker_id": "L004",
+          "render_speaker_id": "spk_004",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_004_primary.wav",
+            "sha256": "1e3bc1e3733507394c0beeb59656e5dd5280bc7a46537e2110681b7e588a060c"
+          }
+        }
+      }
+    },
+    {
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 15,
+        "record_sha256": "b2f0ba9dfe8ebcfca3b465e333d8890938e9ff589f07ad993fea20c75ae508b5"
+      },
+      "dialogue_id": "corpus_v1_000014",
+      "roles": {
+        "caller": {
+          "upstream_role": "User",
+          "upstream_scenario_speaker_id": "C005",
+          "render_speaker_id": "spk_001",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_001_primary.wav",
+            "sha256": "eb7f8024d51eedaec2406773ef49aa7d6e96bee7c2bd5cdf65e043815cbc4d8f"
+          }
+        },
+        "counsellor": {
+          "upstream_role": "Listener",
+          "upstream_scenario_speaker_id": "L000",
+          "render_speaker_id": "spk_010",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_010_primary.wav",
+            "sha256": "4680b885c7f4b6701c8394de1320dfad4c2f4d21e65e44d9610b070f93c2a375"
+          }
+        }
+      }
+    },
+    {
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 16,
+        "record_sha256": "a7e31439cd6e1b37ca5f6b07b95eafc3057cb7be7c19ee0a3618b530021e3c4d"
+      },
+      "dialogue_id": "corpus_v1_000015",
+      "roles": {
+        "caller": {
+          "upstream_role": "User",
+          "upstream_scenario_speaker_id": "C000",
+          "render_speaker_id": "spk_006",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_006_primary.wav",
+            "sha256": "650c0fe63ac79d987f784e1752479c414862936973c23a0891b8142c2cdf1d5d"
+          }
+        },
+        "counsellor": {
+          "upstream_role": "Listener",
+          "upstream_scenario_speaker_id": "L010",
+          "render_speaker_id": "spk_003",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_003_primary.wav",
+            "sha256": "b1fff562d2c305b29992ed9a7f1c510135fb34c6101087b997a8e1dddb42314e"
+          }
+        }
+      }
+    },
+    {
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 17,
+        "record_sha256": "7d14ba1735573e32780317fbee03681ca6fcb82d7802b172a734246af815068a"
+      },
+      "dialogue_id": "corpus_v1_000016",
+      "roles": {
+        "caller": {
+          "upstream_role": "User",
+          "upstream_scenario_speaker_id": "C007",
+          "render_speaker_id": "spk_004",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_004_primary.wav",
+            "sha256": "1e3bc1e3733507394c0beeb59656e5dd5280bc7a46537e2110681b7e588a060c"
+          }
+        },
+        "counsellor": {
+          "upstream_role": "Listener",
+          "upstream_scenario_speaker_id": "L010",
+          "render_speaker_id": "spk_001",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_001_primary.wav",
+            "sha256": "eb7f8024d51eedaec2406773ef49aa7d6e96bee7c2bd5cdf65e043815cbc4d8f"
+          }
+        }
+      }
+    },
+    {
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 18,
+        "record_sha256": "30a0e8f09d8f004a7e75a18cb0a133c3de273ddd5619e482df86d87a0dc6d243"
+      },
+      "dialogue_id": "corpus_v1_000017",
+      "roles": {
+        "caller": {
+          "upstream_role": "User",
+          "upstream_scenario_speaker_id": "C001",
+          "render_speaker_id": "spk_012",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_012_primary.wav",
+            "sha256": "3c4d2b063ce4802e43a08316553f1a0f9b271fbeba5559060befd5c51a21680e"
+          }
+        },
+        "counsellor": {
+          "upstream_role": "Listener",
+          "upstream_scenario_speaker_id": "L005",
+          "render_speaker_id": "spk_008",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_008_primary.wav",
+            "sha256": "3789926b9af6e94a28cbc615d726093b47aafbe1539f5ec2f841c2cb2e2fad6a"
+          }
+        }
+      }
+    },
+    {
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 19,
+        "record_sha256": "6cf90da11bd6352c05cc5a2d493a8bc55d8d92f4c04f3ba270658c3fc32aca8f"
+      },
+      "dialogue_id": "corpus_v1_000025",
+      "roles": {
+        "caller": {
+          "upstream_role": "User",
+          "upstream_scenario_speaker_id": "C036",
+          "render_speaker_id": "spk_006",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_006_primary.wav",
+            "sha256": "650c0fe63ac79d987f784e1752479c414862936973c23a0891b8142c2cdf1d5d"
+          }
+        },
+        "counsellor": {
+          "upstream_role": "Listener",
+          "upstream_scenario_speaker_id": "L000",
+          "render_speaker_id": "spk_012",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_012_primary.wav",
+            "sha256": "3c4d2b063ce4802e43a08316553f1a0f9b271fbeba5559060befd5c51a21680e"
+          }
+        }
+      }
+    },
+    {
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 20,
+        "record_sha256": "41d8a0793034f306d77b2537c3f9b8bfdaf741e00df3e13e65a8bc838de1a26c"
+      },
+      "dialogue_id": "corpus_v1_000076",
+      "roles": {
+        "caller": {
+          "upstream_role": "User",
+          "upstream_scenario_speaker_id": "C044",
+          "render_speaker_id": "spk_008",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_008_primary.wav",
+            "sha256": "3789926b9af6e94a28cbc615d726093b47aafbe1539f5ec2f841c2cb2e2fad6a"
+          }
+        },
+        "counsellor": {
+          "upstream_role": "Listener",
+          "upstream_scenario_speaker_id": "L007",
+          "render_speaker_id": "spk_011",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_011_primary.wav",
+            "sha256": "d91903d62d42310e90deb900115a5b69bc488198c1ee0aff10ff3c742700c139"
+          }
+        }
+      }
+    },
+    {
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 21,
+        "record_sha256": "1f409b35915204db38f494c63306de6672a886ecf47810ffeba6c5a8099f81f8"
+      },
+      "dialogue_id": "corpus_v1_000254",
+      "roles": {
+        "caller": {
+          "upstream_role": "User",
+          "upstream_scenario_speaker_id": "C013",
+          "render_speaker_id": "spk_001",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_001_primary.wav",
+            "sha256": "eb7f8024d51eedaec2406773ef49aa7d6e96bee7c2bd5cdf65e043815cbc4d8f"
+          }
+        },
+        "counsellor": {
+          "upstream_role": "Listener",
+          "upstream_scenario_speaker_id": "L004",
+          "render_speaker_id": "spk_009",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_009_primary.wav",
+            "sha256": "ee0c2ef451292f4b7d7bf35beaa6e630976457c27e02226e87d4f12762582315"
+          }
+        }
+      }
+    },
+    {
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 22,
+        "record_sha256": "c03da7523f47717876197a5f8f91fc7ec108929b35af6cf660ff568b783d0416"
+      },
+      "dialogue_id": "corpus_v1_000451",
+      "roles": {
+        "caller": {
+          "upstream_role": "User",
+          "upstream_scenario_speaker_id": "C033",
+          "render_speaker_id": "spk_012",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_012_primary.wav",
+            "sha256": "3c4d2b063ce4802e43a08316553f1a0f9b271fbeba5559060befd5c51a21680e"
+          }
+        },
+        "counsellor": {
+          "upstream_role": "Listener",
+          "upstream_scenario_speaker_id": "L002",
+          "render_speaker_id": "spk_006",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_006_primary.wav",
+            "sha256": "650c0fe63ac79d987f784e1752479c414862936973c23a0891b8142c2cdf1d5d"
+          }
+        }
+      }
+    },
+    {
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 23,
+        "record_sha256": "aeded78c615aa4bcc59552b1545055e5f61343ebdbb990d62e5271e067ad31be"
+      },
+      "dialogue_id": "corpus_v1_000490",
+      "roles": {
+        "caller": {
+          "upstream_role": "User",
+          "upstream_scenario_speaker_id": "C009",
+          "render_speaker_id": "spk_012",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_012_primary.wav",
+            "sha256": "3c4d2b063ce4802e43a08316553f1a0f9b271fbeba5559060befd5c51a21680e"
+          }
+        },
+        "counsellor": {
+          "upstream_role": "Listener",
+          "upstream_scenario_speaker_id": "L003",
+          "render_speaker_id": "spk_007",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_007_primary.wav",
+            "sha256": "8889c52d7d07209930f8dd29fc8bf0c8d6c2a94d8f54e452316ce21556a6cc6a"
+          }
+        }
+      }
+    },
+    {
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 24,
+        "record_sha256": "84fd7977c3e97508be6a0e89ff96b81ca8d3cbac2f26ce9ce45c88f8c5578c7a"
+      },
+      "dialogue_id": "corpus_v1_000604",
+      "roles": {
+        "caller": {
+          "upstream_role": "User",
+          "upstream_scenario_speaker_id": "C040",
+          "render_speaker_id": "spk_009",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_009_primary.wav",
+            "sha256": "ee0c2ef451292f4b7d7bf35beaa6e630976457c27e02226e87d4f12762582315"
+          }
+        },
+        "counsellor": {
+          "upstream_role": "Listener",
+          "upstream_scenario_speaker_id": "L002",
+          "render_speaker_id": "spk_010",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_010_primary.wav",
+            "sha256": "4680b885c7f4b6701c8394de1320dfad4c2f4d21e65e44d9610b070f93c2a375"
+          }
+        }
+      }
+    },
+    {
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 25,
+        "record_sha256": "df8d9628ea289f713615e19f0e3d28cfd427899af6661aa0b7ff7f90349d2219"
+      },
+      "dialogue_id": "corpus_v1_000621",
+      "roles": {
+        "caller": {
+          "upstream_role": "User",
+          "upstream_scenario_speaker_id": "C001",
+          "render_speaker_id": "spk_012",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_012_primary.wav",
+            "sha256": "3c4d2b063ce4802e43a08316553f1a0f9b271fbeba5559060befd5c51a21680e"
+          }
+        },
+        "counsellor": {
+          "upstream_role": "Listener",
+          "upstream_scenario_speaker_id": "L008",
+          "render_speaker_id": "spk_001",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_001_primary.wav",
+            "sha256": "eb7f8024d51eedaec2406773ef49aa7d6e96bee7c2bd5cdf65e043815cbc4d8f"
+          }
+        }
+      }
+    },
+    {
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 26,
+        "record_sha256": "5aeb3c252dcea81d5097a5040cb5f78dad8ca33760ca9750f3a630582097bd1e"
+      },
+      "dialogue_id": "corpus_v1_000779",
+      "roles": {
+        "caller": {
+          "upstream_role": "User",
+          "upstream_scenario_speaker_id": "C037",
+          "render_speaker_id": "spk_004",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_004_primary.wav",
+            "sha256": "1e3bc1e3733507394c0beeb59656e5dd5280bc7a46537e2110681b7e588a060c"
+          }
+        },
+        "counsellor": {
+          "upstream_role": "Listener",
+          "upstream_scenario_speaker_id": "L002",
+          "render_speaker_id": "spk_010",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_010_primary.wav",
+            "sha256": "4680b885c7f4b6701c8394de1320dfad4c2f4d21e65e44d9610b070f93c2a375"
+          }
+        }
+      }
+    },
+    {
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 27,
+        "record_sha256": "d9a6e7979b22f86dddb6a8165429b0a7bbbcf4eab21a7dd009a3e5f9f95a73fd"
+      },
+      "dialogue_id": "corpus_v1_000834",
+      "roles": {
+        "caller": {
+          "upstream_role": "User",
+          "upstream_scenario_speaker_id": "C012",
+          "render_speaker_id": "spk_007",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_007_primary.wav",
+            "sha256": "8889c52d7d07209930f8dd29fc8bf0c8d6c2a94d8f54e452316ce21556a6cc6a"
+          }
+        },
+        "counsellor": {
+          "upstream_role": "Listener",
+          "upstream_scenario_speaker_id": "L005",
+          "render_speaker_id": "spk_003",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_003_primary.wav",
+            "sha256": "b1fff562d2c305b29992ed9a7f1c510135fb34c6101087b997a8e1dddb42314e"
+          }
+        }
+      }
+    },
+    {
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 28,
+        "record_sha256": "2762e855a540541c0684c557b95db7cd440df3229fa6f862b67ce93e0936c8b2"
+      },
+      "dialogue_id": "corpus_v1_000856",
+      "roles": {
+        "caller": {
+          "upstream_role": "User",
+          "upstream_scenario_speaker_id": "C033",
+          "render_speaker_id": "spk_009",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_009_primary.wav",
+            "sha256": "ee0c2ef451292f4b7d7bf35beaa6e630976457c27e02226e87d4f12762582315"
+          }
+        },
+        "counsellor": {
+          "upstream_role": "Listener",
+          "upstream_scenario_speaker_id": "L009",
+          "render_speaker_id": "spk_003",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_003_primary.wav",
+            "sha256": "b1fff562d2c305b29992ed9a7f1c510135fb34c6101087b997a8e1dddb42314e"
+          }
+        }
+      }
+    },
+    {
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 29,
+        "record_sha256": "c8e086b766c1aab682e51b00f3079e58bb9bc2f978048eb0d5dcd7fd7b91e9d7"
+      },
+      "dialogue_id": "corpus_v1_000892",
+      "roles": {
+        "caller": {
+          "upstream_role": "User",
+          "upstream_scenario_speaker_id": "C025",
+          "render_speaker_id": "spk_006",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_006_primary.wav",
+            "sha256": "650c0fe63ac79d987f784e1752479c414862936973c23a0891b8142c2cdf1d5d"
+          }
+        },
+        "counsellor": {
+          "upstream_role": "Listener",
+          "upstream_scenario_speaker_id": "L008",
+          "render_speaker_id": "spk_008",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_008_primary.wav",
+            "sha256": "3789926b9af6e94a28cbc615d726093b47aafbe1539f5ec2f841c2cb2e2fad6a"
+          }
+        }
+      }
+    },
+    {
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 30,
+        "record_sha256": "4c144190226cb63c671304bf4745f52407b52c4380db4e663e2e4e025629a4d3"
+      },
+      "dialogue_id": "corpus_v1_000991",
+      "roles": {
+        "caller": {
+          "upstream_role": "User",
+          "upstream_scenario_speaker_id": "C047",
+          "render_speaker_id": "spk_004",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_004_primary.wav",
+            "sha256": "1e3bc1e3733507394c0beeb59656e5dd5280bc7a46537e2110681b7e588a060c"
+          }
+        },
+        "counsellor": {
+          "upstream_role": "Listener",
+          "upstream_scenario_speaker_id": "L006",
+          "render_speaker_id": "spk_003",
+          "higgs_reference": {
+            "reference_wav": "data/speaker_pool/vctk_v0.1/references/spk_003_primary.wav",
+            "sha256": "b1fff562d2c305b29992ed9a7f1c510135fb34c6101087b997a8e1dddb42314e"
+          }
+        }
+      }
+    }
+  ]
+}
