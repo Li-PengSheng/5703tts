@@ -1,0 +1,538 @@
+{
+  "backend": "higgs",
+  "backend_identity": {
+    "backend": "higgs",
+    "control_mapping": {
+      "implementation_id": "controlled_tts_v1_prod_1",
+      "mapping_version": "controlled_tts_v1",
+      "provenance": {
+        "contract_sha256": "4e787a5363d01e5454a8031c59bb1d4bb454ee37d44ccf262d471c7ce30ba799",
+        "source_commit": "7b005135e148fad8a142f39dc8be3144c3e5adcc",
+        "source_repository": "ginkgoyin/comp5703-tts-experiments"
+      },
+      "release_status": "PROVISIONAL_PRODUCTION_MAPPING_WEEK6_FREEZE"
+    },
+    "ffmpeg_bin": "ffmpeg",
+    "generation_profile": {
+      "max_new_tokens": 1024,
+      "response_format": "wav",
+      "speed": 1.0,
+      "stream": false,
+      "temperature": 0.8,
+      "top_k": 30,
+      "top_p": 0.8,
+      "voice": "default"
+    },
+    "host": "127.0.0.1",
+    "identity_complete": true,
+    "inference_timeout_seconds": 300,
+    "model_dir": "models/higgs-tts-3-4b",
+    "model_id": "bosonai/higgs-tts-3-4b",
+    "port": 18080,
+    "references": {},
+    "server_executable": "third_party/sglang-omni/.venv/bin/sgl-omni",
+    "startup_timeout_seconds": 900
+  },
+  "backend_identity_sha256": "9ff2f8d1a37195129bdc43fa6158a0cbf96595c9bbca3f7b5caac9ac6140c32b",
+  "batch_provenance": {
+    "controlled_tts": {
+      "contract_sha256": "4e787a5363d01e5454a8031c59bb1d4bb454ee37d44ccf262d471c7ce30ba799",
+      "implementation_id": "controlled_tts_v1_prod_1",
+      "mapping_name": "controlled_tts_v1",
+      "mapping_version": "controlled_tts_v1",
+      "release_status": "PROVISIONAL_PRODUCTION_MAPPING_WEEK6_FREEZE"
+    },
+    "exclusion_policy": {
+      "policy_sha256": null,
+      "schema_version": null
+    },
+    "input_containers": [
+      "data/final/pilot30.jsonl"
+    ],
+    "speaker_sidecar": {
+      "active_speakers_sha256": "3afe73567569f1c22390f9bef38ce34fef312909c21df48dd4d8b0562312e83b",
+      "assignment_sha256": "1e4fa078e83c8bef67e3e719459d927f4911c9825d081c1551389d11dd4e53ea",
+      "path": "data/pilot30_higgs_sidecar.json",
+      "registry_sha256": "6fc3ab7918b670fade009f1e2d1bbcf80fc8e8b2e1b87ac9efb8d714bc3e42c2"
+    }
+  },
+  "config_path": "config/config_higgs_cloud.yaml",
+  "config_sha256": "1c2d8fb905dfba3d666136dea604fba33e49fff49511bbac24891fcb04171aaa",
+  "dialogues_excluded": 0,
+  "dialogues_failed": 0,
+  "dialogues_rendered": 30,
+  "dialogues_resumed": 0,
+  "dialogues_skipped": 0,
+  "dialogues_succeeded": 30,
+  "dialogues_total": 30,
+  "duration_seconds": 3982.824,
+  "finished_at": "2026-09-24T13:29:56+00:00",
+  "input_failures": 0,
+  "input_root": "data/final/pilot30.jsonl",
+  "manifest_version": "2.0",
+  "output_root": "data/output/higgs_pilot30_final_1024",
+  "records_total": 30,
+  "results": [
+    {
+      "action": "rendered",
+      "dialogue_id": "corpus_v1_000000",
+      "error": null,
+      "exclusion": null,
+      "output_dir": "/home/li_yanyupingsheng/5703tts/data/output/higgs_pilot30_final_1024/corpus_v1_000000",
+      "render_fingerprint": "88c8de500f7b58aafd359783696d71ce5dd5b9d4d841ca17911c3aa777ece029",
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 1,
+        "record_sha256": "1599eaf6a70b4ae794f340371176c5e4e6df2f734089b0b69cc94eec8fe0a544"
+      },
+      "status": "success"
+    },
+    {
+      "action": "rendered",
+      "dialogue_id": "corpus_v1_000001",
+      "error": null,
+      "exclusion": null,
+      "output_dir": "/home/li_yanyupingsheng/5703tts/data/output/higgs_pilot30_final_1024/corpus_v1_000001",
+      "render_fingerprint": "63301aeb37895a3c0e5de2797f8d6512595b1cd7a54e6a5123e82be787d4b53b",
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 2,
+        "record_sha256": "94fed9586dbc8729a362ed3474f35a62af15b6338410b6e8cdfbd034892f5573"
+      },
+      "status": "success"
+    },
+    {
+      "action": "rendered",
+      "dialogue_id": "corpus_v1_000002",
+      "error": null,
+      "exclusion": null,
+      "output_dir": "/home/li_yanyupingsheng/5703tts/data/output/higgs_pilot30_final_1024/corpus_v1_000002",
+      "render_fingerprint": "fb38219ecdb36f42730594a0cf7008e735f194c0a8cb470f229ad75c5d582512",
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 3,
+        "record_sha256": "951b8e0f4f6b175c20c378de1b954c6fb1e2c082bbe15a0639d13a4a1b0dfd2f"
+      },
+      "status": "success"
+    },
+    {
+      "action": "rendered",
+      "dialogue_id": "corpus_v1_000003",
+      "error": null,
+      "exclusion": null,
+      "output_dir": "/home/li_yanyupingsheng/5703tts/data/output/higgs_pilot30_final_1024/corpus_v1_000003",
+      "render_fingerprint": "96ad3a8fdd39cda2a0bc2fc50d0d08d26dc6e02106e9c2986fd29bd2ec6ad471",
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 4,
+        "record_sha256": "7f1eb8ec38c138c93e9f6a641acbf97caf8cc1cc08c5d23ef5eb99df879535f9"
+      },
+      "status": "success"
+    },
+    {
+      "action": "rendered",
+      "dialogue_id": "corpus_v1_000004",
+      "error": null,
+      "exclusion": null,
+      "output_dir": "/home/li_yanyupingsheng/5703tts/data/output/higgs_pilot30_final_1024/corpus_v1_000004",
+      "render_fingerprint": "1ad99880b1ef11c59fc1c9e69756fff7eb2fd14131c095d878463e62c4350eac",
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 5,
+        "record_sha256": "fa0ba629c30e28ad26f0c2c8df5c96ead0f0dbb80084244fa762083796b10f98"
+      },
+      "status": "success"
+    },
+    {
+      "action": "rendered",
+      "dialogue_id": "corpus_v1_000005",
+      "error": null,
+      "exclusion": null,
+      "output_dir": "/home/li_yanyupingsheng/5703tts/data/output/higgs_pilot30_final_1024/corpus_v1_000005",
+      "render_fingerprint": "86de2bf27f068416b10defca9806d131fe5ea2f61acb7bf97620b8ad53542556",
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 6,
+        "record_sha256": "99ee9022864fe2e09f4cf6e263a7e17bcceea8348137448fb8d47fd6cc028597"
+      },
+      "status": "success"
+    },
+    {
+      "action": "rendered",
+      "dialogue_id": "corpus_v1_000006",
+      "error": null,
+      "exclusion": null,
+      "output_dir": "/home/li_yanyupingsheng/5703tts/data/output/higgs_pilot30_final_1024/corpus_v1_000006",
+      "render_fingerprint": "a1efb02903ce8a35fd0fbc21cf62f0bf2f2a2af3cf7530ffb3c022647e0f2ad2",
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 7,
+        "record_sha256": "33792f8f9ffdc6054dfa12701c32fec0b51ae1d054a888c33bf934dc73ceaf72"
+      },
+      "status": "success"
+    },
+    {
+      "action": "rendered",
+      "dialogue_id": "corpus_v1_000007",
+      "error": null,
+      "exclusion": null,
+      "output_dir": "/home/li_yanyupingsheng/5703tts/data/output/higgs_pilot30_final_1024/corpus_v1_000007",
+      "render_fingerprint": "62d5a2b34397f4798a3322b0787d091f023f35271f89fd930b0f84e64115837c",
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 8,
+        "record_sha256": "4d891116de9a088a82a2c5d5544056c817b37842cd2d4197e0ca0c80a185cf2f"
+      },
+      "status": "success"
+    },
+    {
+      "action": "rendered",
+      "dialogue_id": "corpus_v1_000008",
+      "error": null,
+      "exclusion": null,
+      "output_dir": "/home/li_yanyupingsheng/5703tts/data/output/higgs_pilot30_final_1024/corpus_v1_000008",
+      "render_fingerprint": "0d78cb8d8fd651ec9cb0be4f8a8c64ef9db92e7f57b4b47288b920ea6c4003a3",
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 9,
+        "record_sha256": "09d3a7ea295509fe072c55358ab56414e0014fc1797b197f9273d3ce091f12e6"
+      },
+      "status": "success"
+    },
+    {
+      "action": "rendered",
+      "dialogue_id": "corpus_v1_000009",
+      "error": null,
+      "exclusion": null,
+      "output_dir": "/home/li_yanyupingsheng/5703tts/data/output/higgs_pilot30_final_1024/corpus_v1_000009",
+      "render_fingerprint": "00281b85952fe3790b4d5a7c77f723d404950226f1df8773e28b7eb6cf1d1b0f",
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 10,
+        "record_sha256": "2d94fb91d938550022a9de3f6f1b38ac899254891bcb80a3c2309cb3132f5415"
+      },
+      "status": "success"
+    },
+    {
+      "action": "rendered",
+      "dialogue_id": "corpus_v1_000010",
+      "error": null,
+      "exclusion": null,
+      "output_dir": "/home/li_yanyupingsheng/5703tts/data/output/higgs_pilot30_final_1024/corpus_v1_000010",
+      "render_fingerprint": "50ddd59d3fa68e8ba45b7ec975f43a07e1e9a544f98e309617ee4b8e7f2f0abc",
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 11,
+        "record_sha256": "59e2536b4bb17c34840b7020a5050caafdfcb38bd79cb5f670653dac1050dd35"
+      },
+      "status": "success"
+    },
+    {
+      "action": "rendered",
+      "dialogue_id": "corpus_v1_000011",
+      "error": null,
+      "exclusion": null,
+      "output_dir": "/home/li_yanyupingsheng/5703tts/data/output/higgs_pilot30_final_1024/corpus_v1_000011",
+      "render_fingerprint": "5f36f72a34c72244eed82594cccf8008eee8667970502e6978e4ca64fd789fad",
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 12,
+        "record_sha256": "29a0cbc6eb4f75e8576a196103017b213fabc3ffe7787d014433a4c55a82a2a5"
+      },
+      "status": "success"
+    },
+    {
+      "action": "rendered",
+      "dialogue_id": "corpus_v1_000012",
+      "error": null,
+      "exclusion": null,
+      "output_dir": "/home/li_yanyupingsheng/5703tts/data/output/higgs_pilot30_final_1024/corpus_v1_000012",
+      "render_fingerprint": "1a4175f7b3f6efb9895e5aee207e9cf05175a2e0fd2e3691d59e973f71ae972c",
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 13,
+        "record_sha256": "085bb60ed3839a26c41e89d6965c54631909485e3936ad4fe8fcf725f7a331d7"
+      },
+      "status": "success"
+    },
+    {
+      "action": "rendered",
+      "dialogue_id": "corpus_v1_000013",
+      "error": null,
+      "exclusion": null,
+      "output_dir": "/home/li_yanyupingsheng/5703tts/data/output/higgs_pilot30_final_1024/corpus_v1_000013",
+      "render_fingerprint": "6dd306efc2e6b85482f08b52ce335cc611cb3dac8e918c414ae17d3ba9640d81",
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 14,
+        "record_sha256": "17f0e46b8f40aa0c5e6a15eedc71551a583d57b0787481d7ddd16a5a19de9329"
+      },
+      "status": "success"
+    },
+    {
+      "action": "rendered",
+      "dialogue_id": "corpus_v1_000014",
+      "error": null,
+      "exclusion": null,
+      "output_dir": "/home/li_yanyupingsheng/5703tts/data/output/higgs_pilot30_final_1024/corpus_v1_000014",
+      "render_fingerprint": "dd6f7d8372ae801725a597f3a3d36ebf1b7ad75a4277b3c9d9aa7ce680c7565e",
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 15,
+        "record_sha256": "b2f0ba9dfe8ebcfca3b465e333d8890938e9ff589f07ad993fea20c75ae508b5"
+      },
+      "status": "success"
+    },
+    {
+      "action": "rendered",
+      "dialogue_id": "corpus_v1_000015",
+      "error": null,
+      "exclusion": null,
+      "output_dir": "/home/li_yanyupingsheng/5703tts/data/output/higgs_pilot30_final_1024/corpus_v1_000015",
+      "render_fingerprint": "1bee834b4e3ad66c149a2b2684448081609bebf095e8e369c7553826cd145018",
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 16,
+        "record_sha256": "a7e31439cd6e1b37ca5f6b07b95eafc3057cb7be7c19ee0a3618b530021e3c4d"
+      },
+      "status": "success"
+    },
+    {
+      "action": "rendered",
+      "dialogue_id": "corpus_v1_000016",
+      "error": null,
+      "exclusion": null,
+      "output_dir": "/home/li_yanyupingsheng/5703tts/data/output/higgs_pilot30_final_1024/corpus_v1_000016",
+      "render_fingerprint": "eac16bafd86da1a7eb65e57173778c9e999ffb59a7645c371ad743c435866919",
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 17,
+        "record_sha256": "7d14ba1735573e32780317fbee03681ca6fcb82d7802b172a734246af815068a"
+      },
+      "status": "success"
+    },
+    {
+      "action": "rendered",
+      "dialogue_id": "corpus_v1_000017",
+      "error": null,
+      "exclusion": null,
+      "output_dir": "/home/li_yanyupingsheng/5703tts/data/output/higgs_pilot30_final_1024/corpus_v1_000017",
+      "render_fingerprint": "ea7f4e7a18bcdbe207e087518d5f2f92a927aa06651eee2fad08e5ad052f139a",
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 18,
+        "record_sha256": "30a0e8f09d8f004a7e75a18cb0a133c3de273ddd5619e482df86d87a0dc6d243"
+      },
+      "status": "success"
+    },
+    {
+      "action": "rendered",
+      "dialogue_id": "corpus_v1_000025",
+      "error": null,
+      "exclusion": null,
+      "output_dir": "/home/li_yanyupingsheng/5703tts/data/output/higgs_pilot30_final_1024/corpus_v1_000025",
+      "render_fingerprint": "4a81ebd6141af8982381486cad82ee6ba4458632672d25a301ec5792a9cb23ee",
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 19,
+        "record_sha256": "6cf90da11bd6352c05cc5a2d493a8bc55d8d92f4c04f3ba270658c3fc32aca8f"
+      },
+      "status": "success"
+    },
+    {
+      "action": "rendered",
+      "dialogue_id": "corpus_v1_000076",
+      "error": null,
+      "exclusion": null,
+      "output_dir": "/home/li_yanyupingsheng/5703tts/data/output/higgs_pilot30_final_1024/corpus_v1_000076",
+      "render_fingerprint": "7d0029060da24fe678cc4565db8ce89f2c391d55dec6bb636dabeb1cc216e517",
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 20,
+        "record_sha256": "41d8a0793034f306d77b2537c3f9b8bfdaf741e00df3e13e65a8bc838de1a26c"
+      },
+      "status": "success"
+    },
+    {
+      "action": "rendered",
+      "dialogue_id": "corpus_v1_000254",
+      "error": null,
+      "exclusion": null,
+      "output_dir": "/home/li_yanyupingsheng/5703tts/data/output/higgs_pilot30_final_1024/corpus_v1_000254",
+      "render_fingerprint": "31c3b201201856ca1685eeb1524c3a9db3b6293b9eee3164e086bc21ecc50a29",
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 21,
+        "record_sha256": "1f409b35915204db38f494c63306de6672a886ecf47810ffeba6c5a8099f81f8"
+      },
+      "status": "success"
+    },
+    {
+      "action": "rendered",
+      "dialogue_id": "corpus_v1_000451",
+      "error": null,
+      "exclusion": null,
+      "output_dir": "/home/li_yanyupingsheng/5703tts/data/output/higgs_pilot30_final_1024/corpus_v1_000451",
+      "render_fingerprint": "eb950d6299f6d22626e45fedcdf041b36d6e173814994627ae3cfff5efa704fa",
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 22,
+        "record_sha256": "c03da7523f47717876197a5f8f91fc7ec108929b35af6cf660ff568b783d0416"
+      },
+      "status": "success"
+    },
+    {
+      "action": "rendered",
+      "dialogue_id": "corpus_v1_000490",
+      "error": null,
+      "exclusion": null,
+      "output_dir": "/home/li_yanyupingsheng/5703tts/data/output/higgs_pilot30_final_1024/corpus_v1_000490",
+      "render_fingerprint": "7e67b236936714cc847cdf9c614f0f7def755a6fe0f0681ab9edbe2043657f40",
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 23,
+        "record_sha256": "aeded78c615aa4bcc59552b1545055e5f61343ebdbb990d62e5271e067ad31be"
+      },
+      "status": "success"
+    },
+    {
+      "action": "rendered",
+      "dialogue_id": "corpus_v1_000604",
+      "error": null,
+      "exclusion": null,
+      "output_dir": "/home/li_yanyupingsheng/5703tts/data/output/higgs_pilot30_final_1024/corpus_v1_000604",
+      "render_fingerprint": "308b7d866d132cd26b93983514ca7a519dafa01b14263fb5bb8f7e898bb12503",
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 24,
+        "record_sha256": "84fd7977c3e97508be6a0e89ff96b81ca8d3cbac2f26ce9ce45c88f8c5578c7a"
+      },
+      "status": "success"
+    },
+    {
+      "action": "rendered",
+      "dialogue_id": "corpus_v1_000621",
+      "error": null,
+      "exclusion": null,
+      "output_dir": "/home/li_yanyupingsheng/5703tts/data/output/higgs_pilot30_final_1024/corpus_v1_000621",
+      "render_fingerprint": "8fb0a64e0975892d0087fdabb7d6bdb199eee8974bb1bb0d939f726beb507060",
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 25,
+        "record_sha256": "df8d9628ea289f713615e19f0e3d28cfd427899af6661aa0b7ff7f90349d2219"
+      },
+      "status": "success"
+    },
+    {
+      "action": "rendered",
+      "dialogue_id": "corpus_v1_000779",
+      "error": null,
+      "exclusion": null,
+      "output_dir": "/home/li_yanyupingsheng/5703tts/data/output/higgs_pilot30_final_1024/corpus_v1_000779",
+      "render_fingerprint": "eaa39bf3ffdac6deca1861074a48e283c3f02e38763ea16cded87348e8197d6e",
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 26,
+        "record_sha256": "5aeb3c252dcea81d5097a5040cb5f78dad8ca33760ca9750f3a630582097bd1e"
+      },
+      "status": "success"
+    },
+    {
+      "action": "rendered",
+      "dialogue_id": "corpus_v1_000834",
+      "error": null,
+      "exclusion": null,
+      "output_dir": "/home/li_yanyupingsheng/5703tts/data/output/higgs_pilot30_final_1024/corpus_v1_000834",
+      "render_fingerprint": "d48d0a8bbb881acecb5950529d91946df9b5bd00e16d4d6f6acd46b6816295f2",
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 27,
+        "record_sha256": "d9a6e7979b22f86dddb6a8165429b0a7bbbcf4eab21a7dd009a3e5f9f95a73fd"
+      },
+      "status": "success"
+    },
+    {
+      "action": "rendered",
+      "dialogue_id": "corpus_v1_000856",
+      "error": null,
+      "exclusion": null,
+      "output_dir": "/home/li_yanyupingsheng/5703tts/data/output/higgs_pilot30_final_1024/corpus_v1_000856",
+      "render_fingerprint": "b56297becdbc93432b8c3375847ec1aaa50bc10bdbadb091f1a36aeffea13336",
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 28,
+        "record_sha256": "2762e855a540541c0684c557b95db7cd440df3229fa6f862b67ce93e0936c8b2"
+      },
+      "status": "success"
+    },
+    {
+      "action": "rendered",
+      "dialogue_id": "corpus_v1_000892",
+      "error": null,
+      "exclusion": null,
+      "output_dir": "/home/li_yanyupingsheng/5703tts/data/output/higgs_pilot30_final_1024/corpus_v1_000892",
+      "render_fingerprint": "52d5f50630790367cf1c24d5261bcd306b49c148f4f1be84c85a02ab9992d514",
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 29,
+        "record_sha256": "c8e086b766c1aab682e51b00f3079e58bb9bc2f978048eb0d5dcd7fd7b91e9d7"
+      },
+      "status": "success"
+    },
+    {
+      "action": "rendered",
+      "dialogue_id": "corpus_v1_000991",
+      "error": null,
+      "exclusion": null,
+      "output_dir": "/home/li_yanyupingsheng/5703tts/data/output/higgs_pilot30_final_1024/corpus_v1_000991",
+      "render_fingerprint": "4b41c9c5fdfdf3a238e1faa9fb3c114ed774f93028ecd7bdf3defedb98ab3cbd",
+      "source": {
+        "container_path": "data/final/pilot30.jsonl",
+        "format": "jsonl",
+        "line_number": 30,
+        "record_sha256": "4c144190226cb63c671304bf4745f52407b52c4380db4e663e2e4e025629a4d3"
+      },
+      "status": "success"
+    }
+  ],
+  "resume_requested": false,
+  "started_at": "2026-09-24T12:23:33+00:00",
+  "status": "success",
+  "summary": {
+    "excluded": 0,
+    "failed": 0,
+    "input_failures": 0,
+    "rendered": 30,
+    "resumed": 0,
+    "total_valid_records": 30
+  }
+}
