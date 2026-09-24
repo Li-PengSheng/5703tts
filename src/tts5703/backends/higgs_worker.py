@@ -32,6 +32,9 @@ HEALTH_POLL_INTERVAL_SECONDS = 0.25
 HEALTH_REQUEST_TIMEOUT_SECONDS = 5.0
 TERMINATE_TIMEOUT_SECONDS = 20.0
 KILL_TIMEOUT_SECONDS = 20.0
+FROZEN_MAX_TOTAL_TOKENS = 71680
+FROZEN_MAX_RUNNING_REQUESTS = 1
+FROZEN_CUDA_GRAPH_MAX_BS = 1
 
 OFFLINE_ENVIRONMENT = {
     "HF_HUB_OFFLINE": "1",
@@ -188,6 +191,12 @@ def _launch_server(config: dict[str, Any]) -> subprocess.Popen[bytes]:
         config["host"],
         "--port",
         str(config["port"]),
+        "--max-total-tokens",
+        str(FROZEN_MAX_TOTAL_TOKENS),
+        "--max-running-requests",
+        str(FROZEN_MAX_RUNNING_REQUESTS),
+        "--cuda-graph-max-bs",
+        str(FROZEN_CUDA_GRAPH_MAX_BS),
     ]
     return subprocess.Popen(
         command,

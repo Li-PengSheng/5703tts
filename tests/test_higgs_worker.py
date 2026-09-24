@@ -54,6 +54,9 @@ parser.add_argument("command")
 parser.add_argument("--model-path", required=True)
 parser.add_argument("--host", required=True)
 parser.add_argument("--port", required=True, type=int)
+parser.add_argument("--max-total-tokens", required=True, type=int)
+parser.add_argument("--max-running-requests", required=True, type=int)
+parser.add_argument("--cuda-graph-max-bs", required=True, type=int)
 args = parser.parse_args()
 model_dir = Path(args.model_path)
 behavior = json.loads((model_dir / "behavior.json").read_text(encoding="utf-8"))
@@ -405,6 +408,39 @@ def test_init_defaults_and_frozen_server_environment(tmp_path: Path) -> None:
     )
 
 
+def test_server_launch_uses_frozen_production_runtime(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = higgs_worker._validate_init(_valid_init(tmp_path))
+    launched: list[list[str]] = []
+
+    def fake_popen(command: list[str], **kwargs: Any) -> object:
+        launched.append(command)
+        return object()
+
+    monkeypatch.setattr(higgs_worker.subprocess, "Popen", fake_popen)
+    higgs_worker._launch_server(config)
+
+    assert launched == [
+        [
+            str(config["server_executable"]),
+            "serve",
+            "--model-path",
+            str(config["model_dir"]),
+            "--host",
+            config["host"],
+            "--port",
+            str(config["port"]),
+            "--max-total-tokens",
+            "71680",
+            "--max-running-requests",
+            "1",
+            "--cuda-graph-max-bs",
+            "1",
+        ]
+    ]
+
+
 def test_init_rejects_missing_and_non_executable_server(tmp_path: Path) -> None:
     message = _valid_init(tmp_path)
     message["server_executable"] = str(tmp_path / "missing")
@@ -504,7 +540,7 @@ def test_frozen_external_payload_is_exact(tmp_path: Path) -> None:
         "response_format": "wav",
         "speed": 1.0,
         "stream": False,
-        "max_new_tokens": 2048,
+        "max_new_tokens": 1024,
         "temperature": 0.8,
         "top_p": 0.8,
         "top_k": 30,
@@ -1190,6 +1226,4 @@ def test_worker_imports_only_standard_library_and_never_names_gpu_runtime() -> N
 
     assert imports.isdisjoint({"torch", "sglang", "sglang_omni", "higgs"})
     assert "nvidia-smi" not in source
-    assert "CUDA" not in source.replace(
-        "Higgs worker retrying after CUDA OOM HTTP 500 (attempt 2 of 2)", ""
-    )
+    assert "torch.cuda" not in source

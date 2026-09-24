@@ -52,6 +52,13 @@ def test_cloud_setup_script_freezes_reviewed_runtime_identities() -> None:
         assert f'readonly {name}="{value}"' in script
 
 
+def test_cloud_setup_installs_and_checks_ninja() -> None:
+    script = SCRIPT.read_text(encoding="utf-8")
+    packages = script.split("readonly -a BASE_PACKAGES=(\n", 1)[1].split("\n)", 1)[0]
+    assert "ninja-build" in packages.split()
+    assert "ninja" in _shell_function("base_commands_ready").split()
+
+
 def test_cosyvoice_cleanliness_allows_only_installer_venv() -> None:
     allowed = b"?? .venv/\0?? .venv/bin/python\0?? .venv/lib/site.py\0"
     assert (

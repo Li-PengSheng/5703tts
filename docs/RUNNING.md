@@ -103,6 +103,7 @@ The reviewed bootstrap contract is:
 SGLang executable: third_party/sglang-omni/.venv/bin/sgl-omni
 model directory:   models/higgs-tts-3-4b
 host/port:         127.0.0.1:18080
+server flags:      --max-total-tokens 71680 --max-running-requests 1 --cuda-graph-max-bs 1
 ```
 
 Verify the executable with:

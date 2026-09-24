@@ -17,7 +17,7 @@ readonly HIGGS_MODEL_SHA256="2f7965264c360b38180885006944aa16bd1de20f4e6cff79f64
 readonly -a BASE_PACKAGES=(
   git curl wget ca-certificates python3 python3.10-dev
   ffmpeg sox libsndfile1
-  build-essential pkg-config iproute2 mokutil pciutils debconf
+  build-essential pkg-config iproute2 mokutil pciutils debconf ninja-build
 )
 readonly -a UCX_PACKAGES=(
   autoconf automake libtool make gcc g++ flex bison m4 libnuma-dev
@@ -200,7 +200,7 @@ project_environment_ready() {
 }
 
 base_commands_ready() {
-  all_commands_exist git curl wget python3 ffmpeg sox ss mokutil
+  all_commands_exist git curl wget python3 ffmpeg sox ss mokutil ninja
 }
 
 packages_installed() {
