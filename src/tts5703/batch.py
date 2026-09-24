@@ -15,7 +15,9 @@ import datetime
 import json
 import logging
 import math
+import os
 import re
+import tempfile
 import time
 from pathlib import Path
 from typing import Any
@@ -51,14 +53,37 @@ _MANAGED_TURN_ARTIFACT = re.compile(
 # A. Manifest loading/writing. The versioned result is authoritative state, and
 # malformed prior state fails loudly under --resume instead of guessing.
 def _write_batch_result(result: dict[str, Any], output_root: Path) -> Path:
-    """Atomically write the authoritative end-of-batch result for this root."""
+    """Publish an immutable attempt before replacing the latest batch result."""
     path = output_root / "batch_result.json"
-    temporary_path = output_root / ".batch_result.json.tmp"
+    attempt_id = re.sub(r"[^A-Za-z0-9._-]", "-", result["started_at"])
+    attempt_path = output_root / f"batch_result.{attempt_id}.json"
     output_root.mkdir(parents=True, exist_ok=True)
-    temporary_path.write_text(
-        json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-    )
-    temporary_path.replace(path)
+    payload = json.dumps(result, indent=2, sort_keys=True) + "\n"
+    with tempfile.NamedTemporaryFile(
+        mode="w",
+        encoding="utf-8",
+        dir=output_root,
+        prefix=".batch_result.",
+        suffix=".tmp",
+        delete=False,
+    ) as temporary:
+        temporary.write(payload)
+    temporary_path = Path(temporary.name)
+    latest_temporary_path = output_root / ".batch_result.json.tmp"
+    try:
+        # A hard link publishes complete bytes atomically and fails if the
+        # immutable attempt name already exists.
+        try:
+            os.link(temporary_path, attempt_path)
+        except FileExistsError as error:
+            raise RuntimeError(
+                f"Batch attempt manifest already exists: {attempt_path}"
+            ) from error
+        latest_temporary_path.write_text(payload, encoding="utf-8")
+        latest_temporary_path.replace(path)
+    finally:
+        temporary_path.unlink(missing_ok=True)
+        latest_temporary_path.unlink(missing_ok=True)
     return path
 
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import datetime
 import hashlib
 import inspect
 import json
@@ -288,6 +289,16 @@ def _invoke(
     monkeypatch.setattr(cli, "configure_logging", lambda *_: None)
     monkeypatch.setattr(cli, "load_config", lambda _: deepcopy(loaded_config))
     monkeypatch.setattr(batch, "run_dialogue", fake_run_dialogue)
+
+    async def run_batch_with_distinct_start(**kwargs: Any) -> int:
+        # The CLI tests run multiple batches within one second. Give each test
+        # attempt a distinct whole-second timestamp without changing production.
+        kwargs["run_started"] = datetime.datetime(
+            2026, 9, 23, tzinfo=datetime.UTC
+        ) + datetime.timedelta(seconds=len(list(output.glob("batch_result.*.json"))))
+        return await batch.run_batch(**kwargs)
+
+    monkeypatch.setattr(cli, "run_batch", run_batch_with_distinct_start)
     arguments = [
         "5703tts",
         "--input",
@@ -1673,6 +1684,80 @@ def test_final_manifest_records_semantic_and_provenance_boundaries(
     assert entry["status"] == "success"
     assert entry["error"] is None
     assert entry["exclusion"] is None
+
+
+def test_batch_attempt_manifests_preserve_first_result_and_update_latest(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    input_path = tmp_path / "corpus.jsonl"
+    _write_jsonl(input_path, [_record("A")])
+    sidecar = _sidecar(("A",))
+    output = tmp_path / "output"
+
+    first_exit, first, _ = _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=sidecar,
+        failures={"A"},
+    )
+    assert first_exit == 1
+    first_attempts = list(output.glob("batch_result.*.json"))
+    assert len(first_attempts) == 1
+    first_attempt = first_attempts[0]
+    first_bytes = first_attempt.read_bytes()
+    assert "." not in first["started_at"]
+    assert first_attempt.name == (
+        "batch_result."
+        + first["started_at"].replace(":", "-").replace("+", "-")
+        + ".json"
+    )
+    assert json.loads(first_bytes) == first
+    assert json.loads((output / "batch_result.json").read_bytes()) == first
+
+    second_exit, second, _ = _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=sidecar,
+        resume=True,
+    )
+    assert second_exit == 0
+    attempts = list(output.glob("batch_result.*.json"))
+    assert len(attempts) == 2
+    assert first_attempt.read_bytes() == first_bytes
+    second_attempt = next(path for path in attempts if path != first_attempt)
+    assert json.loads(second_attempt.read_bytes()) == second
+    assert json.loads((output / "batch_result.json").read_bytes()) == second
+    assert first["summary"]["failed"] == 1
+    assert second["summary"]["failed"] == 0
+
+
+def test_batch_attempt_collision_preserves_evidence_and_latest(tmp_path: Path) -> None:
+    first = {"started_at": "2026-09-23T07:48:12+00:00", "status": "failure"}
+    latest = batch._write_batch_result(first, tmp_path)
+    (attempt,) = tmp_path.glob("batch_result.*.json")
+    first_bytes = attempt.read_bytes()
+    assert attempt.name == "batch_result.2026-09-23T07-48-12-00-00.json"
+    assert latest.read_bytes() == first_bytes
+
+    with pytest.raises(RuntimeError, match="attempt manifest already exists"):
+        batch._write_batch_result({**first, "status": "success"}, tmp_path)
+
+    assert attempt.read_bytes() == first_bytes
+    assert latest.read_bytes() == first_bytes
+    assert not list(tmp_path.glob(".batch_result.*.tmp"))
+
+
+def test_latest_manifest_does_not_share_attempt_file_bytes(tmp_path: Path) -> None:
+    result = {"started_at": "2026-09-23T07:48:12+00:00", "status": "failure"}
+    latest = batch._write_batch_result(result, tmp_path)
+    (attempt,) = tmp_path.glob("batch_result.*.json")
+    first_bytes = attempt.read_bytes()
+
+    latest.write_text("changed latest", encoding="utf-8")
+
+    assert attempt.read_bytes() == first_bytes
 
 
 def test_render_failure_records_expected_output_even_when_result_out_dir_is_none(

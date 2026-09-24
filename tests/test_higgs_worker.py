@@ -164,10 +164,12 @@ class Handler(BaseHTTPRequestHandler):
         if behavior.get("exit_on_request"):
             os._exit(9)
         if (
-            behavior.get("fail_first") and request_count == 1
-        ) or request_count <= int(behavior.get("fail_requests", 0)):
-            body = b"synthetic request failure"
-            self.send_response(500)
+            (behavior.get("fail_first") and request_count == 1)
+            or request_count <= int(behavior.get("fail_requests", 0))
+            or request_count in behavior.get("fail_on_requests", [])
+        ):
+            body = behavior.get("fail_body", "synthetic request failure").encode()
+            self.send_response(int(behavior.get("fail_status", 500)))
             self.send_header("Content-Type", "text/plain")
         elif behavior.get("malformed_first") and request_count == 1:
             body = b"not-a-wav"
@@ -828,6 +830,170 @@ def test_http_error_is_recoverable_and_later_request_reuses_server(
     assert (harness.model_dir / "launch-count.txt").read_text() == "1"
 
 
+def test_cuda_oom_http_500_retries_once_then_publishes_wav(
+    tmp_path: Path, harnesses: list[WorkerHarness]
+) -> None:
+    harness = _harness(
+        harnesses,
+        tmp_path,
+        {"fail_first": True, "fail_body": "CUDA   Out\nOf Memory"},
+    )
+    assert harness.start() == {"status": "ready"}
+    pid = harness.server_pid()
+    output = tmp_path / "raw.wav"
+
+    response = harness.request(output)
+
+    assert response["status"] == "ok"
+    assert output.is_file()
+    assert not output.with_name("raw.wav.part").exists()
+    assert len(harness.requests()) == 2
+    assert {record["pid"] for record in harness.requests()} == {pid}
+    assert (harness.model_dir / "launch-count.txt").read_text() == "1"
+
+
+def test_cuda_oom_http_500_stops_after_two_attempts_and_keeps_server(
+    tmp_path: Path, harnesses: list[WorkerHarness]
+) -> None:
+    harness = _harness(
+        harnesses,
+        tmp_path,
+        {"fail_requests": 2, "fail_body": "CUDA out of memory"},
+    )
+    assert harness.start() == {"status": "ready"}
+    pid = harness.server_pid()
+    output = tmp_path / "failed.wav"
+
+    failed = harness.request(output)
+
+    assert failed["status"] == "error"
+    assert "HTTP 500" in failed["message"]
+    assert "fatal" not in failed
+    assert len(harness.requests()) == 2
+    assert not output.exists()
+    assert not output.with_name("failed.wav.part").exists()
+    assert harness.request(tmp_path / "later.wav")["status"] == "ok"
+    assert harness.server_pid() == pid
+    assert (harness.model_dir / "launch-count.txt").read_text() == "1"
+
+
+@pytest.mark.parametrize(
+    "status,body", [(500, "other error"), (400, "CUDA out of memory")]
+)
+def test_only_cuda_oom_http_500_is_retried(
+    tmp_path: Path, harnesses: list[WorkerHarness], status: int, body: str
+) -> None:
+    harness = _harness(
+        harnesses,
+        tmp_path,
+        {"fail_first": True, "fail_status": status, "fail_body": body},
+    )
+    assert harness.start() == {"status": "ready"}
+
+    failed = harness.request(tmp_path / "failed.wav")
+
+    assert failed["status"] == "error"
+    assert f"HTTP {status}" in failed["message"]
+    assert len(harness.requests()) == 1
+
+
+@pytest.mark.parametrize(
+    "failure", [TimeoutError("slow"), urllib.error.URLError("network")]
+)
+def test_speech_transport_failure_is_not_retried(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, failure: Exception
+) -> None:
+    reference = tmp_path / "reference.wav"
+    _write_wav(reference)
+    output = tmp_path / "raw.wav"
+    requests: list[object] = []
+
+    class Server:
+        returncode = None
+
+        def poll(self) -> None:
+            return None
+
+    def fail(request: object, **_kwargs: object) -> None:
+        requests.append(request)
+        raise failure
+
+    monkeypatch.setattr(higgs_worker.HTTP_OPENER, "open", fail)
+    with pytest.raises(RuntimeError, match="transport failed"):
+        higgs_worker._synthesise(
+            Server(),  # type: ignore[arg-type]
+            {"host": "127.0.0.1", "port": 18080, "inference_timeout_seconds": 2},
+            {
+                "model_input": "text",
+                "reference_wav": str(reference),
+                "output_path": str(output),
+            },
+        )
+    assert len(requests) == 1
+    assert not output.exists()
+    assert not output.with_name("raw.wav.part").exists()
+
+
+def test_server_death_after_oom_prevents_retry(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    reference = tmp_path / "reference.wav"
+    _write_wav(reference)
+    output = tmp_path / "raw.wav"
+    requests: list[object] = []
+
+    class Server:
+        returncode = 9
+        checks = 0
+
+        def poll(self) -> int | None:
+            self.checks += 1
+            return None if self.checks == 1 else 9
+
+    def oom(request: object, **_kwargs: object) -> None:
+        requests.append(request)
+        raise urllib.error.HTTPError(
+            "speech", 500, "error", {}, io.BytesIO(b"CUDA out of memory")
+        )
+
+    monkeypatch.setattr(higgs_worker.HTTP_OPENER, "open", oom)
+    with pytest.raises(higgs_worker.FatalServerError, match="exited unexpectedly"):
+        higgs_worker._synthesise(
+            Server(),  # type: ignore[arg-type]
+            {"host": "127.0.0.1", "port": 18080, "inference_timeout_seconds": 2},
+            {
+                "model_input": "text",
+                "reference_wav": str(reference),
+                "output_path": str(output),
+            },
+        )
+    assert len(requests) == 1
+    assert not output.exists()
+
+
+def test_earlier_wav_survives_later_cuda_oom_retry(
+    tmp_path: Path, harnesses: list[WorkerHarness]
+) -> None:
+    harness = _harness(
+        harnesses,
+        tmp_path,
+        {"fail_on_requests": [2, 3], "fail_body": "CUDA out of memory"},
+    )
+    assert harness.start() == {"status": "ready"}
+    earlier = tmp_path / "turn_001.wav"
+    later = tmp_path / "turn_002.wav"
+    assert harness.request(earlier)["status"] == "ok"
+    original = earlier.read_bytes()
+
+    failed = harness.request(later)
+
+    assert failed["status"] == "error"
+    assert len(harness.requests()) == 3
+    assert earlier.read_bytes() == original
+    assert not later.exists()
+    assert not later.with_name("turn_002.wav.part").exists()
+
+
 def test_many_speech_http_errors_close_responses_and_reuse_server(
     tmp_path: Path, harnesses: list[WorkerHarness]
 ) -> None:
@@ -856,6 +1022,9 @@ def test_malformed_wav_is_recoverable_atomic_and_preserves_existing_output(
     output.write_bytes(b"existing")
 
     failed = harness.request(output)
+    assert len(harness.requests()) == 1
+    assert output.read_bytes() == b"existing"
+    assert not output.with_name("raw.wav.part").exists()
     succeeded = harness.request(output)
 
     assert failed["status"] == "error"
@@ -871,10 +1040,14 @@ def test_wrong_content_type_is_a_recoverable_request_error(
     harness = _harness(harnesses, tmp_path, {"wrong_content_type": True})
     assert harness.start() == {"status": "ready"}
 
-    response = harness.request(tmp_path / "raw.wav")
+    output = tmp_path / "raw.wav"
+    response = harness.request(output)
 
     assert response["status"] == "error"
     assert "audio/wav" in response["message"]
+    assert len(harness.requests()) == 1
+    assert not output.exists()
+    assert not output.with_name("raw.wav.part").exists()
     assert harness.process.poll() is None
 
 
@@ -1017,4 +1190,6 @@ def test_worker_imports_only_standard_library_and_never_names_gpu_runtime() -> N
 
     assert imports.isdisjoint({"torch", "sglang", "sglang_omni", "higgs"})
     assert "nvidia-smi" not in source
-    assert "CUDA" not in source
+    assert "CUDA" not in source.replace(
+        "Higgs worker retrying after CUDA OOM HTTP 500 (attempt 2 of 2)", ""
+    )

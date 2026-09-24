@@ -54,6 +54,8 @@ FROZEN_GENERATION_FIELDS: dict[str, Any] = {
 # In particular, model speed is 1.0; production slow/fast semantics are applied
 # afterward by the parent with FFmpeg atempo 0.85/1.15.
 
+_OOM_MARKER = "cuda out of memory"
+
 HTTP_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
 
@@ -205,13 +207,13 @@ def _check_port_available(host: str, port: int) -> None:
         raise OSError(f"cannot own loopback port {host}:{port}: {error}") from error
 
 
-def _http_error_detail(error: urllib.error.HTTPError) -> str:
+def _http_error_detail(error: urllib.error.HTTPError) -> tuple[str, str | None]:
     try:
         try:
             body = error.read().decode("utf-8", errors="replace")
-            return f"HTTP {error.code}: {body}"
+            return f"HTTP {error.code}: {body}", body
         except (http.client.IncompleteRead, OSError, ValueError) as body_error:
-            return f"HTTP {error.code} (error body unavailable: {body_error})"
+            return f"HTTP {error.code} (error body unavailable: {body_error})", None
     finally:
         try:
             error.close()
@@ -219,6 +221,14 @@ def _http_error_detail(error: urllib.error.HTTPError) -> str:
             _diagnose(
                 f"Higgs worker could not close HTTP error response: {close_error}"
             )
+
+
+def _is_cuda_oom_http_error(status: int, body: str | None) -> bool:
+    return (
+        status == 500
+        and body is not None
+        and _OOM_MARKER in " ".join(body.casefold().split())
+    )
 
 
 def _wait_for_readiness(
@@ -249,7 +259,7 @@ def _wait_for_readiness(
                     return
                 last_error = f"health response was not ready: {payload!r}"
         except urllib.error.HTTPError as error:
-            last_error = _http_error_detail(error)
+            last_error, _ = _http_error_detail(error)
         except (
             urllib.error.URLError,
             http.client.IncompleteRead,
@@ -310,30 +320,37 @@ def _synthesise(
     _ensure_server_alive(server)
     request = _validate_request(message)
     body = json.dumps(_speech_payload(request), ensure_ascii=False).encode("utf-8")
-    http_request = urllib.request.Request(
-        f"http://{config['host']}:{config['port']}/v1/audio/speech",
-        data=body,
-        headers={"Content-Type": "application/json", "Accept": "audio/wav"},
-        method="POST",
-    )
-    try:
-        with HTTP_OPENER.open(
-            http_request, timeout=config["inference_timeout_seconds"]
-        ) as response:
-            content_type = response.headers.get_content_type().lower()
-            audio = response.read()
-            if response.status != 200 or content_type != "audio/wav":
-                raise ValueError(
-                    "SGLang speech response must be HTTP 200 audio/wav; "
-                    f"got {response.status} {content_type!r}"
+    for attempt in range(2):
+        http_request = urllib.request.Request(
+            f"http://{config['host']}:{config['port']}/v1/audio/speech",
+            data=body,
+            headers={"Content-Type": "application/json", "Accept": "audio/wav"},
+            method="POST",
+        )
+        try:
+            with HTTP_OPENER.open(
+                http_request, timeout=config["inference_timeout_seconds"]
+            ) as response:
+                content_type = response.headers.get_content_type().lower()
+                audio = response.read()
+                if response.status != 200 or content_type != "audio/wav":
+                    raise ValueError(
+                        "SGLang speech response must be HTTP 200 audio/wav; "
+                        f"got {response.status} {content_type!r}"
+                    )
+            break
+        except urllib.error.HTTPError as error:
+            detail, error_body = _http_error_detail(error)
+            _ensure_server_alive(server)
+            if attempt == 0 and _is_cuda_oom_http_error(error.code, error_body):
+                _diagnose(
+                    "Higgs worker retrying after CUDA OOM HTTP 500 (attempt 2 of 2)"
                 )
-    except urllib.error.HTTPError as error:
-        detail = _http_error_detail(error)
-        _ensure_server_alive(server)
-        raise RuntimeError(f"SGLang speech request returned {detail}") from error
-    except (urllib.error.URLError, TimeoutError, OSError) as error:
-        _ensure_server_alive(server)
-        raise RuntimeError(f"SGLang speech transport failed: {error}") from error
+                continue
+            raise RuntimeError(f"SGLang speech request returned {detail}") from error
+        except (urllib.error.URLError, TimeoutError, OSError) as error:
+            _ensure_server_alive(server)
+            raise RuntimeError(f"SGLang speech transport failed: {error}") from error
 
     output_path: Path = request["output_path"]
     output_path.parent.mkdir(parents=True, exist_ok=True)
