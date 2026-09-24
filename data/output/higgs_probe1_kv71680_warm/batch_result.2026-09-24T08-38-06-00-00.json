@@ -1,0 +1,103 @@
+{
+  "backend": "higgs",
+  "backend_identity": {
+    "backend": "higgs",
+    "control_mapping": {
+      "implementation_id": "controlled_tts_v1_prod_1",
+      "mapping_version": "controlled_tts_v1",
+      "provenance": {
+        "contract_sha256": "4e787a5363d01e5454a8031c59bb1d4bb454ee37d44ccf262d471c7ce30ba799",
+        "source_commit": "7b005135e148fad8a142f39dc8be3144c3e5adcc",
+        "source_repository": "ginkgoyin/comp5703-tts-experiments"
+      },
+      "release_status": "PROVISIONAL_PRODUCTION_MAPPING_WEEK6_FREEZE"
+    },
+    "ffmpeg_bin": "ffmpeg",
+    "generation_profile": {
+      "max_new_tokens": 2048,
+      "response_format": "wav",
+      "speed": 1.0,
+      "stream": false,
+      "temperature": 0.8,
+      "top_k": 30,
+      "top_p": 0.8,
+      "voice": "default"
+    },
+    "host": "127.0.0.1",
+    "identity_complete": true,
+    "inference_timeout_seconds": 300,
+    "model_dir": "models/higgs-tts-3-4b",
+    "model_id": "bosonai/higgs-tts-3-4b",
+    "port": 18080,
+    "references": {},
+    "server_executable": "/tmp/sgl-omni-kv71680",
+    "startup_timeout_seconds": 900
+  },
+  "backend_identity_sha256": "c6d490a0c90b0013ca4f99df0e32e74ad6db40c6614129e48cabe1aba2eba32e",
+  "batch_provenance": {
+    "controlled_tts": {
+      "contract_sha256": "4e787a5363d01e5454a8031c59bb1d4bb454ee37d44ccf262d471c7ce30ba799",
+      "implementation_id": "controlled_tts_v1_prod_1",
+      "mapping_name": "controlled_tts_v1",
+      "mapping_version": "controlled_tts_v1",
+      "release_status": "PROVISIONAL_PRODUCTION_MAPPING_WEEK6_FREEZE"
+    },
+    "exclusion_policy": {
+      "policy_sha256": null,
+      "schema_version": null
+    },
+    "input_containers": [
+      "/tmp/higgs_probe1.jsonl"
+    ],
+    "speaker_sidecar": {
+      "active_speakers_sha256": "3afe73567569f1c22390f9bef38ce34fef312909c21df48dd4d8b0562312e83b",
+      "assignment_sha256": "1e4fa078e83c8bef67e3e719459d927f4911c9825d081c1551389d11dd4e53ea",
+      "path": "data/pilot30_higgs_sidecar.json",
+      "registry_sha256": "6fc3ab7918b670fade009f1e2d1bbcf80fc8e8b2e1b87ac9efb8d714bc3e42c2"
+    }
+  },
+  "config_path": "/tmp/config_higgs_kv71680.yaml",
+  "config_sha256": "dab9f854798dee07bc4b61e76418449cd675cb0a9e19d2bb41ef4b83b9b139c5",
+  "dialogues_excluded": 0,
+  "dialogues_failed": 0,
+  "dialogues_rendered": 1,
+  "dialogues_resumed": 0,
+  "dialogues_skipped": 0,
+  "dialogues_succeeded": 1,
+  "dialogues_total": 1,
+  "duration_seconds": 189.796,
+  "finished_at": "2026-09-24T08:41:16+00:00",
+  "input_failures": 0,
+  "input_root": "/tmp/higgs_probe1.jsonl",
+  "manifest_version": "2.0",
+  "output_root": "data/output/higgs_probe1_kv71680_warm",
+  "records_total": 1,
+  "results": [
+    {
+      "action": "rendered",
+      "dialogue_id": "corpus_v1_000000",
+      "error": null,
+      "exclusion": null,
+      "output_dir": "/home/li_yanyupingsheng/5703tts/data/output/higgs_probe1_kv71680_warm/corpus_v1_000000",
+      "render_fingerprint": "34d5ae51f8d85a3a0aaa2abaa59179238fa3e75ed4652e611322f8c7cf1a813f",
+      "source": {
+        "container_path": "/tmp/higgs_probe1.jsonl",
+        "format": "jsonl",
+        "line_number": 1,
+        "record_sha256": "1599eaf6a70b4ae794f340371176c5e4e6df2f734089b0b69cc94eec8fe0a544"
+      },
+      "status": "success"
+    }
+  ],
+  "resume_requested": false,
+  "started_at": "2026-09-24T08:38:06+00:00",
+  "status": "success",
+  "summary": {
+    "excluded": 0,
+    "failed": 0,
+    "input_failures": 0,
+    "rendered": 1,
+    "resumed": 0,
+    "total_valid_records": 1
+  }
+}

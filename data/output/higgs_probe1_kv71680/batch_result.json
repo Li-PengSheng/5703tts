@@ -1,0 +1,106 @@
+{
+  "backend": "higgs",
+  "backend_identity": {
+    "backend": "higgs",
+    "control_mapping": {
+      "implementation_id": "controlled_tts_v1_prod_1",
+      "mapping_version": "controlled_tts_v1",
+      "provenance": {
+        "contract_sha256": "4e787a5363d01e5454a8031c59bb1d4bb454ee37d44ccf262d471c7ce30ba799",
+        "source_commit": "7b005135e148fad8a142f39dc8be3144c3e5adcc",
+        "source_repository": "ginkgoyin/comp5703-tts-experiments"
+      },
+      "release_status": "PROVISIONAL_PRODUCTION_MAPPING_WEEK6_FREEZE"
+    },
+    "ffmpeg_bin": "ffmpeg",
+    "generation_profile": {
+      "max_new_tokens": 2048,
+      "response_format": "wav",
+      "speed": 1.0,
+      "stream": false,
+      "temperature": 0.8,
+      "top_k": 30,
+      "top_p": 0.8,
+      "voice": "default"
+    },
+    "host": "127.0.0.1",
+    "identity_complete": true,
+    "inference_timeout_seconds": 300,
+    "model_dir": "models/higgs-tts-3-4b",
+    "model_id": "bosonai/higgs-tts-3-4b",
+    "port": 18080,
+    "references": {},
+    "server_executable": "/tmp/sgl-omni-kv71680",
+    "startup_timeout_seconds": 900
+  },
+  "backend_identity_sha256": "c6d490a0c90b0013ca4f99df0e32e74ad6db40c6614129e48cabe1aba2eba32e",
+  "batch_provenance": {
+    "controlled_tts": {
+      "contract_sha256": "4e787a5363d01e5454a8031c59bb1d4bb454ee37d44ccf262d471c7ce30ba799",
+      "implementation_id": "controlled_tts_v1_prod_1",
+      "mapping_name": "controlled_tts_v1",
+      "mapping_version": "controlled_tts_v1",
+      "release_status": "PROVISIONAL_PRODUCTION_MAPPING_WEEK6_FREEZE"
+    },
+    "exclusion_policy": {
+      "policy_sha256": null,
+      "schema_version": null
+    },
+    "input_containers": [
+      "/tmp/higgs_probe1.jsonl"
+    ],
+    "speaker_sidecar": {
+      "active_speakers_sha256": "3afe73567569f1c22390f9bef38ce34fef312909c21df48dd4d8b0562312e83b",
+      "assignment_sha256": "1e4fa078e83c8bef67e3e719459d927f4911c9825d081c1551389d11dd4e53ea",
+      "path": "data/pilot30_higgs_sidecar.json",
+      "registry_sha256": "6fc3ab7918b670fade009f1e2d1bbcf80fc8e8b2e1b87ac9efb8d714bc3e42c2"
+    }
+  },
+  "config_path": "/tmp/config_higgs_kv71680.yaml",
+  "config_sha256": "dab9f854798dee07bc4b61e76418449cd675cb0a9e19d2bb41ef4b83b9b139c5",
+  "dialogues_excluded": 0,
+  "dialogues_failed": 1,
+  "dialogues_rendered": 0,
+  "dialogues_resumed": 0,
+  "dialogues_skipped": 0,
+  "dialogues_succeeded": 0,
+  "dialogues_total": 1,
+  "duration_seconds": 39.449,
+  "finished_at": "2026-09-24T08:23:05+00:00",
+  "input_failures": 0,
+  "input_root": "/tmp/higgs_probe1.jsonl",
+  "manifest_version": "2.0",
+  "output_root": "data/output/higgs_probe1_kv71680",
+  "records_total": 1,
+  "results": [
+    {
+      "action": "render_failed",
+      "dialogue_id": "corpus_v1_000000",
+      "error": {
+        "message": "Final dialogue failed: Failed to start Higgs worker: FatalServerError: SGLang server exited before readiness with code 1\n  File \n\"/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si\nte-packages/sglang_omni/scheduling/bootstrap.py\", line 58, in \ninit_sglang_cuda_graphs\n    model_worker.model_runner.init_cuda_graphs()\n  File \n\"/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si\nte-packages/sglang_omni/model_runner/sglang_model_runner.py\", line 382, in \ninit_cuda_graphs\n    result = super().init_cuda_graphs(capture_decode_cuda_graph)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \n\"/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si\nte-packages/sglang/srt/model_executor/model_runner.py\", line 839, in \ninit_cuda_graphs\n    capture = capture_cuda_graphs(\n              ^^^^^^^^^^^^^^^^^^^^\n  File \n\"/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si\nte-packages/sglang/srt/model_executor/model_runner_components/cuda_graph_setup.p\ny\", line 106, in capture_cuda_graphs\n    decode = capture_decode_graph(model_runner=model_runner)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \n\"/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si\nte-packages/sglang/srt/model_executor/model_runner_components/cuda_graph_setup.p\ny\", line 333, in capture_decode_graph\n    runner = graph_runners[model_runner.device](model_runner)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \n\"/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si\nte-packages/sglang/srt/model_executor/runner/decode_cuda_graph_runner.py\", line \n407, in __init__\n    self.capture()\n  File \n\"/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si\nte-packages/sglang/srt/model_executor/runner/decode_cuda_graph_runner.py\", line \n857, in capture\n    self._capture_one_stream()\n  File \n\"/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si\nte-packages/sglang/srt/model_executor/runner/decode_cuda_graph_runner.py\", line \n911, in _capture_one_stream\n    self.capture_one_shape(bs, forward, stream_idx, variant_label)\n  File \n\"/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si\nte-packages/sglang/srt/model_executor/runner/decode_cuda_graph_runner.py\", line \n942, in capture_one_shape\n    attn_backend.init_forward_metadata_out_graph(forward_batch, in_capture=True)\n  File \n\"/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si\nte-packages/sglang/srt/layers/attention/flashinfer_backend.py\", line 732, in \ninit_forward_metadata_out_graph\n    self.indices_updater_decode.update(\n  File \n\"/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si\nte-packages/sglang/srt/layers/attention/flashinfer_backend.py\", line 1538, in \nupdate_single_wrapper\n    self.call_begin_forward(\n  File \n\"/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si\nte-packages/sglang/srt/layers/attention/flashinfer_backend.py\", line 1727, in \ncall_begin_forward\n    wrapper.begin_forward(\n  File \n\"/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si\nte-packages/flashinfer/decode.py\", line 1201, in plan\n    self._cached_module = get_batch_prefill_module(\n                          ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \n\"/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si\nte-packages/flashinfer/prefill.py\", line 447, in get_batch_prefill_module\n    module = gen_batch_prefill_module(backend, *args).build_and_load()\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \n\"/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si\nte-packages/flashinfer/jit/core.py\", line 316, in build_and_load\n    self.build(verbose, need_lock=False)\n  File \n\"/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si\nte-packages/flashinfer/jit/core.py\", line 302, in build\n    run_ninja(self.build_dir, self.ninja_path, verbose)\n  File \n\"/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si\nte-packages/flashinfer/jit/cpp_ext.py\", line 368, in run_ninja\n    subprocess.run(\n  File \n\"/home/li_yanyupingsheng/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu\n/lib/python3.12/subprocess.py\", line 548, in run\n    with Popen(*popenargs, **kwargs) as process:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \n\"/home/li_yanyupingsheng/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu\n/lib/python3.12/subprocess.py\", line 1026, in __init__\n    self._execute_child(args, executable, preexec_fn, close_fds,\n  File \n\"/home/li_yanyupingsheng/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu\n/lib/python3.12/subprocess.py\", line 1955, in _execute_child\n    raise child_exception_type(errno_num, err_msg, err_filename)\nFileNotFoundError: [Errno 2] No such file or directory: 'ninja'",
+        "type": "RuntimeError"
+      },
+      "exclusion": null,
+      "output_dir": "/home/li_yanyupingsheng/5703tts/data/output/higgs_probe1_kv71680/corpus_v1_000000",
+      "render_fingerprint": "34d5ae51f8d85a3a0aaa2abaa59179238fa3e75ed4652e611322f8c7cf1a813f",
+      "source": {
+        "container_path": "/tmp/higgs_probe1.jsonl",
+        "format": "jsonl",
+        "line_number": 1,
+        "record_sha256": "1599eaf6a70b4ae794f340371176c5e4e6df2f734089b0b69cc94eec8fe0a544"
+      },
+      "status": "failed"
+    }
+  ],
+  "resume_requested": false,
+  "started_at": "2026-09-24T08:22:25+00:00",
+  "status": "failure",
+  "summary": {
+    "excluded": 0,
+    "failed": 1,
+    "input_failures": 0,
+    "rendered": 0,
+    "resumed": 0,
+    "total_valid_records": 1
+  }
+}

@@ -1,0 +1,482 @@
+2026-09-24 08:02:22 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=2026-09-24 08:02:22,180 [ERROR] sglang_omni.relay.nixl: Failed to import nixl: No module named 'nixl'. NixlRelay will not work.
+2026-09-24 08:02:22 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=2026-09-24 08:02:22,317 [INFO] sglang_omni.pipeline.control_plane: Coordinator control plane started
+2026-09-24 08:02:22 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=2026-09-24 08:02:22,317 [INFO] sglang_omni.pipeline.coordinator: Coordinator started
+2026-09-24 08:02:22 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=2026-09-24 08:02:22,320 [INFO] sglang_omni.pipeline.stage_workers: StageGroup tts_frontend: spawned 1 process(es) (pids=[6889])
+2026-09-24 08:02:22 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=2026-09-24 08:02:22,321 [INFO] sglang_omni.pipeline.stage_workers: StageGroup pipeline: spawned 1 process(es) (pids=[6890])
+2026-09-24 08:02:31 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=Failed to import nixl: No module named 'nixl'. NixlRelay will not work.
+2026-09-24 08:02:31 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=Failed to import nixl: No module named 'nixl'. NixlRelay will not work.
+2026-09-24 08:02:31 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=2026-09-24 08:02:31,108 [INFO] stage_workers.tts_frontend: Building scheduler for preprocessing (tp_rank=0/1) ...
+2026-09-24 08:02:31 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=2026-09-24 08:02:31,145 [INFO] stage_workers.pipeline: Set current device to 0 for stage tts_engine
+2026-09-24 08:02:31 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=2026-09-24 08:02:31,145 [INFO] stage_workers.pipeline: Building scheduler for tts_engine (tp_rank=0/1) ...
+2026-09-24 08:02:31 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=2026-09-24 08:02:31,166 [INFO] stage_workers.pipeline: Acquired GPU startup lock for stage tts_engine: /tmp/sglang_omni_gpu_0_startup.lock
+2026-09-24 08:02:32 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=2026-09-24 08:02:32,287 [INFO] stage_workers.tts_frontend: Set current device to 0 for stage audio_encoder
+2026-09-24 08:02:32 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=2026-09-24 08:02:32,288 [INFO] stage_workers.tts_frontend: Building scheduler for audio_encoder (tp_rank=0/1) ...
+2026-09-24 08:02:33 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=2026-09-24 08:02:33,516 [WARNING] sglang.srt.utils.common: Failed to load generation config for /home/li_yanyupingsheng/5703tts/models/higgs-tts-3-4b: /home/li_yanyupingsheng/5703tts/models/higgs-tts-3-4b does not appear to have a file named generation_config.json. Checkout 'https://huggingface.co//home/li_yanyupingsheng/5703tts/models/higgs-tts-3-4b/tree/main' for available files.. Proceeding without generation config.
+2026-09-24 08:02:33 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=2026-09-24 08:02:33,541 [INFO] sglang.srt.arg_groups.overrides: Attention backend not specified. Use flashinfer backend by default.
+2026-09-24 08:02:33 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=2026-09-24 08:02:33,548 [INFO] sglang_omni.scheduling.bootstrap: SGLang runtime configuration: gpu_id=0, sm=89, architecture=ada, attention_backend=flashinfer, decode_attention_backend=flashinfer, prefill_attention_backend=flashinfer, sampling_backend=flashinfer
+2026-09-24 08:02:33 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=2026-09-24 08:02:33,549 [INFO] sglang_omni.platforms.cuda: Configured SGLang backend policy: arch=None effective_quantization=None server_quantization=None moe_runner_backend=auto fp8_gemm_backend=auto
+2026-09-24 08:02:36 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=Unable to import `torchao` Tensor objects. This may affect loading checkpoints serialized with `torchao`
+2026-09-24 08:02:38 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=2026-09-24 08:02:38,712 [INFO] sglang.srt.distributed.bootstrap: Init torch distributed begin.
+2026-09-24 08:02:38 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=2026-09-24 08:02:38,774 [INFO] sglang.srt.distributed.bootstrap: Init torch distributed ends. elapsed=0.06 s, mem usage=0.03 GB
+2026-09-24 08:02:38 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=2026-09-24 08:02:38,777 [INFO] sglang.srt.model_executor.model_runner: Load weight begin. avail mem=21.69 GB
+2026-09-24 08:02:38 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=Multi-thread loading shards:   0% Completed | 0/1 [00:00<?, ?it/s]
+2026-09-24 08:02:38 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=Multi-thread loading shards: 100% Completed | 1/1 [00:00<00:00, 41.06it/s]
+2026-09-24 08:02:41 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=2026-09-24 08:02:41,122 [WARNING] sglang.srt.models.qwen3: Parameter lm_head.weight not found in params_dict
+2026-09-24 08:02:41 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=2026-09-24 08:02:41,304 [INFO] sglang.srt.model_executor.model_runner: Load weight end. elapsed=2.53 s, type=HiggsTTSModel, avail mem=14.08 GB, mem usage=7.60 GB.
+2026-09-24 08:02:41 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=2026-09-24 08:02:41,349 [INFO] sglang.srt.mem_cache.memory_pool: KV Cache is allocated. dtype: torch.bfloat16, #tokens: 65536, K size: 4.50 GB, V size: 4.50 GB
+2026-09-24 08:02:41 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=2026-09-24 08:02:41,350 [INFO] sglang.srt.mem_cache.kv_cache_configurator: Memory pool end. avail mem=4.94 GB
+2026-09-24 08:02:41 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=2026-09-24 08:02:41,636 [INFO] sglang.srt.model_executor.model_runner_components.cuda_graph_setup: Capture target prefill CUDA graph begin. backend=breakable, num_tokens=[4, 8, 12, 16, 20, 24, 28, 32, 48, 64, 80, 96, 112, 128, 144, 160, 176, 192, 208, 224, 240, 256, 288, 320, 352, 384, 416, 448, 480, 512], avail mem=4.49 GB
+2026-09-24 08:02:42 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  0%|          | 0/30 [00:00<?, ?it/s]
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=Capturing num tokens (num_tokens=512 avail_mem=4.49 GB):   0%|          | 0/30 [00:00<?, ?it/s]
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=Capturing num tokens (num_tokens=512 avail_mem=4.49 GB):   0%|          | 0/30 [00:01<?, ?it/s]
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=2026-09-24 08:02:43,308 [ERROR] sglang.srt.model_executor.runner_backend_utils.breakable_cuda_graph.context: FileNotFoundError: [Errno 2] No such file or directory: 'ninja'
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=Fail when using backend: breakable for prefill runner.
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=Possible suggestions:
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=1. change to tc_piecewise by --cuda-graph-backend-prefill=tc_piecewise
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=2. disable the prefill CUDA graph by --cuda-graph-backend-prefill=disabled
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=3. if it is an OOM problem, set --mem-fraction-static to a smaller value (e.g., 0.8 or 0.7) or set --cuda-graph-max-bs-prefill to a smaller value (e.g., 2048)
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=Open an issue on GitHub https://github.com/sgl-project/sglang/issues/new/choose 
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=2026-09-24 08:02:43,736 [INFO] stage_workers.tts_frontend: Acquired GPU startup lock for stage audio_encoder: /tmp/sglang_omni_gpu_0_startup.lock
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=2026-09-24 08:02:43,757 [ERROR] stage_workers.pipeline: Stage process pipeline failed
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=Traceback (most recent call last):
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File "/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/site-packages/sglang_omni/pipeline/stage_workers.py", line 381, in stage_process_main
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    _run_process(spec, ready_event, log)
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File "/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/site-packages/sglang_omni/pipeline/stage_workers.py", line 457, in _run_process
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    _construct_stage(
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File "/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/site-packages/sglang_omni/pipeline/stage_workers.py", line 594, in _construct_stage
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    scheduler = _construct_scheduler(spec, gpu_id, log)
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File "/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/site-packages/sglang_omni/pipeline/stage_workers.py", line 792, in _construct_scheduler
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    return factory(**factory_args)
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=           ^^^^^^^^^^^^^^^^^^^^^^^
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File "/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/site-packages/sglang_omni/models/higgs_tts/stages.py", line 492, in create_sglang_tts_engine_executor
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    ).build(
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=      ^^^^^^
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File "/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/site-packages/sglang_omni/scheduling/engine_factory.py", line 153, in build
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    scheduling_bootstrap.init_sglang_cuda_graphs(model_worker)
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File "/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/site-packages/sglang_omni/scheduling/bootstrap.py", line 58, in init_sglang_cuda_graphs
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    model_worker.model_runner.init_cuda_graphs()
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File "/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/site-packages/sglang_omni/model_runner/sglang_model_runner.py", line 382, in init_cuda_graphs
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    result = super().init_cuda_graphs(capture_decode_cuda_graph)
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File "/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/site-packages/sglang/srt/model_executor/model_runner.py", line 839, in init_cuda_graphs
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    capture = capture_cuda_graphs(
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=              ^^^^^^^^^^^^^^^^^^^^
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File "/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/site-packages/sglang/srt/model_executor/model_runner_components/cuda_graph_setup.py", line 99, in capture_cuda_graphs
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    prefill_runner = capture_prefill_graph(
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=                     ^^^^^^^^^^^^^^^^^^^^^^
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File "/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/site-packages/sglang/srt/model_executor/model_runner_components/cuda_graph_setup.py", line 262, in capture_prefill_graph
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    prefill_runner = PrefillCudaGraphRunner(model_runner)
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File "/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/site-packages/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py", line 363, in __init__
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    self.capture()
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File "/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/site-packages/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py", line 861, in capture
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    self._capture_one_stream()
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File "/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/site-packages/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py", line 884, in _capture_one_stream
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    self.capture_one_shape(num_tokens)
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File "/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/site-packages/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py", line 895, in capture_one_shape
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    self._init_forward_metadata_for_capture(forward_batch, num_tokens)
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File "/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/site-packages/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py", line 609, in _init_forward_metadata_for_capture
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    attn_backend.init_forward_metadata(forward_batch)
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File "/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/site-packages/sglang/srt/layers/attention/flashinfer_backend.py", line 988, in init_forward_metadata
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    self.indices_updater_prefill.update(
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File "/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/site-packages/sglang/srt/layers/attention/flashinfer_backend.py", line 1828, in update_single_wrapper
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    self.call_begin_forward(
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File "/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/site-packages/sglang/srt/layers/attention/flashinfer_backend.py", line 2194, in call_begin_forward
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    wrapper_paged.begin_forward(
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File "/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/site-packages/flashinfer/prefill.py", line 2094, in plan
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    self._cached_module = get_batch_prefill_module(
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=                          ^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File "/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/site-packages/flashinfer/prefill.py", line 447, in get_batch_prefill_module
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    module = gen_batch_prefill_module(backend, *args).build_and_load()
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File "/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/site-packages/flashinfer/jit/core.py", line 316, in build_and_load
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    self.build(verbose, need_lock=False)
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File "/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/site-packages/flashinfer/jit/core.py", line 302, in build
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    run_ninja(self.build_dir, self.ninja_path, verbose)
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File "/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/site-packages/flashinfer/jit/cpp_ext.py", line 368, in run_ninja
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    subprocess.run(
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File "/home/li_yanyupingsheng/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/subprocess.py", line 548, in run
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    with Popen(*popenargs, **kwargs) as process:
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File "/home/li_yanyupingsheng/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/subprocess.py", line 1026, in __init__
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    self._execute_child(args, executable, preexec_fn, close_fds,
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File "/home/li_yanyupingsheng/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/subprocess.py", line 1955, in _execute_child
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    raise child_exception_type(errno_num, err_msg, err_filename)
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=FileNotFoundError: [Errno 2] No such file or directory: 'ninja'
+2026-09-24 08:02:43 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=2026-09-24 08:02:43,757 [WARNING] stage_workers.pipeline: Destroying torch.distributed process group after failure
+2026-09-24 08:02:44 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=2026-09-24 08:02:44,195 [WARNING] stage_workers.pipeline: Reclaiming CUDA memory after stage process pipeline exit after failure on gpu_ids=[0]
+2026-09-24 08:02:44 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=2026-09-24 08:02:44,632 [WARNING] stage_workers.pipeline: CUDA memory reclaim complete after stage process pipeline exit after failure on gpu_ids=[0]
+2026-09-24 08:02:47 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=2026-09-24 08:02:47,510 [INFO] sglang_omni.pipeline.coordinator: Coordinator completion loop cancelled
+2026-09-24 08:02:47 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=2026-09-24 08:02:47,510 [INFO] sglang_omni.pipeline.coordinator: Coordinator stopped
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=╭───────────────────── Traceback (most recent call last) ──────────────────────╮
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│ /home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12 │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│ /site-packages/sglang_omni/cli/serve.py:1563 in serve                        │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│                                                                              │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   1560 │   if _should_print_merged_config(colocate=colocate,                 │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│        log_level=log_level):                                                 │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   1561 │   │   _print_merged_config(merged_config)                           │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   1562 │                                                                     │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│ ❱ 1563 │   launch_server(                                                    │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   1564 │   │   merged_config,                                                │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   1565 │   │   host=host,                                                    │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   1566 │   │   port=port,                                                    │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│                                                                              │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│ /home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12 │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│ /site-packages/sglang_omni/cli/serve.py:73 in launch_server                  │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│                                                                              │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│     70 def launch_server(*args: object, **kwargs: object) -> object:         │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│     71 │   from sglang_omni.serve.launcher import launch_server as           │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│        _launch_server                                                        │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│     72 │                                                                     │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│ ❱   73 │   return _launch_server(*args, **kwargs)                            │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│     74                                                                       │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│     75                                                                       │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│     76 def _normalize_stage_toggle_mode(flag_name: str, value: str) ->       │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│        _STAGE_TOGGLE_MODE:                                                   │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│                                                                              │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│ /home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12 │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│ /site-packages/sglang_omni/serve/launcher.py:535 in launch_server            │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│                                                                              │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   532 │   │   │   ``/v1/audio/speech/batch``.                                │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   533 │   """                                                                │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   534 │   apply_gpu_compat_env_defaults()                                    │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│ ❱ 535 │   asyncio.run(                                                       │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   536 │   │   _run_server(                                                   │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   537 │   │   │   pipeline_config,                                           │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   538 │   │   │   host=host,                                                 │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│                                                                              │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│ /home/li_yanyupingsheng/.local/share/uv/python/cpython-3.12.14-linux-x86_64- │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│ gnu/lib/python3.12/asyncio/runners.py:195 in run                             │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│                                                                              │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   192 │   │   │   "asyncio.run() cannot be called from a running event       │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│       loop")                                                                 │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   193 │                                                                      │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   194 │   with Runner(debug=debug, loop_factory=loop_factory) as runner:     │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│ ❱ 195 │   │   return runner.run(main)                                        │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   196                                                                        │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   197                                                                        │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   198 def _cancel_all_tasks(loop):                                           │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│                                                                              │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│ /home/li_yanyupingsheng/.local/share/uv/python/cpython-3.12.14-linux-x86_64- │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│ gnu/lib/python3.12/asyncio/runners.py:118 in run                             │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│                                                                              │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   115 │   │                                                                  │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   116 │   │   self._interrupt_count = 0                                      │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   117 │   │   try:                                                           │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│ ❱ 118 │   │   │   return self._loop.run_until_complete(task)                 │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   119 │   │   except exceptions.CancelledError:                              │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   120 │   │   │   if self._interrupt_count > 0:                              │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   121 │   │   │   │   uncancel = getattr(task, "uncancel", None)             │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│                                                                              │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│ /home/li_yanyupingsheng/.local/share/uv/python/cpython-3.12.14-linux-x86_64- │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│ gnu/lib/python3.12/asyncio/base_events.py:691 in run_until_complete          │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│                                                                              │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│    688 │   │   if not future.done():                                         │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│    689 │   │   │   raise RuntimeError('Event loop stopped before Future      │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│        completed.')                                                          │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│    690 │   │                                                                 │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│ ❱  691 │   │   return future.result()                                        │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│    692 │                                                                     │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│    693 │   def stop(self):                                                   │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│    694 │   │   """Stop running the event loop.                               │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│                                                                              │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│ /home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12 │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│ /site-packages/sglang_omni/serve/launcher.py:388 in _run_server              │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│                                                                              │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   385 │                                                                      │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   386 │   mp_runner = MultiProcessPipelineRunner(pipeline_config)            │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   387 │   startup_timeout =                                                  │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│       float(os.environ.get("SGLANG_OMNI_STARTUP_TIMEOUT", "600"))            │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│ ❱ 388 │   await mp_runner.start(timeout=startup_timeout)                     │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   389 │   coordinator = mp_runner.coordinator                                │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   390 │                                                                      │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   391 │   # Plans are resolved once inside ``mp_runner.start()`` (which      │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│       applies                                                                │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│                                                                              │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│ /home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12 │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│ /site-packages/sglang_omni/pipeline/mp_runner.py:507 in start                │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│                                                                              │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   504 │   │   │   for group in self._groups:                                 │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   505 │   │   │   │   group.spawn(ctx)                                       │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   506 │   │   │                                                              │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│ ❱ 507 │   │   │   await asyncio.gather(*(g.wait_ready(timeout) for g in      │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│       self._groups))                                                         │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   508 │   │   │                                                              │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   509 │   │   │   for group in self._groups:                                 │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   510 │   │   │   │   if group.any_dead():                                   │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│                                                                              │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│ /home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12 │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│ /site-packages/sglang_omni/pipeline/stage_workers.py:309 in wait_ready       │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│                                                                              │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   306 │   │   │   │   │   │   pass                                           │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   307 │   │   │   │   │   else:                                              │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   308 │   │   │   │   │   │   details = f"\nStartup failure                  │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│       detail:\n{traceback_text}"                                             │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│ ❱ 309 │   │   │   │   │   raise RuntimeError(                                │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   310 │   │   │   │   │   │   f"Process {process_label} died during startup  │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│       "                                                                      │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   311 │   │   │   │   │   │   f"(exit code {proc.exitcode}){details}"        │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   312 │   │   │   │   │   )                                                  │
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=╰──────────────────────────────────────────────────────────────────────────────╯
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=RuntimeError: Process pipeline died during startup (exit code 1)
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=Startup failure detail:
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=Traceback (most recent call last):
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File 
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message="/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=te-packages/sglang_omni/pipeline/stage_workers.py", line 381, in 
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=stage_process_main
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    _run_process(spec, ready_event, log)
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File 
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message="/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=te-packages/sglang_omni/pipeline/stage_workers.py", line 457, in _run_process
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    _construct_stage(
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File 
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message="/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=te-packages/sglang_omni/pipeline/stage_workers.py", line 594, in 
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=_construct_stage
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    scheduler = _construct_scheduler(spec, gpu_id, log)
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File 
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message="/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=te-packages/sglang_omni/pipeline/stage_workers.py", line 792, in 
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=_construct_scheduler
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    return factory(**factory_args)
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=           ^^^^^^^^^^^^^^^^^^^^^^^
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File 
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message="/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=te-packages/sglang_omni/models/higgs_tts/stages.py", line 492, in 
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=create_sglang_tts_engine_executor
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    ).build(
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=      ^^^^^^
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File 
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message="/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=te-packages/sglang_omni/scheduling/engine_factory.py", line 153, in build
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    scheduling_bootstrap.init_sglang_cuda_graphs(model_worker)
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File 
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message="/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=te-packages/sglang_omni/scheduling/bootstrap.py", line 58, in 
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=init_sglang_cuda_graphs
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    model_worker.model_runner.init_cuda_graphs()
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File 
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message="/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=te-packages/sglang_omni/model_runner/sglang_model_runner.py", line 382, in 
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=init_cuda_graphs
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    result = super().init_cuda_graphs(capture_decode_cuda_graph)
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File 
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message="/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=te-packages/sglang/srt/model_executor/model_runner.py", line 839, in 
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=init_cuda_graphs
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    capture = capture_cuda_graphs(
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=              ^^^^^^^^^^^^^^^^^^^^
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File 
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message="/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=te-packages/sglang/srt/model_executor/model_runner_components/cuda_graph_setup.p
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=y", line 99, in capture_cuda_graphs
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    prefill_runner = capture_prefill_graph(
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=                     ^^^^^^^^^^^^^^^^^^^^^^
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File 
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message="/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=te-packages/sglang/srt/model_executor/model_runner_components/cuda_graph_setup.p
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=y", line 262, in capture_prefill_graph
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    prefill_runner = PrefillCudaGraphRunner(model_runner)
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File 
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message="/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=te-packages/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py", line
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=363, in __init__
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    self.capture()
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File 
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message="/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=te-packages/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py", line
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=861, in capture
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    self._capture_one_stream()
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File 
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message="/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=te-packages/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py", line
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=884, in _capture_one_stream
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    self.capture_one_shape(num_tokens)
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File 
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message="/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=te-packages/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py", line
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=895, in capture_one_shape
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    self._init_forward_metadata_for_capture(forward_batch, num_tokens)
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File 
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message="/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=te-packages/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py", line
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=609, in _init_forward_metadata_for_capture
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    attn_backend.init_forward_metadata(forward_batch)
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File 
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message="/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=te-packages/sglang/srt/layers/attention/flashinfer_backend.py", line 988, in 
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=init_forward_metadata
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    self.indices_updater_prefill.update(
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File 
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message="/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=te-packages/sglang/srt/layers/attention/flashinfer_backend.py", line 1828, in 
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=update_single_wrapper
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    self.call_begin_forward(
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File 
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message="/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=te-packages/sglang/srt/layers/attention/flashinfer_backend.py", line 2194, in 
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=call_begin_forward
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    wrapper_paged.begin_forward(
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File 
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message="/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=te-packages/flashinfer/prefill.py", line 2094, in plan
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    self._cached_module = get_batch_prefill_module(
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=                          ^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File 
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message="/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=te-packages/flashinfer/prefill.py", line 447, in get_batch_prefill_module
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    module = gen_batch_prefill_module(backend, *args).build_and_load()
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File 
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message="/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=te-packages/flashinfer/jit/core.py", line 316, in build_and_load
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    self.build(verbose, need_lock=False)
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File 
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message="/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=te-packages/flashinfer/jit/core.py", line 302, in build
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    run_ninja(self.build_dir, self.ninja_path, verbose)
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File 
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message="/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=te-packages/flashinfer/jit/cpp_ext.py", line 368, in run_ninja
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    subprocess.run(
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File 
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message="/home/li_yanyupingsheng/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=/lib/python3.12/subprocess.py", line 548, in run
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    with Popen(*popenargs, **kwargs) as process:
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File 
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message="/home/li_yanyupingsheng/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=/lib/python3.12/subprocess.py", line 1026, in __init__
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    self._execute_child(args, executable, preexec_fn, close_fds,
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  File 
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message="/home/li_yanyupingsheng/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=/lib/python3.12/subprocess.py", line 1955, in _execute_child
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    raise child_exception_type(errno_num, err_msg, err_filename)
+2026-09-24 08:02:48 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=FileNotFoundError: [Errno 2] No such file or directory: 'ninja'
+2026-09-24 08:02:50 | ERROR    | tts5703.pipeline | event=final_dialogue_pipeline_failed dialogue=corpus_v1_000000 elapsed_sec=37.44
+Traceback (most recent call last):
+  File "/home/li_yanyupingsheng/5703tts/src/tts5703/backends/higgs.py", line 239, in _get_worker
+    raise _StartupError(fallback)
+tts5703.backends.higgs._StartupError: FatalServerError: SGLang server exited before readiness with code 1
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/li_yanyupingsheng/5703tts/src/tts5703/pipeline.py", line 73, in run_dialogue
+    turn_results = await synthesize_prepared_turns(prepared, out_dir, config)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/li_yanyupingsheng/5703tts/src/tts5703/tts_engine.py", line 72, in synthesize_prepared_turns
+    output_path = higgs.synthesize_prepared_turn(turn, out_dir, config)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/li_yanyupingsheng/5703tts/src/tts5703/backends/higgs.py", line 517, in synthesize_prepared_turn
+    worker = _get_worker(
+             ^^^^^^^^^^^^
+  File "/home/li_yanyupingsheng/5703tts/src/tts5703/backends/higgs.py", line 247, in _get_worker
+    raise RuntimeError(  # noqa: TRY004 - subprocess protocol failure
+RuntimeError: Failed to start Higgs worker: FatalServerError: SGLang server exited before readiness with code 1
+  File 
+"/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si
+te-packages/sglang_omni/model_runner/sglang_model_runner.py", line 382, in 
+init_cuda_graphs
+    result = super().init_cuda_graphs(capture_decode_cuda_graph)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File 
+"/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si
+te-packages/sglang/srt/model_executor/model_runner.py", line 839, in 
+init_cuda_graphs
+    capture = capture_cuda_graphs(
+              ^^^^^^^^^^^^^^^^^^^^
+  File 
+"/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si
+te-packages/sglang/srt/model_executor/model_runner_components/cuda_graph_setup.p
+y", line 99, in capture_cuda_graphs
+    prefill_runner = capture_prefill_graph(
+                     ^^^^^^^^^^^^^^^^^^^^^^
+  File 
+"/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si
+te-packages/sglang/srt/model_executor/model_runner_components/cuda_graph_setup.p
+y", line 262, in capture_prefill_graph
+    prefill_runner = PrefillCudaGraphRunner(model_runner)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File 
+"/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si
+te-packages/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py", line
+363, in __init__
+    self.capture()
+  File 
+"/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si
+te-packages/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py", line
+861, in capture
+    self._capture_one_stream()
+  File 
+"/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si
+te-packages/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py", line
+884, in _capture_one_stream
+    self.capture_one_shape(num_tokens)
+  File 
+"/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si
+te-packages/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py", line
+895, in capture_one_shape
+    self._init_forward_metadata_for_capture(forward_batch, num_tokens)
+  File 
+"/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si
+te-packages/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py", line
+609, in _init_forward_metadata_for_capture
+    attn_backend.init_forward_metadata(forward_batch)
+  File 
+"/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si
+te-packages/sglang/srt/layers/attention/flashinfer_backend.py", line 988, in 
+init_forward_metadata
+    self.indices_updater_prefill.update(
+  File 
+"/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si
+te-packages/sglang/srt/layers/attention/flashinfer_backend.py", line 1828, in 
+update_single_wrapper
+    self.call_begin_forward(
+  File 
+"/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si
+te-packages/sglang/srt/layers/attention/flashinfer_backend.py", line 2194, in 
+call_begin_forward
+    wrapper_paged.begin_forward(
+  File 
+"/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si
+te-packages/flashinfer/prefill.py", line 2094, in plan
+    self._cached_module = get_batch_prefill_module(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File 
+"/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si
+te-packages/flashinfer/prefill.py", line 447, in get_batch_prefill_module
+    module = gen_batch_prefill_module(backend, *args).build_and_load()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File 
+"/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si
+te-packages/flashinfer/jit/core.py", line 316, in build_and_load
+    self.build(verbose, need_lock=False)
+  File 
+"/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si
+te-packages/flashinfer/jit/core.py", line 302, in build
+    run_ninja(self.build_dir, self.ninja_path, verbose)
+  File 
+"/home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12/si
+te-packages/flashinfer/jit/cpp_ext.py", line 368, in run_ninja
+    subprocess.run(
+  File 
+"/home/li_yanyupingsheng/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu
+/lib/python3.12/subprocess.py", line 548, in run
+    with Popen(*popenargs, **kwargs) as process:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File 
+"/home/li_yanyupingsheng/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu
+/lib/python3.12/subprocess.py", line 1026, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+  File 
+"/home/li_yanyupingsheng/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu
+/lib/python3.12/subprocess.py", line 1955, in _execute_child
+    raise child_exception_type(errno_num, err_msg, err_filename)
+FileNotFoundError: [Errno 2] No such file or directory: 'ninja'
+2026-09-24 08:02:50 | INFO     | tts5703.cli | event=final_batch_complete status=failure rendered=0 resumed=0 excluded=0 failed=1 elapsed_sec=37.46 manifest=data/output/higgs_probe1_kv65536/batch_result.json

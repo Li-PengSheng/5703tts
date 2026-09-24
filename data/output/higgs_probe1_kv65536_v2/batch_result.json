@@ -1,0 +1,106 @@
+{
+  "backend": "higgs",
+  "backend_identity": {
+    "backend": "higgs",
+    "control_mapping": {
+      "implementation_id": "controlled_tts_v1_prod_1",
+      "mapping_version": "controlled_tts_v1",
+      "provenance": {
+        "contract_sha256": "4e787a5363d01e5454a8031c59bb1d4bb454ee37d44ccf262d471c7ce30ba799",
+        "source_commit": "7b005135e148fad8a142f39dc8be3144c3e5adcc",
+        "source_repository": "ginkgoyin/comp5703-tts-experiments"
+      },
+      "release_status": "PROVISIONAL_PRODUCTION_MAPPING_WEEK6_FREEZE"
+    },
+    "ffmpeg_bin": "ffmpeg",
+    "generation_profile": {
+      "max_new_tokens": 2048,
+      "response_format": "wav",
+      "speed": 1.0,
+      "stream": false,
+      "temperature": 0.8,
+      "top_k": 30,
+      "top_p": 0.8,
+      "voice": "default"
+    },
+    "host": "127.0.0.1",
+    "identity_complete": true,
+    "inference_timeout_seconds": 300,
+    "model_dir": "models/higgs-tts-3-4b",
+    "model_id": "bosonai/higgs-tts-3-4b",
+    "port": 18080,
+    "references": {},
+    "server_executable": "/tmp/sgl-omni-kv65536",
+    "startup_timeout_seconds": 900
+  },
+  "backend_identity_sha256": "28fac9ab619375153b59b93c837c1c021f8fced05fbbe8b2679afbb7cca0fec1",
+  "batch_provenance": {
+    "controlled_tts": {
+      "contract_sha256": "4e787a5363d01e5454a8031c59bb1d4bb454ee37d44ccf262d471c7ce30ba799",
+      "implementation_id": "controlled_tts_v1_prod_1",
+      "mapping_name": "controlled_tts_v1",
+      "mapping_version": "controlled_tts_v1",
+      "release_status": "PROVISIONAL_PRODUCTION_MAPPING_WEEK6_FREEZE"
+    },
+    "exclusion_policy": {
+      "policy_sha256": null,
+      "schema_version": null
+    },
+    "input_containers": [
+      "/tmp/higgs_probe1.jsonl"
+    ],
+    "speaker_sidecar": {
+      "active_speakers_sha256": "3afe73567569f1c22390f9bef38ce34fef312909c21df48dd4d8b0562312e83b",
+      "assignment_sha256": "1e4fa078e83c8bef67e3e719459d927f4911c9825d081c1551389d11dd4e53ea",
+      "path": "data/pilot30_higgs_sidecar.json",
+      "registry_sha256": "6fc3ab7918b670fade009f1e2d1bbcf80fc8e8b2e1b87ac9efb8d714bc3e42c2"
+    }
+  },
+  "config_path": "/tmp/config_higgs_kv65536.yaml",
+  "config_sha256": "045193ac218e956824ce772f1dc3cb1e662103a481c02d1a8f28b22c9b7b6280",
+  "dialogues_excluded": 0,
+  "dialogues_failed": 1,
+  "dialogues_rendered": 0,
+  "dialogues_resumed": 0,
+  "dialogues_skipped": 0,
+  "dialogues_succeeded": 0,
+  "dialogues_total": 1,
+  "duration_seconds": 15.479,
+  "finished_at": "2026-09-24T08:20:10+00:00",
+  "input_failures": 0,
+  "input_root": "/tmp/higgs_probe1.jsonl",
+  "manifest_version": "2.0",
+  "output_root": "data/output/higgs_probe1_kv65536_v2",
+  "records_total": 1,
+  "results": [
+    {
+      "action": "render_failed",
+      "dialogue_id": "corpus_v1_000000",
+      "error": {
+        "message": "Final dialogue failed: Failed to start Higgs worker: FatalServerError: SGLang server exited before readiness with code 1\n\u256d\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 Traceback (most recent call last) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256e\n\u2502 /home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12 \u2502\n\u2502 /site-packages/sglang_omni/cli/serve.py:1469 in serve                        \u2502\n\u2502                                                                              \u2502\n\u2502   1466 \u2502   # we use ctx to capture the arguments that are used to modify the \u2502\n\u2502        configuration on the fly                                              \u2502\n\u2502   1467 \u2502   # we do expect the extra arguments to be pairs of names and       \u2502\n\u2502        values                                                                \u2502\n\u2502   1468 \u2502   extra_args = config_manager.parse_extra_args(ctx.args)            \u2502\n\u2502 \u2771 1469 \u2502   merged_config = config_manager.merge_config(extra_args)           \u2502\n\u2502   1470 \u2502   if model_path is not None:                                        \u2502\n\u2502   1471 \u2502   \u2502   merged_config =                                               \u2502\n\u2502        merged_config.model_copy(update={\"model_path\": model_path})           \u2502\n\u2502   1472 \u2502   if colocate:                                                      \u2502\n\u2502                                                                              \u2502\n\u2502 /home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12 \u2502\n\u2502 /site-packages/sglang_omni/config/manager.py:103 in merge_config             \u2502\n\u2502                                                                              \u2502\n\u2502   100 \u2502   \u2502   _sync_stage_parallelism_aliases(cfg_copy, set(extra_args))     \u2502\n\u2502   101 \u2502   \u2502                                                                  \u2502\n\u2502   102 \u2502   \u2502   # validate the configuration                                   \u2502\n\u2502 \u2771 103 \u2502   \u2502   merged_config = config_cls(**cfg_copy)                         \u2502\n\u2502   104 \u2502   \u2502   return merged_config                                           \u2502\n\u2502   105 \u2502                                                                      \u2502\n\u2502   106 \u2502   @staticmethod                                                      \u2502\n\u2502                                                                              \u2502\n\u2502 /home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12 \u2502\n\u2502 /site-packages/pydantic/main.py:280 in __init__                              \u2502\n\u2502                                                                              \u2502\n\u2502    277 \u2502   \u2502   \"\"\"                                                           \u2502\n\u2502    278 \u2502   \u2502   # `__tracebackhide__` tells pytest and some other tools to    \u2502\n\u2502        omit this function from tracebacks                                    \u2502\n\u2502    279 \u2502   \u2502   __tracebackhide__ = True                                      \u2502\n\u2502 \u2771  280 \u2502   \u2502   validated_self =                                              \u2502\n\u2502        self.__pydantic_validator__.validate_python(data, self_instance=self) \u2502\n\u2502    281 \u2502   \u2502   if self is not validated_self:                                \u2502\n\u2502    282 \u2502   \u2502   \u2502   warnings.warn(                                            \u2502\n\u2502    283 \u2502   \u2502   \u2502   \u2502   'A custom validator is returning a value other than   \u2502\n\u2502        `self`.\\n'                                                            \u2502\n\u2570\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256f\nValidationError: 1 validation error for HiggsTtsPipelineConfig\ncuda_graph_backend_prefill\n  Extra inputs are not permitted [type=extra_forbidden, input_value='disabled', \ninput_type=str]\n    For further information visit \nhttps://errors.pydantic.dev/2.14/v/extra_forbidden",
+        "type": "RuntimeError"
+      },
+      "exclusion": null,
+      "output_dir": "/home/li_yanyupingsheng/5703tts/data/output/higgs_probe1_kv65536_v2/corpus_v1_000000",
+      "render_fingerprint": "7ffc15698f4e4ecf73b665a079ede6146b1b373a415f1c9b5644c6e8290e64c0",
+      "source": {
+        "container_path": "/tmp/higgs_probe1.jsonl",
+        "format": "jsonl",
+        "line_number": 1,
+        "record_sha256": "1599eaf6a70b4ae794f340371176c5e4e6df2f734089b0b69cc94eec8fe0a544"
+      },
+      "status": "failed"
+    }
+  ],
+  "resume_requested": false,
+  "started_at": "2026-09-24T08:19:55+00:00",
+  "status": "failure",
+  "summary": {
+    "excluded": 0,
+    "failed": 1,
+    "input_failures": 0,
+    "rendered": 0,
+    "resumed": 0,
+    "total_valid_records": 1
+  }
+}

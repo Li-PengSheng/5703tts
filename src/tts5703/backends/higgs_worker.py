@@ -45,7 +45,7 @@ FROZEN_GENERATION_FIELDS: dict[str, Any] = {
     "response_format": "wav",
     "speed": 1.0,
     "stream": False,
-    "max_new_tokens": 2048,
+    "max_new_tokens": 1024,
     "temperature": 0.8,
     "top_p": 0.8,
     "top_k": 30,

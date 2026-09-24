@@ -1,0 +1,114 @@
+2026-09-24 08:20:08 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=╭───────────────────── Traceback (most recent call last) ──────────────────────╮
+2026-09-24 08:20:08 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│ /home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12 │
+2026-09-24 08:20:08 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│ /site-packages/sglang_omni/cli/serve.py:1469 in serve                        │
+2026-09-24 08:20:08 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│                                                                              │
+2026-09-24 08:20:08 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   1466 │   # we use ctx to capture the arguments that are used to modify the │
+2026-09-24 08:20:08 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│        configuration on the fly                                              │
+2026-09-24 08:20:08 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   1467 │   # we do expect the extra arguments to be pairs of names and       │
+2026-09-24 08:20:08 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│        values                                                                │
+2026-09-24 08:20:08 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   1468 │   extra_args = config_manager.parse_extra_args(ctx.args)            │
+2026-09-24 08:20:08 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│ ❱ 1469 │   merged_config = config_manager.merge_config(extra_args)           │
+2026-09-24 08:20:08 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   1470 │   if model_path is not None:                                        │
+2026-09-24 08:20:08 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   1471 │   │   merged_config =                                               │
+2026-09-24 08:20:08 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│        merged_config.model_copy(update={"model_path": model_path})           │
+2026-09-24 08:20:08 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   1472 │   if colocate:                                                      │
+2026-09-24 08:20:08 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│                                                                              │
+2026-09-24 08:20:08 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│ /home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12 │
+2026-09-24 08:20:08 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│ /site-packages/sglang_omni/config/manager.py:103 in merge_config             │
+2026-09-24 08:20:08 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│                                                                              │
+2026-09-24 08:20:08 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   100 │   │   _sync_stage_parallelism_aliases(cfg_copy, set(extra_args))     │
+2026-09-24 08:20:08 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   101 │   │                                                                  │
+2026-09-24 08:20:08 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   102 │   │   # validate the configuration                                   │
+2026-09-24 08:20:08 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│ ❱ 103 │   │   merged_config = config_cls(**cfg_copy)                         │
+2026-09-24 08:20:08 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   104 │   │   return merged_config                                           │
+2026-09-24 08:20:08 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   105 │                                                                      │
+2026-09-24 08:20:08 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│   106 │   @staticmethod                                                      │
+2026-09-24 08:20:08 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│                                                                              │
+2026-09-24 08:20:08 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│ /home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12 │
+2026-09-24 08:20:08 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│ /site-packages/pydantic/main.py:280 in __init__                              │
+2026-09-24 08:20:08 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│                                                                              │
+2026-09-24 08:20:08 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│    277 │   │   """                                                           │
+2026-09-24 08:20:08 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│    278 │   │   # `__tracebackhide__` tells pytest and some other tools to    │
+2026-09-24 08:20:08 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│        omit this function from tracebacks                                    │
+2026-09-24 08:20:08 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│    279 │   │   __tracebackhide__ = True                                      │
+2026-09-24 08:20:08 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│ ❱  280 │   │   validated_self =                                              │
+2026-09-24 08:20:08 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│        self.__pydantic_validator__.validate_python(data, self_instance=self) │
+2026-09-24 08:20:08 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│    281 │   │   if self is not validated_self:                                │
+2026-09-24 08:20:08 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│    282 │   │   │   warnings.warn(                                            │
+2026-09-24 08:20:08 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│    283 │   │   │   │   'A custom validator is returning a value other than   │
+2026-09-24 08:20:08 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=│        `self`.\n'                                                            │
+2026-09-24 08:20:08 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=╰──────────────────────────────────────────────────────────────────────────────╯
+2026-09-24 08:20:08 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=ValidationError: 1 validation error for HiggsTtsPipelineConfig
+2026-09-24 08:20:08 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=cuda_graph_backend_prefill
+2026-09-24 08:20:08 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=  Extra inputs are not permitted [type=extra_forbidden, input_value='disabled', 
+2026-09-24 08:20:08 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=input_type=str]
+2026-09-24 08:20:08 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=    For further information visit 
+2026-09-24 08:20:08 | DEBUG    | tts5703.tts_engine | event=higgs_worker_stderr message=https://errors.pydantic.dev/2.14/v/extra_forbidden
+2026-09-24 08:20:10 | ERROR    | tts5703.pipeline | event=final_dialogue_pipeline_failed dialogue=corpus_v1_000000 elapsed_sec=15.46
+Traceback (most recent call last):
+  File "/home/li_yanyupingsheng/5703tts/src/tts5703/backends/higgs.py", line 239, in _get_worker
+    raise _StartupError(fallback)
+tts5703.backends.higgs._StartupError: FatalServerError: SGLang server exited before readiness with code 1
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/li_yanyupingsheng/5703tts/src/tts5703/pipeline.py", line 73, in run_dialogue
+    turn_results = await synthesize_prepared_turns(prepared, out_dir, config)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/li_yanyupingsheng/5703tts/src/tts5703/tts_engine.py", line 72, in synthesize_prepared_turns
+    output_path = higgs.synthesize_prepared_turn(turn, out_dir, config)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/li_yanyupingsheng/5703tts/src/tts5703/backends/higgs.py", line 517, in synthesize_prepared_turn
+    worker = _get_worker(
+             ^^^^^^^^^^^^
+  File "/home/li_yanyupingsheng/5703tts/src/tts5703/backends/higgs.py", line 247, in _get_worker
+    raise RuntimeError(  # noqa: TRY004 - subprocess protocol failure
+RuntimeError: Failed to start Higgs worker: FatalServerError: SGLang server exited before readiness with code 1
+╭───────────────────── Traceback (most recent call last) ──────────────────────╮
+│ /home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12 │
+│ /site-packages/sglang_omni/cli/serve.py:1469 in serve                        │
+│                                                                              │
+│   1466 │   # we use ctx to capture the arguments that are used to modify the │
+│        configuration on the fly                                              │
+│   1467 │   # we do expect the extra arguments to be pairs of names and       │
+│        values                                                                │
+│   1468 │   extra_args = config_manager.parse_extra_args(ctx.args)            │
+│ ❱ 1469 │   merged_config = config_manager.merge_config(extra_args)           │
+│   1470 │   if model_path is not None:                                        │
+│   1471 │   │   merged_config =                                               │
+│        merged_config.model_copy(update={"model_path": model_path})           │
+│   1472 │   if colocate:                                                      │
+│                                                                              │
+│ /home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12 │
+│ /site-packages/sglang_omni/config/manager.py:103 in merge_config             │
+│                                                                              │
+│   100 │   │   _sync_stage_parallelism_aliases(cfg_copy, set(extra_args))     │
+│   101 │   │                                                                  │
+│   102 │   │   # validate the configuration                                   │
+│ ❱ 103 │   │   merged_config = config_cls(**cfg_copy)                         │
+│   104 │   │   return merged_config                                           │
+│   105 │                                                                      │
+│   106 │   @staticmethod                                                      │
+│                                                                              │
+│ /home/li_yanyupingsheng/5703tts/third_party/sglang-omni/.venv/lib/python3.12 │
+│ /site-packages/pydantic/main.py:280 in __init__                              │
+│                                                                              │
+│    277 │   │   """                                                           │
+│    278 │   │   # `__tracebackhide__` tells pytest and some other tools to    │
+│        omit this function from tracebacks                                    │
+│    279 │   │   __tracebackhide__ = True                                      │
+│ ❱  280 │   │   validated_self =                                              │
+│        self.__pydantic_validator__.validate_python(data, self_instance=self) │
+│    281 │   │   if self is not validated_self:                                │
+│    282 │   │   │   warnings.warn(                                            │
+│    283 │   │   │   │   'A custom validator is returning a value other than   │
+│        `self`.\n'                                                            │
+╰──────────────────────────────────────────────────────────────────────────────╯
+ValidationError: 1 validation error for HiggsTtsPipelineConfig
+cuda_graph_backend_prefill
+  Extra inputs are not permitted [type=extra_forbidden, input_value='disabled', 
+input_type=str]
+    For further information visit 
+https://errors.pydantic.dev/2.14/v/extra_forbidden
+2026-09-24 08:20:10 | INFO     | tts5703.cli | event=final_batch_complete status=failure rendered=0 resumed=0 excluded=0 failed=1 elapsed_sec=15.48 manifest=data/output/higgs_probe1_kv65536_v2/batch_result.json
