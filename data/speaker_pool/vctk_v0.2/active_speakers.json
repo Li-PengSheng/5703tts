@@ -1,0 +1,28 @@
+{
+  "speaker_pool_version": "vctk_v0.2",
+  "status": "active_higgs_production_references",
+  "selection_basis": "Higgs same-text smoke and human listening approval for exact reference bytes.",
+  "active_speaker_ids": [
+    "spk_001",
+    "spk_003",
+    "spk_004",
+    "spk_006",
+    "spk_007",
+    "spk_008",
+    "spk_009",
+    "spk_010",
+    "spk_011",
+    "spk_012",
+    "spk_013",
+    "spk_014",
+    "spk_015",
+    "spk_016",
+    "spk_017"
+  ],
+  "excluded_from_active_pool": [],
+  "speaker_count": 15,
+  "source_gender_counts": {
+    "F": 8,
+    "M": 7
+  }
+}

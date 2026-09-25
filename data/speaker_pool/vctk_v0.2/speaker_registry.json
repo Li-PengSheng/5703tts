@@ -1,0 +1,339 @@
+{
+  "speaker_pool_version": "vctk_v0.2",
+  "status": "higgs_production_approved_references",
+  "backend_approval_scope": "higgs_only",
+  "source_dataset": {
+    "name": "CSTR VCTK Corpus",
+    "version": "0.92",
+    "license": "CC BY 4.0",
+    "doi": "10.7488/ds/2645",
+    "citation": "Yamagishi, Junichi; Veaux, Christophe; MacDonald, Kirsten. (2019). CSTR VCTK Corpus: English Multi-speaker Corpus for CSTR Voice Cloning Toolkit (version 0.92). University of Edinburgh, CSTR. DOI: 10.7488/ds/2645",
+    "source_root": "vctk-speaker"
+  },
+  "reference_audio_format": {
+    "sample_rate": 16000,
+    "channels": 1,
+    "encoding": "PCM_16",
+    "container": "wav",
+    "conversion": "Channel, sample-rate, and bit-depth conversion only. No denoising, pitch shifting, speed change, loudness enhancement, telephone filtering, added silence, or speech-content change is applied.",
+    "duration_tolerance_sec": 0.05
+  },
+  "speaker_count": 15,
+  "reference_count": 15,
+  "approval_evidence_path": "data/speaker_pool/vctk_v0.2/approval_evidence.json",
+  "speakers": [
+    {
+      "speaker_id": "spk_001",
+      "source_speaker_id": "p248",
+      "source_metadata": {
+        "age": "23",
+        "gender": "F",
+        "accent": "Indian"
+      },
+      "source_reference": {
+        "kind": "inherited_vctk_v0.1_primary",
+        "path": "data/speaker_pool/vctk_v0.1/references/spk_001_primary.wav",
+        "sha256": "eb7f8024d51eedaec2406773ef49aa7d6e96bee7c2bd5cdf65e043815cbc4d8f",
+        "source_utterance_id": "p248_112"
+      },
+      "higgs_reference": {
+        "reference_wav": "data/speaker_pool/vctk_v0.2/references/spk_001_primary.wav",
+        "sha256": "eb7f8024d51eedaec2406773ef49aa7d6e96bee7c2bd5cdf65e043815cbc4d8f",
+        "approval_status": "production_approved"
+      }
+    },
+    {
+      "speaker_id": "spk_003",
+      "source_speaker_id": "p261",
+      "source_metadata": {
+        "age": "26",
+        "gender": "F",
+        "accent": "NorthernIrish",
+        "region": "Belfast"
+      },
+      "source_reference": {
+        "kind": "inherited_vctk_v0.1_primary",
+        "path": "data/speaker_pool/vctk_v0.1/references/spk_003_primary.wav",
+        "sha256": "b1fff562d2c305b29992ed9a7f1c510135fb34c6101087b997a8e1dddb42314e",
+        "source_utterance_id": "p261_199"
+      },
+      "higgs_reference": {
+        "reference_wav": "data/speaker_pool/vctk_v0.2/references/spk_003_primary.wav",
+        "sha256": "b1fff562d2c305b29992ed9a7f1c510135fb34c6101087b997a8e1dddb42314e",
+        "approval_status": "production_approved"
+      }
+    },
+    {
+      "speaker_id": "spk_004",
+      "source_speaker_id": "p234",
+      "source_metadata": {
+        "age": "22",
+        "gender": "F",
+        "accent": "Scottish",
+        "region": "West  Dumfries"
+      },
+      "source_reference": {
+        "kind": "inherited_vctk_v0.1_primary",
+        "path": "data/speaker_pool/vctk_v0.1/references/spk_004_primary.wav",
+        "sha256": "1e3bc1e3733507394c0beeb59656e5dd5280bc7a46537e2110681b7e588a060c",
+        "source_utterance_id": "p234_238"
+      },
+      "higgs_reference": {
+        "reference_wav": "data/speaker_pool/vctk_v0.2/references/spk_004_primary.wav",
+        "sha256": "1e3bc1e3733507394c0beeb59656e5dd5280bc7a46537e2110681b7e588a060c",
+        "approval_status": "production_approved"
+      }
+    },
+    {
+      "speaker_id": "spk_006",
+      "source_speaker_id": "p283",
+      "source_metadata": {
+        "age": "24",
+        "gender": "F",
+        "accent": "Irish",
+        "region": "Cork"
+      },
+      "source_reference": {
+        "kind": "inherited_vctk_v0.1_primary",
+        "path": "data/speaker_pool/vctk_v0.1/references/spk_006_primary.wav",
+        "sha256": "650c0fe63ac79d987f784e1752479c414862936973c23a0891b8142c2cdf1d5d",
+        "source_utterance_id": "p283_013"
+      },
+      "higgs_reference": {
+        "reference_wav": "data/speaker_pool/vctk_v0.2/references/spk_006_primary.wav",
+        "sha256": "650c0fe63ac79d987f784e1752479c414862936973c23a0891b8142c2cdf1d5d",
+        "approval_status": "production_approved"
+      }
+    },
+    {
+      "speaker_id": "spk_007",
+      "source_speaker_id": "p251",
+      "source_metadata": {
+        "age": "26",
+        "gender": "M",
+        "accent": "Indian"
+      },
+      "source_reference": {
+        "kind": "inherited_vctk_v0.1_primary",
+        "path": "data/speaker_pool/vctk_v0.1/references/spk_007_primary.wav",
+        "sha256": "8889c52d7d07209930f8dd29fc8bf0c8d6c2a94d8f54e452316ce21556a6cc6a",
+        "source_utterance_id": "p251_009"
+      },
+      "higgs_reference": {
+        "reference_wav": "data/speaker_pool/vctk_v0.2/references/spk_007_primary.wav",
+        "sha256": "8889c52d7d07209930f8dd29fc8bf0c8d6c2a94d8f54e452316ce21556a6cc6a",
+        "approval_status": "production_approved"
+      }
+    },
+    {
+      "speaker_id": "spk_008",
+      "source_speaker_id": "p245",
+      "source_metadata": {
+        "age": "25",
+        "gender": "M",
+        "accent": "Irish",
+        "region": "Dublin"
+      },
+      "source_reference": {
+        "kind": "inherited_vctk_v0.1_primary",
+        "path": "data/speaker_pool/vctk_v0.1/references/spk_008_primary.wav",
+        "sha256": "3789926b9af6e94a28cbc615d726093b47aafbe1539f5ec2f841c2cb2e2fad6a",
+        "source_utterance_id": "p245_269"
+      },
+      "higgs_reference": {
+        "reference_wav": "data/speaker_pool/vctk_v0.2/references/spk_008_primary.wav",
+        "sha256": "3789926b9af6e94a28cbc615d726093b47aafbe1539f5ec2f841c2cb2e2fad6a",
+        "approval_status": "production_approved"
+      }
+    },
+    {
+      "speaker_id": "spk_009",
+      "source_speaker_id": "p237",
+      "source_metadata": {
+        "age": "22",
+        "gender": "M",
+        "accent": "Scottish",
+        "region": "Fife"
+      },
+      "source_reference": {
+        "kind": "inherited_vctk_v0.1_primary",
+        "path": "data/speaker_pool/vctk_v0.1/references/spk_009_primary.wav",
+        "sha256": "ee0c2ef451292f4b7d7bf35beaa6e630976457c27e02226e87d4f12762582315",
+        "source_utterance_id": "p237_013"
+      },
+      "higgs_reference": {
+        "reference_wav": "data/speaker_pool/vctk_v0.2/references/spk_009_primary.wav",
+        "sha256": "ee0c2ef451292f4b7d7bf35beaa6e630976457c27e02226e87d4f12762582315",
+        "approval_status": "production_approved"
+      }
+    },
+    {
+      "speaker_id": "spk_010",
+      "source_speaker_id": "p243",
+      "source_metadata": {
+        "age": "22",
+        "gender": "M",
+        "accent": "English",
+        "region": "London"
+      },
+      "source_reference": {
+        "kind": "inherited_vctk_v0.1_primary",
+        "path": "data/speaker_pool/vctk_v0.1/references/spk_010_primary.wav",
+        "sha256": "4680b885c7f4b6701c8394de1320dfad4c2f4d21e65e44d9610b070f93c2a375",
+        "source_utterance_id": "p243_394"
+      },
+      "higgs_reference": {
+        "reference_wav": "data/speaker_pool/vctk_v0.2/references/spk_010_primary.wav",
+        "sha256": "4680b885c7f4b6701c8394de1320dfad4c2f4d21e65e44d9610b070f93c2a375",
+        "approval_status": "production_approved"
+      }
+    },
+    {
+      "speaker_id": "spk_011",
+      "source_speaker_id": "p256",
+      "source_metadata": {
+        "age": "24",
+        "gender": "M",
+        "accent": "English",
+        "region": "Birmingham"
+      },
+      "source_reference": {
+        "kind": "inherited_vctk_v0.1_primary",
+        "path": "data/speaker_pool/vctk_v0.1/references/spk_011_primary.wav",
+        "sha256": "d91903d62d42310e90deb900115a5b69bc488198c1ee0aff10ff3c742700c139",
+        "source_utterance_id": "p256_241"
+      },
+      "higgs_reference": {
+        "reference_wav": "data/speaker_pool/vctk_v0.2/references/spk_011_primary.wav",
+        "sha256": "d91903d62d42310e90deb900115a5b69bc488198c1ee0aff10ff3c742700c139",
+        "approval_status": "production_approved"
+      }
+    },
+    {
+      "speaker_id": "spk_012",
+      "source_speaker_id": "p252",
+      "source_metadata": {
+        "age": "22",
+        "gender": "M",
+        "accent": "Scottish",
+        "region": "Edinburgh"
+      },
+      "source_reference": {
+        "kind": "inherited_vctk_v0.1_primary",
+        "path": "data/speaker_pool/vctk_v0.1/references/spk_012_primary.wav",
+        "sha256": "3c4d2b063ce4802e43a08316553f1a0f9b271fbeba5559060befd5c51a21680e",
+        "source_utterance_id": "p252_007"
+      },
+      "higgs_reference": {
+        "reference_wav": "data/speaker_pool/vctk_v0.2/references/spk_012_primary.wav",
+        "sha256": "3c4d2b063ce4802e43a08316553f1a0f9b271fbeba5559060befd5c51a21680e",
+        "approval_status": "production_approved"
+      }
+    },
+    {
+      "speaker_id": "spk_013",
+      "source_speaker_id": "p227",
+      "source_metadata": {
+        "age": "38",
+        "gender": "M",
+        "accent": "English",
+        "region": "Cumbria"
+      },
+      "source_reference": {
+        "kind": "selected_source_listening_wav",
+        "path": "data/speaker_pool/production_candidate_review/wav/p227_b.wav",
+        "sha256": "e53e94bffad7c513f37de55e6bdd5cb55f15374b7b33a011be2bd9b942e44440",
+        "source_utterance_id": "p227_020"
+      },
+      "higgs_reference": {
+        "reference_wav": "data/speaker_pool/vctk_v0.2/references/spk_013_primary.wav",
+        "sha256": "e53e94bffad7c513f37de55e6bdd5cb55f15374b7b33a011be2bd9b942e44440",
+        "approval_status": "production_approved"
+      }
+    },
+    {
+      "speaker_id": "spk_014",
+      "source_speaker_id": "p294",
+      "source_metadata": {
+        "age": "33",
+        "gender": "F",
+        "accent": "American",
+        "region": "San  Francisco"
+      },
+      "source_reference": {
+        "kind": "selected_source_listening_wav",
+        "path": "data/speaker_pool/production_candidate_review/wav/p294_b.wav",
+        "sha256": "df8f36d6b5c2b293f91579999e9e5725eaec23f426b6e0e08dadee6a5901d3b9",
+        "source_utterance_id": "p294_017"
+      },
+      "higgs_reference": {
+        "reference_wav": "data/speaker_pool/vctk_v0.2/references/spk_014_primary.wav",
+        "sha256": "df8f36d6b5c2b293f91579999e9e5725eaec23f426b6e0e08dadee6a5901d3b9",
+        "approval_status": "production_approved"
+      }
+    },
+    {
+      "speaker_id": "spk_015",
+      "source_speaker_id": "p305",
+      "source_metadata": {
+        "age": "19",
+        "gender": "F",
+        "accent": "American",
+        "region": "Philadelphia"
+      },
+      "source_reference": {
+        "kind": "selected_source_listening_wav",
+        "path": "data/speaker_pool/production_candidate_review/wav/p305_b.wav",
+        "sha256": "f482fd4ebe53a8663e00208d5495a88c437f8f099e0cf584a791584c87e28d72",
+        "source_utterance_id": "p305_114"
+      },
+      "higgs_reference": {
+        "reference_wav": "data/speaker_pool/vctk_v0.2/references/spk_015_primary.wav",
+        "sha256": "f482fd4ebe53a8663e00208d5495a88c437f8f099e0cf584a791584c87e28d72",
+        "approval_status": "production_approved"
+      }
+    },
+    {
+      "speaker_id": "spk_016",
+      "source_speaker_id": "p318",
+      "source_metadata": {
+        "age": "32",
+        "gender": "F",
+        "accent": "American",
+        "region": "Napa"
+      },
+      "source_reference": {
+        "kind": "selected_source_listening_wav",
+        "path": "data/speaker_pool/production_candidate_review/wav/p318_a.wav",
+        "sha256": "279821427a078b47695711f41bff900b4e2e9bebd079eaf46dde275665333694",
+        "source_utterance_id": "p318_051"
+      },
+      "higgs_reference": {
+        "reference_wav": "data/speaker_pool/vctk_v0.2/references/spk_016_primary.wav",
+        "sha256": "279821427a078b47695711f41bff900b4e2e9bebd079eaf46dde275665333694",
+        "approval_status": "production_approved"
+      }
+    },
+    {
+      "speaker_id": "spk_017",
+      "source_speaker_id": "p343",
+      "source_metadata": {
+        "age": "27",
+        "gender": "F",
+        "accent": "Canadian",
+        "region": "Alberta"
+      },
+      "source_reference": {
+        "kind": "selected_source_listening_wav",
+        "path": "data/speaker_pool/production_candidate_review/wav/p343_a.wav",
+        "sha256": "7e8788a80004767a32ab210cc7e4292612e3e8f9d1ef0beb0f87ebaf09f9bbf4",
+        "source_utterance_id": "p343_012"
+      },
+      "higgs_reference": {
+        "reference_wav": "data/speaker_pool/vctk_v0.2/references/spk_017_primary.wav",
+        "sha256": "7e8788a80004767a32ab210cc7e4292612e3e8f9d1ef0beb0f87ebaf09f9bbf4",
+        "approval_status": "production_approved"
+      }
+    }
+  ]
+}
