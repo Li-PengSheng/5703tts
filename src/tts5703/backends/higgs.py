@@ -18,6 +18,7 @@ import os
 import subprocess
 import sys
 import threading
+import time
 import wave
 from collections import deque
 from pathlib import Path
@@ -201,6 +202,7 @@ def _get_worker(
 
         proc: subprocess.Popen[str] | None = None
         try:
+            startup_started = time.perf_counter()
             proc = subprocess.Popen(
                 [sys.executable, str(_WORKER_SCRIPT)],
                 stdin=subprocess.PIPE,
@@ -238,6 +240,11 @@ def _get_worker(
                 )
                 raise _StartupError(fallback)
             logger.debug("event=higgs_worker_ready model_dir=%s", model_dir)
+            logger.info(
+                "event=higgs_worker_startup_complete elapsed_sec=%.3f model_dir=%s",
+                time.perf_counter() - startup_started,
+                model_dir,
+            )
         except BaseException as error:
             if proc is not None:
                 _terminate_worker(proc)
@@ -506,6 +513,7 @@ def synthesize_prepared_turn(
     ``references: [{\"audio_path\": reference_wav}]``; this parent never
     substitutes a CosyVoice prompt or remaps controls.
     """
+    started = time.perf_counter()
     higgs, server_executable, model_dir, ffmpeg_bin = preflight_prepared_turn(
         turn, config
     )
@@ -534,17 +542,35 @@ def synthesize_prepared_turn(
         turn.rate,
     )
     try:
+        request_started = time.perf_counter()
         response = _request(worker, request)
+        request_sec = time.perf_counter() - request_started
+        validation_started = time.perf_counter()
         _validate_success(worker, response, raw_path)
+        validation_sec = time.perf_counter() - validation_started
     except Exception:
         raw_path.unlink(missing_ok=True)
         processed_path.unlink(missing_ok=True)
         raise
+    rate_started = time.perf_counter()
     _apply_rate(raw_path, final_path, turn.rate_plan, ffmpeg_bin)
+    rate_postprocess_sec = time.perf_counter() - rate_started
     logger.debug(
         "event=prepared_turn_tts_complete engine=higgs ordinal=%d output=%s bytes=%d",
         turn.ordinal,
         final_path.name,
         final_path.stat().st_size,
+    )
+    logger.info(
+        "event=higgs_turn_timing ordinal=%d speaker=%s rate=%s "
+        "request_sec=%.3f validation_sec=%.3f rate_postprocess_sec=%.3f "
+        "total_sec=%.3f",
+        turn.ordinal,
+        turn.render_speaker_id,
+        turn.rate,
+        request_sec,
+        validation_sec,
+        rate_postprocess_sec,
+        time.perf_counter() - started,
     )
     return final_path

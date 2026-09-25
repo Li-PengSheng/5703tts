@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import logging
 import wave
 from pathlib import Path
 from typing import Any
@@ -343,7 +344,9 @@ def test_cosyvoice_preflight_rechecks_prompt_sha(
 
 
 def test_cosyvoice_execution_uses_cached_request_and_never_falls_back(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     record, sidecar = _fixture(tmp_path)
     dialogue = prepare_dialogue(
@@ -369,6 +372,7 @@ def test_cosyvoice_execution_uses_cached_request_and_never_falls_back(
         lambda *args: (_ for _ in ()).throw(AssertionError("automatic fallback")),
     )
 
+    caplog.set_level(logging.INFO, logger="tts5703.tts_engine")
     tts_engine.preflight_prepared_dialogue(dialogue, _config("cosyvoice"))
     results = asyncio.run(
         tts_engine.synthesize_prepared_turns(
@@ -383,6 +387,7 @@ def test_cosyvoice_execution_uses_cached_request_and_never_falls_back(
     assert captured[0]["speed"] == plan["speed"]
     assert captured[0]["instruction"] == plan["instruction"]
     assert captured[0]["prompt_text"] == plan["prompt_text"]
+    assert not any("event=higgs_turn_timing" in r.message for r in caplog.records)
 
 
 def test_cosyvoice_failure_is_not_retried_with_higgs(

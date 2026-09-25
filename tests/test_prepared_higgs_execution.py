@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import logging
 import subprocess
 import wave
 from pathlib import Path
@@ -209,6 +210,7 @@ def test_invalid_ordinals_fail_before_worker(
 def test_prepared_rate_postprocess_is_after_worker_and_forces_pcm16(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
     rate: str,
     factor: str | None,
 ) -> None:
@@ -244,6 +246,9 @@ def test_prepared_rate_postprocess_is_after_worker_and_forces_pcm16(
     dialogue = _dialogue(turn)
     config = _config(tmp_path)
     tts_engine.preflight_prepared_dialogue(dialogue, config)
+    clock = iter(range(8))
+    monkeypatch.setattr(higgs.time, "perf_counter", lambda: next(clock))
+    caplog.set_level(logging.INFO, logger="tts5703.tts_engine")
     result = asyncio.run(
         tts_engine.synthesize_prepared_turns(dialogue, tmp_path, config)
     )[0]
@@ -271,3 +276,15 @@ def test_prepared_rate_postprocess_is_after_worker_and_forces_pcm16(
         assert output.getsampwidth() == 2
         assert output.getnframes() / output.getframerate() == pytest.approx(0.2)
     assert not (tmp_path / "turn_001.higgs_raw.wav").exists()
+    timing_logs = [
+        record.message
+        for record in caplog.records
+        if "event=higgs_turn_timing" in record.message
+    ]
+    assert timing_logs == [
+        (
+            "event=higgs_turn_timing ordinal=1 speaker=spk_001 "
+            f"rate={rate} request_sec=1.000 validation_sec=1.000 "
+            "rate_postprocess_sec=1.000 total_sec=7.000"
+        )
+    ]

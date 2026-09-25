@@ -214,10 +214,19 @@ def test_parent_starts_once_reuses_worker_and_drains_large_stderr(
         tmp_path, {"stderr_lines": 300, "stderr_width": 10000}
     )
     monkeypatch.setattr(higgs_backend, "_WORKER_SCRIPT", script)
+    clock = iter((10.0, 12.0))
+    monkeypatch.setattr(higgs_backend.time, "perf_counter", lambda: next(clock))
     caplog.set_level(logging.DEBUG, logger="tts5703.tts_engine")
     proc = higgs_backend._get_worker(*_worker_args(model_dir))
     try:
         assert higgs_backend._get_worker(*_worker_args(model_dir)) is proc
+        startup_logs = [
+            record.message
+            for record in caplog.records
+            if "event=higgs_worker_startup_complete" in record.message
+        ]
+        assert len(startup_logs) == 1
+        assert "elapsed_sec=2.000" in startup_logs[0]
         assert (model_dir / "parent-worker-launches.txt").read_text() == "1"
         assert proc.args == [sys.executable, str(script)]
         deadline = time.monotonic() + 2

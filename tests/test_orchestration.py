@@ -3,8 +3,10 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import logging
 import wave
 from copy import deepcopy
+from itertools import count
 from pathlib import Path
 from typing import Any
 
@@ -217,7 +219,10 @@ def _artifacts(tmp_path: Path) -> dict[str, Any]:
     "quality_outcome", ["pass", "reject", "metric_error", "exact_zero"]
 )
 def test_final_pipeline_prepares_once_and_orders_preflight_before_output(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, quality_outcome: str
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+    quality_outcome: str,
 ) -> None:
     record, sidecar = _inputs(tmp_path)
     output_root = tmp_path / "output"
@@ -292,6 +297,9 @@ def test_final_pipeline_prepares_once_and_orders_preflight_before_output(
 
         monkeypatch.setattr(pipeline, "assess_dialogue_turns", forced_assessment)
 
+    clock = count()
+    monkeypatch.setattr(pipeline.time, "perf_counter", lambda: next(clock))
+    caplog.set_level(logging.INFO, logger="tts5703.pipeline")
     result = asyncio.run(
         pipeline.run_dialogue(
             record,
@@ -334,6 +342,19 @@ def test_final_pipeline_prepares_once_and_orders_preflight_before_output(
     assert preflight_calls == 1
     assert mapper_calls == len(record.raw["turns"])
     assert result.qc is not None and result.qc.passed
+    timing_logs = [
+        record.message
+        for record in caplog.records
+        if "event=dialogue_timing" in record.message
+    ]
+    assert timing_logs == [
+        (
+            "event=dialogue_timing dialogue=final-production-001 engine=higgs "
+            "preflight_sec=1.000 synthesis_sec=1.000 assemble_sec=1.000 "
+            "clean_export_sec=1.000 telephone_sec=1.000 metadata_sec=1.000 "
+            "qc_sec=1.000 quality_sec=1.000 total_sec=17.000"
+        )
+    ]
 
 
 def test_higgs_identity_failure_prevents_synthesis(

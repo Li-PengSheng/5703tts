@@ -80,17 +80,28 @@ async def run_dialogue(
         )
         # Validate the complete execution plan before creating artifacts or
         # spending GPU work on a prefix of an invalid dialogue.
+        preflight_started = time.perf_counter()
         preflight_prepared_dialogue(prepared, config)
+        preflight_sec = time.perf_counter() - preflight_started
 
         out_dir = output_root / dialogue_id
         out_dir.mkdir(parents=True, exist_ok=True)
+        phase_started = time.perf_counter()
         turn_results = await synthesize_prepared_turns(prepared, out_dir, config)
+        synthesis_sec = time.perf_counter() - phase_started
+        phase_started = time.perf_counter()
         full_audio, timings = assemble_prepared_dialogue(prepared, turn_results, config)
+        assemble_sec = time.perf_counter() - phase_started
+        phase_started = time.perf_counter()
         clean_path = out_dir / f"{dialogue_id}_clean.wav"
         full_audio.export(clean_path, format="wav")
+        clean_export_sec = time.perf_counter() - phase_started
+        phase_started = time.perf_counter()
         telephone_path = out_dir / f"{dialogue_id}_telephone.wav"
         apply_telephone_effect(full_audio, config).export(telephone_path, format="wav")
+        telephone_sec = time.perf_counter() - phase_started
 
+        phase_started = time.perf_counter()
         engine_info = describe_engine(config, prepared)
         metadata = build_metadata(
             input_record,
@@ -102,6 +113,8 @@ async def run_dialogue(
             engine_info,
         )
         write_metadata(metadata, out_dir)
+        metadata_sec = time.perf_counter() - phase_started
+        phase_started = time.perf_counter()
         qc = run_qc(
             input_record,
             prepared,
@@ -111,8 +124,11 @@ async def run_dialogue(
             telephone_path,
             metadata,
         )
+        qc_sec = time.perf_counter() - phase_started
         quality = None
+        quality_sec = 0.0
         if qc.passed and is_higgs:
+            phase_started = time.perf_counter()
             quality = assess_dialogue_turns(
                 out_dir,
                 dialogue_id,
@@ -126,6 +142,24 @@ async def run_dialogue(
                 quality,
                 [turn["execution"]["turn_audio"] for turn in metadata["turns"]],
             )
+            quality_sec = time.perf_counter() - phase_started
+        logger.info(
+            "event=dialogue_timing dialogue=%s engine=%s "
+            "preflight_sec=%.3f synthesis_sec=%.3f assemble_sec=%.3f "
+            "clean_export_sec=%.3f telephone_sec=%.3f metadata_sec=%.3f "
+            "qc_sec=%.3f quality_sec=%.3f total_sec=%.3f",
+            dialogue_id,
+            config.get("tts", {}).get("engine"),
+            preflight_sec,
+            synthesis_sec,
+            assemble_sec,
+            clean_export_sec,
+            telephone_sec,
+            metadata_sec,
+            qc_sec,
+            quality_sec,
+            time.perf_counter() - started,
+        )
         logger.info(
             "event=final_dialogue_pipeline_complete dialogue=%s passed=%s "
             "elapsed_sec=%.2f",
