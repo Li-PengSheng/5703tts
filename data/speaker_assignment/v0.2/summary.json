@@ -1,0 +1,391 @@
+{
+  "assignment_policy_version": "speaker_assignment_policy_v0.2",
+  "speaker_pool_version": "vctk_v0.2",
+  "corpus": {
+    "dialogue_count": 1000,
+    "turn_count": 15934,
+    "caller_upstream_identity_count": 48,
+    "counsellor_upstream_identity_count": 12
+  },
+  "mapping": {
+    "upstream_identity_count": 60,
+    "upstream_speaker_ids": [
+      "C000",
+      "C001",
+      "C002",
+      "C003",
+      "C004",
+      "C005",
+      "C006",
+      "C007",
+      "C008",
+      "C009",
+      "C010",
+      "C011",
+      "C012",
+      "C013",
+      "C014",
+      "C015",
+      "C016",
+      "C017",
+      "C018",
+      "C019",
+      "C020",
+      "C021",
+      "C022",
+      "C023",
+      "C024",
+      "C025",
+      "C026",
+      "C027",
+      "C028",
+      "C029",
+      "C030",
+      "C031",
+      "C032",
+      "C033",
+      "C034",
+      "C035",
+      "C036",
+      "C037",
+      "C038",
+      "C039",
+      "C040",
+      "C041",
+      "C042",
+      "C043",
+      "C044",
+      "C045",
+      "C046",
+      "C047",
+      "L000",
+      "L001",
+      "L002",
+      "L003",
+      "L004",
+      "L005",
+      "L006",
+      "L007",
+      "L008",
+      "L009",
+      "L010",
+      "L011"
+    ],
+    "per_render_voice": {
+      "spk_001": {
+        "role": "caller",
+        "source_speaker_id": "p248",
+        "source_gender": "F",
+        "source_age": 23,
+        "identity_count": 5,
+        "dialogue_count": 99,
+        "turn_count": 824
+      },
+      "spk_003": {
+        "role": "caller",
+        "source_speaker_id": "p261",
+        "source_gender": "F",
+        "source_age": 26,
+        "identity_count": 5,
+        "dialogue_count": 106,
+        "turn_count": 893
+      },
+      "spk_004": {
+        "role": "caller",
+        "source_speaker_id": "p234",
+        "source_gender": "F",
+        "source_age": 22,
+        "identity_count": 5,
+        "dialogue_count": 102,
+        "turn_count": 869
+      },
+      "spk_006": {
+        "role": "counsellor",
+        "source_speaker_id": "p283",
+        "source_gender": "F",
+        "source_age": 24,
+        "identity_count": 2,
+        "dialogue_count": 194,
+        "turn_count": 1440
+      },
+      "spk_007": {
+        "role": "counsellor",
+        "source_speaker_id": "p251",
+        "source_gender": "M",
+        "source_age": 26,
+        "identity_count": 2,
+        "dialogue_count": 159,
+        "turn_count": 1191
+      },
+      "spk_008": {
+        "role": "caller",
+        "source_speaker_id": "p245",
+        "source_gender": "M",
+        "source_age": 25,
+        "identity_count": 6,
+        "dialogue_count": 126,
+        "turn_count": 1074
+      },
+      "spk_009": {
+        "role": "caller",
+        "source_speaker_id": "p237",
+        "source_gender": "M",
+        "source_age": 22,
+        "identity_count": 6,
+        "dialogue_count": 126,
+        "turn_count": 1064
+      },
+      "spk_010": {
+        "role": "caller",
+        "source_speaker_id": "p243",
+        "source_gender": "M",
+        "source_age": 22,
+        "identity_count": 6,
+        "dialogue_count": 122,
+        "turn_count": 1030
+      },
+      "spk_011": {
+        "role": "caller",
+        "source_speaker_id": "p256",
+        "source_gender": "M",
+        "source_age": 24,
+        "identity_count": 6,
+        "dialogue_count": 121,
+        "turn_count": 1015
+      },
+      "spk_012": {
+        "role": "counsellor",
+        "source_speaker_id": "p252",
+        "source_gender": "M",
+        "source_age": 22,
+        "identity_count": 2,
+        "dialogue_count": 179,
+        "turn_count": 1339
+      },
+      "spk_013": {
+        "role": "counsellor",
+        "source_speaker_id": "p227",
+        "source_gender": "M",
+        "source_age": 38,
+        "identity_count": 2,
+        "dialogue_count": 172,
+        "turn_count": 1289
+      },
+      "spk_014": {
+        "role": "caller",
+        "source_speaker_id": "p294",
+        "source_gender": "F",
+        "source_age": 33,
+        "identity_count": 4,
+        "dialogue_count": 92,
+        "turn_count": 775
+      },
+      "spk_015": {
+        "role": "caller",
+        "source_speaker_id": "p305",
+        "source_gender": "F",
+        "source_age": 19,
+        "identity_count": 5,
+        "dialogue_count": 106,
+        "turn_count": 889
+      },
+      "spk_016": {
+        "role": "counsellor",
+        "source_speaker_id": "p318",
+        "source_gender": "F",
+        "source_age": 32,
+        "identity_count": 2,
+        "dialogue_count": 158,
+        "turn_count": 1199
+      },
+      "spk_017": {
+        "role": "counsellor",
+        "source_speaker_id": "p343",
+        "source_gender": "F",
+        "source_age": 27,
+        "identity_count": 2,
+        "dialogue_count": 138,
+        "turn_count": 1043
+      }
+    },
+    "all_15_voices_used": true,
+    "role_exposure": {
+      "caller": {
+        "identity_count": 48,
+        "dialogue_count": 1000,
+        "turn_count": 8433
+      },
+      "counsellor": {
+        "identity_count": 12,
+        "dialogue_count": 1000,
+        "turn_count": 7501
+      }
+    }
+  },
+  "gender": {
+    "requested": {
+      "female": {
+        "identity_count": 20,
+        "dialogue_count": 641,
+        "turn_count": 5126
+      },
+      "male": {
+        "identity_count": 20,
+        "dialogue_count": 660,
+        "turn_count": 5254
+      },
+      "neutral": {
+        "identity_count": 20,
+        "dialogue_count": 699,
+        "turn_count": 5554
+      }
+    },
+    "neutral_to_source": {
+      "F": {
+        "identity_count": 10,
+        "dialogue_count": 354,
+        "turn_count": 2806
+      },
+      "M": {
+        "identity_count": 10,
+        "dialogue_count": 345,
+        "turn_count": 2748
+      }
+    },
+    "neutral_to_source_by_role": {
+      "caller": {
+        "F": {
+          "identity_count": 8,
+          "dialogue_count": 167,
+          "turn_count": 1414
+        },
+        "M": {
+          "identity_count": 8,
+          "dialogue_count": 168,
+          "turn_count": 1420
+        }
+      },
+      "counsellor": {
+        "F": {
+          "identity_count": 2,
+          "dialogue_count": 187,
+          "turn_count": 1392
+        },
+        "M": {
+          "identity_count": 2,
+          "dialogue_count": 177,
+          "turn_count": 1328
+        }
+      }
+    }
+  },
+  "role_partition": {
+    "caller_voices": [
+      "spk_001",
+      "spk_003",
+      "spk_004",
+      "spk_008",
+      "spk_009",
+      "spk_010",
+      "spk_011",
+      "spk_014",
+      "spk_015"
+    ],
+    "counsellor_voices": [
+      "spk_006",
+      "spk_007",
+      "spk_012",
+      "spk_013",
+      "spk_016",
+      "spk_017"
+    ],
+    "intersection": []
+  },
+  "age": {
+    "requested_age_band": {
+      "adult": {
+        "identity_count": 16,
+        "dialogue_count": 566,
+        "turn_count": 4461
+      },
+      "older": {
+        "identity_count": 16,
+        "dialogue_count": 607,
+        "turn_count": 4781
+      },
+      "teen": {
+        "identity_count": 12,
+        "dialogue_count": 270,
+        "turn_count": 2260
+      },
+      "young_adult": {
+        "identity_count": 16,
+        "dialogue_count": 557,
+        "turn_count": 4432
+      }
+    },
+    "render_source_age": {
+      "19": {
+        "source_voice_count": 1,
+        "identity_count": 5,
+        "dialogue_count": 106,
+        "turn_count": 889
+      },
+      "22": {
+        "source_voice_count": 4,
+        "identity_count": 19,
+        "dialogue_count": 529,
+        "turn_count": 4302
+      },
+      "23": {
+        "source_voice_count": 1,
+        "identity_count": 5,
+        "dialogue_count": 99,
+        "turn_count": 824
+      },
+      "24": {
+        "source_voice_count": 2,
+        "identity_count": 8,
+        "dialogue_count": 315,
+        "turn_count": 2455
+      },
+      "25": {
+        "source_voice_count": 1,
+        "identity_count": 6,
+        "dialogue_count": 126,
+        "turn_count": 1074
+      },
+      "26": {
+        "source_voice_count": 2,
+        "identity_count": 7,
+        "dialogue_count": 265,
+        "turn_count": 2084
+      },
+      "27": {
+        "source_voice_count": 1,
+        "identity_count": 2,
+        "dialogue_count": 138,
+        "turn_count": 1043
+      },
+      "32": {
+        "source_voice_count": 1,
+        "identity_count": 2,
+        "dialogue_count": 158,
+        "turn_count": 1199
+      },
+      "33": {
+        "source_voice_count": 1,
+        "identity_count": 4,
+        "dialogue_count": 92,
+        "turn_count": 775
+      },
+      "38": {
+        "source_voice_count": 1,
+        "identity_count": 2,
+        "dialogue_count": 172,
+        "turn_count": 1289
+      }
+    },
+    "note": "Requested age_band and VCTK source age are descriptive; source age is not age-band realization or a selection input."
+  }
+}
