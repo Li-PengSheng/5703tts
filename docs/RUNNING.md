@@ -182,6 +182,19 @@ Each dialogue directory contains speech-only `turn_NNN.wav`, a clean assembled
 WAV, a telephone-labelled WAV, metadata, and structural QC. Telephone output is
 only mono/resampling/filtering/level processing, not PSTN or codec simulation.
 
+For offline Higgs turn-audio diagnostics:
+
+```bash
+uv run python scripts/analyze_higgs_audio_qc.py \
+  --output-root data/output/higgs_pilot30_final_1024 \
+  --json-out /tmp/higgs_pilot30_audio_qc.json
+```
+
+This analyzer is diagnostic evidence collection only and does not gate production rendering.
+It compares fixed 250 ms window energy with the early
+body at several relative thresholds; inspect the report and listen before
+choosing any future production rule.
+
 ## Troubleshooting
 
 | Symptom | First checks |
