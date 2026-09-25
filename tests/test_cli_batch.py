@@ -377,6 +377,104 @@ def _invoke(
     return exit_code, manifest, attempted
 
 
+def _quality_queue(tmp_path: Path) -> list[dict[str, Any]]:
+    path = tmp_path / "output" / "quality_rejected.jsonl"
+    assert path.exists()
+    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+
+
+def test_quality_retry_queue_filters_orders_and_deduplicates(tmp_path: Path) -> None:
+    def rejected(dialogue_id: str) -> dict[str, Any]:
+        return {
+            "dialogue_id": dialogue_id,
+            "source": {
+                "container_path": "input.jsonl",
+                "format": "jsonl",
+                "line_number": 1,
+                "record_sha256": "a" * 64,
+            },
+            "render_fingerprint": "b" * 64,
+            "output_dir": str(tmp_path / dialogue_id),
+            "action": "quality_rejected",
+            "status": "failed",
+            "quality": {
+                "outcome": "reject",
+                "issues": [
+                    {"code": "z_tail"},
+                    {"code": "abnormal_tail"},
+                    {"code": "abnormal_tail"},
+                ],
+            },
+        }
+
+    first, second = rejected("B"), rejected("A")
+    integrity = {
+        **rejected("integrity"),
+        "quality_observation": {"issues": [{"code": "artifact_integrity_failure"}]},
+    }
+    issue_integrity = rejected("issue_integrity")
+    issue_integrity["quality"]["issues"].append({"code": "artifact_integrity_failure"})
+    indeterminate = rejected("indeterminate")
+    indeterminate["quality"]["outcome"] = "indeterminate"
+    render_failed = {**rejected("render_failed"), "action": "render_failed"}
+    input_error = {**rejected("input_error"), "action": "input_error"}
+    succeeded = {**rejected("succeeded"), "status": "success"}
+    missing_quality = {**rejected("missing_quality"), "quality": None}
+    invalid_issues = {
+        **rejected("invalid_issues"),
+        "quality": {"outcome": "reject", "issues": None},
+    }
+
+    path, count = batch._write_quality_retry_queue(
+        [
+            first,
+            integrity,
+            issue_integrity,
+            indeterminate,
+            render_failed,
+            input_error,
+            succeeded,
+            missing_quality,
+            invalid_issues,
+            second,
+        ],
+        tmp_path,
+    )
+    assert count == 2
+    rows = [json.loads(line) for line in path.read_text().splitlines()]
+    assert [row["dialogue_id"] for row in rows] == ["B", "A"]
+    assert all(row["reason_codes"] == ["abnormal_tail", "z_tail"] for row in rows)
+    assert rows[0] == {
+        "dialogue_id": "B",
+        "source": first["source"],
+        "render_fingerprint": first["render_fingerprint"],
+        "reason_codes": ["abnormal_tail", "z_tail"],
+        "output_dir": first["output_dir"],
+        "quality_sidecar": str(tmp_path / "B" / "B_quality.json"),
+    }
+    first_bytes = path.read_bytes()
+    batch._write_quality_retry_queue([first, second], tmp_path)
+    assert path.read_bytes() == first_bytes
+
+
+def test_successful_batch_publishes_empty_quality_retry_queue(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    input_path = tmp_path / "corpus.jsonl"
+    _write_jsonl(input_path, [_record("A")])
+    code, manifest, attempted = _invoke(
+        tmp_path, monkeypatch, input_path=input_path, sidecar=_sidecar(("A",))
+    )
+    assert code == 0 and attempted == ["A"]
+    assert manifest["status"] == "success"
+    assert manifest["quality_retry_queue"] == {
+        "path": str(tmp_path / "output" / "quality_rejected.jsonl"),
+        "count": 0,
+    }
+    assert _quality_queue(tmp_path) == []
+    assert (tmp_path / "output" / "quality_rejected.jsonl").stat().st_size == 0
+
+
 def _policy(*dialogue_ids: str) -> dict[str, Any]:
     return {
         "schema_version": "1.0",
@@ -438,6 +536,7 @@ def test_jsonl_record_failures_continue_and_manifest_has_no_synthetic_ids(
     assert len(failures) == 3
     assert all(item["dialogue_id"] is None for item in failures)
     assert [item["source"]["line_number"] for item in failures] == [3, 4, 5]
+    assert _quality_queue(tmp_path) == []
     assert [
         item["dialogue_id"]
         for item in manifest["results"]
@@ -1701,6 +1800,7 @@ def test_untrusted_quality_evidence_never_reaches_cleanup(
     assert manifest["dialogues_quality_integrity_failed"] == 1
     assert manifest["dialogues_failed"] == 1
     assert path.is_symlink() if mode == "symlink" else path.exists()
+    assert _quality_queue(tmp_path) == []
 
 
 def test_pass_quality_plain_rerender_and_resume_preservation(
@@ -1764,6 +1864,21 @@ def test_changed_policy_can_reassess_to_rejection(
     assert manifest["results"][0]["action"] == "quality_rejected"
     assert manifest["results"][0]["quality"]["assessment"] == "reassessed"
     assert manifest["results"][0]["quality"]["issues"][0]["code"] == "abnormal_tail"
+    result = manifest["results"][0]
+    assert _quality_queue(tmp_path) == [
+        {
+            "dialogue_id": "A",
+            "source": result["source"],
+            "render_fingerprint": result["render_fingerprint"],
+            "reason_codes": ["abnormal_tail"],
+            "output_dir": result["output_dir"],
+            "quality_sidecar": str(path),
+        }
+    ]
+    assert manifest["quality_retry_queue"] == {
+        "path": str(tmp_path / "output" / "quality_rejected.jsonl"),
+        "count": 1,
+    }
 
 
 def test_changed_render_identity_replaces_terminal_quality(
@@ -1771,6 +1886,8 @@ def test_changed_render_identity_replaces_terminal_quality(
 ) -> None:
     input_path, path, sidecar, _ = _seed_quality(tmp_path, monkeypatch)
     _set_quality(path, "reject")
+    _invoke(tmp_path, monkeypatch, input_path=input_path, sidecar=sidecar)
+    assert len(_quality_queue(tmp_path)) == 1
     _write_jsonl(input_path, [_record_with_turn_count("A", 2)])
     _, manifest, attempted = _invoke(
         tmp_path, monkeypatch, input_path=input_path, sidecar=sidecar, resume=True
@@ -1778,6 +1895,9 @@ def test_changed_render_identity_replaces_terminal_quality(
     assert attempted == ["A"]
     assert manifest["results"][0]["action"] == "rendered"
     assert not path.exists()  # the fake renderer does not create a new sidecar
+    assert _quality_queue(tmp_path) == []
+    assert (tmp_path / "output" / "quality_rejected.jsonl").stat().st_size == 0
+    assert manifest["quality_retry_queue"]["count"] == 0
 
 
 def test_fingerprint_unavailable_does_not_start_fresh_higgs_render(
@@ -1813,6 +1933,8 @@ def test_same_identity_rejection_resume_preserves_sidecar(
     assert manifest["results"][0]["action"] == "quality_rejected"
     assert manifest["results"][0]["quality"]["assessment"] == "preserved"
     assert path.read_bytes() == before
+    assert _quality_queue(tmp_path)[0]["quality_sidecar"] == str(path)
+    assert manifest["quality_retry_queue"]["count"] == 1
 
 
 def test_fingerprint_unavailable_with_sidecar_preserves_artifacts(
@@ -1880,6 +2002,7 @@ def test_fresh_pipeline_quality_failure_maps_before_render_failure(
     assert manifest["results"][0]["quality"]["outcome"] == outcome
     assert manifest["results"][0]["error"]["type"] == "QualityRejected"
     assert manifest["results"][1]["action"] == "rendered"
+    assert len(_quality_queue(tmp_path)) == (1 if outcome == "reject" else 0)
 
 
 def test_quality_and_integrity_counts_are_distinct_in_mixed_batch(
@@ -1918,6 +2041,7 @@ def test_quality_and_integrity_counts_are_distinct_in_mixed_batch(
     assert manifest["results"][0]["quality_observation"]["issues"][0]["code"] == (
         "artifact_integrity_failure"
     )
+    assert _quality_queue(tmp_path) == []
 
 
 @pytest.mark.parametrize("engine", ["higgs", "cosyvoice"])
@@ -2108,6 +2232,31 @@ def test_batch_attempt_manifests_preserve_first_result_and_update_latest(
     assert second["summary"]["failed"] == 0
 
 
+def test_quality_retry_queue_publication_failure_keeps_latest_manifest(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    input_path = tmp_path / "corpus.jsonl"
+    _write_jsonl(input_path, [_record("A")])
+    sidecar = _sidecar(("A",))
+    _invoke(tmp_path, monkeypatch, input_path=input_path, sidecar=sidecar)
+    output = tmp_path / "output"
+    latest_before = (output / "batch_result.json").read_bytes()
+    original_replace = Path.replace
+
+    def fail_queue_replace(path: Path, target: Path) -> Path:
+        if target == output / "quality_rejected.jsonl":
+            raise OSError("synthetic queue publication failure")
+        return original_replace(path, target)
+
+    monkeypatch.setattr(Path, "replace", fail_queue_replace)
+    with pytest.raises(OSError, match="synthetic queue publication failure"):
+        _invoke(
+            tmp_path, monkeypatch, input_path=input_path, sidecar=sidecar, resume=True
+        )
+    assert (output / "batch_result.json").read_bytes() == latest_before
+    assert not list(output.glob(".quality_rejected.*.tmp"))
+
+
 def test_batch_attempt_collision_preserves_evidence_and_latest(tmp_path: Path) -> None:
     first = {"started_at": "2026-09-23T07:48:12+00:00", "status": "failure"}
     latest = batch._write_batch_result(first, tmp_path)
@@ -2155,6 +2304,7 @@ def test_render_failure_records_expected_output_even_when_result_out_dir_is_none
     assert entry["action"] == "render_failed"
     assert entry["output_dir"] == str(tmp_path / "output" / "A")
     assert (tmp_path / "output" / "A").is_dir()
+    assert _quality_queue(tmp_path) == []
 
 
 def test_final_batch_cosyvoice_engine_is_supported(
@@ -2174,6 +2324,25 @@ def test_final_batch_cosyvoice_engine_is_supported(
     assert exit_code == 0
     assert attempted == ["A"]
     assert manifest["backend"] == "cosyvoice"
+    assert _quality_queue(tmp_path) == []
+
+
+def test_cosyvoice_failure_is_not_queued(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    input_path = tmp_path / "corpus.jsonl"
+    _write_jsonl(input_path, [_record("A")])
+    code, manifest, attempted = _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=_sidecar(("A",)),
+        engine="cosyvoice",
+        failures={"A"},
+    )
+    assert code == 1 and attempted == ["A"]
+    assert manifest["results"][0]["action"] == "render_failed"
+    assert _quality_queue(tmp_path) == []
 
 
 def test_final_batch_unsupported_engine_fails_before_render(

@@ -100,6 +100,65 @@ def _write_batch_result(result: dict[str, Any], output_root: Path) -> Path:
     return path
 
 
+def _write_quality_retry_queue(
+    results: list[dict[str, Any]], output_root: Path
+) -> tuple[Path, int]:
+    """Atomically publish the latest genuine audio-quality rejects."""
+    path = output_root / "quality_rejected.jsonl"
+    rows = []
+    for result in results:
+        quality = result.get("quality")
+        if (
+            result.get("action") != _QUALITY_REJECTED
+            or result.get("status") != "failed"
+            or not isinstance(quality, dict)
+            or quality.get("outcome") != "reject"
+            or not isinstance(quality.get("issues"), list)
+            or any(
+                issue.get("code") == "artifact_integrity_failure"
+                for issue in quality["issues"]
+            )
+            or any(
+                issue.get("code") == "artifact_integrity_failure"
+                for issue in result.get("quality_observation", {}).get("issues", [])
+            )
+        ):
+            continue
+        dialogue_id = result["dialogue_id"]
+        rows.append(
+            {
+                "dialogue_id": dialogue_id,
+                "source": result["source"],
+                "render_fingerprint": result["render_fingerprint"],
+                "reason_codes": sorted({issue["code"] for issue in quality["issues"]}),
+                "output_dir": result["output_dir"],
+                "quality_sidecar": str(
+                    Path(result["output_dir"]) / f"{dialogue_id}_quality.json"
+                ),
+            }
+        )
+
+    output_root.mkdir(parents=True, exist_ok=True)
+    temporary_path = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            dir=output_root,
+            prefix=".quality_rejected.",
+            suffix=".tmp",
+            delete=False,
+        ) as temporary:
+            temporary_path = Path(temporary.name)
+            for row in rows:
+                temporary.write(json.dumps(row, sort_keys=True) + "\n")
+        temporary_path.replace(path)
+    finally:
+        if temporary_path is not None:
+            temporary_path.unlink(missing_ok=True)
+    return path, len(rows)
+
+
 def _load_previous_batch_result(path: Path) -> dict[str, Any] | None:
     """Load only a structurally valid manifest-v2 resume authority."""
     if not path.exists():
@@ -879,6 +938,7 @@ async def run_batch(
     mapping = batch_backend_identity["control_mapping"]
     # I. The single final write summarizes all per-record actions. This is not
     # currently a per-dialogue checkpoint journal.
+    queue_path, queue_count = _write_quality_retry_queue(results, args.output)
     batch_result = {
         "manifest_version": BATCH_MANIFEST_VERSION,
         "status": status,
@@ -892,6 +952,7 @@ async def run_batch(
         "config_sha256": config_sha256,
         "input_root": str(args.input),
         "output_root": str(args.output),
+        "quality_retry_queue": {"path": str(queue_path), "count": queue_count},
         "resume_requested": args.resume,
         "batch_provenance": {
             "controlled_tts": {
