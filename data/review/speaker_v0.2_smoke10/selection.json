@@ -1,0 +1,306 @@
+{
+  "purpose": "temporary_production_speaker_minibatch",
+  "canonical_input": {
+    "path": "data/final/corpus_v1_1000.jsonl",
+    "sha256": "137d74faf441a8e040fe8534b1e17439df541b51f2a3ae2b7e2bc64390027fb0"
+  },
+  "frozen_assignments": {
+    "path": "data/speaker_assignment/v0.2/speaker_assignments.jsonl",
+    "sha256": "6befc53394f89817de1b0eb394b14d4be05490a1835e9661e19cef25ae459196"
+  },
+  "selection_method": "Minimum 150 turns (10 x corpus minimum of 15), full 15-voice coverage, female/male/neutral and all four descriptive age-band labels, then earliest dialogue IDs.",
+  "selected_dialogue_ids": [
+    "corpus_v1_000000",
+    "corpus_v1_000001",
+    "corpus_v1_000002",
+    "corpus_v1_000003",
+    "corpus_v1_000005",
+    "corpus_v1_000007",
+    "corpus_v1_000012",
+    "corpus_v1_000016",
+    "corpus_v1_000018",
+    "corpus_v1_000129"
+  ],
+  "dialogue_count": 10,
+  "total_turn_count": 150,
+  "dialogues": [
+    {
+      "dialogue_id": "corpus_v1_000000",
+      "source_line_number": 1,
+      "turn_count": 15,
+      "caller": {
+        "upstream_speaker_id": "C008",
+        "requested_gender": "neutral",
+        "requested_age_band": "teen",
+        "render_speaker_id": "spk_009"
+      },
+      "counsellor": {
+        "upstream_speaker_id": "L001",
+        "requested_gender": "male",
+        "requested_age_band": "adult",
+        "render_speaker_id": "spk_007"
+      }
+    },
+    {
+      "dialogue_id": "corpus_v1_000001",
+      "source_line_number": 2,
+      "turn_count": 15,
+      "caller": {
+        "upstream_speaker_id": "C003",
+        "requested_gender": "female",
+        "requested_age_band": "older",
+        "render_speaker_id": "spk_014"
+      },
+      "counsellor": {
+        "upstream_speaker_id": "L008",
+        "requested_gender": "neutral",
+        "requested_age_band": "older",
+        "render_speaker_id": "spk_006"
+      }
+    },
+    {
+      "dialogue_id": "corpus_v1_000002",
+      "source_line_number": 3,
+      "turn_count": 15,
+      "caller": {
+        "upstream_speaker_id": "C038",
+        "requested_gender": "neutral",
+        "requested_age_band": "adult",
+        "render_speaker_id": "spk_004"
+      },
+      "counsellor": {
+        "upstream_speaker_id": "L004",
+        "requested_gender": "male",
+        "requested_age_band": "adult",
+        "render_speaker_id": "spk_013"
+      }
+    },
+    {
+      "dialogue_id": "corpus_v1_000003",
+      "source_line_number": 4,
+      "turn_count": 15,
+      "caller": {
+        "upstream_speaker_id": "C043",
+        "requested_gender": "male",
+        "requested_age_band": "older",
+        "render_speaker_id": "spk_010"
+      },
+      "counsellor": {
+        "upstream_speaker_id": "L008",
+        "requested_gender": "neutral",
+        "requested_age_band": "older",
+        "render_speaker_id": "spk_006"
+      }
+    },
+    {
+      "dialogue_id": "corpus_v1_000005",
+      "source_line_number": 6,
+      "turn_count": 15,
+      "caller": {
+        "upstream_speaker_id": "C040",
+        "requested_gender": "male",
+        "requested_age_band": "teen",
+        "render_speaker_id": "spk_011"
+      },
+      "counsellor": {
+        "upstream_speaker_id": "L007",
+        "requested_gender": "male",
+        "requested_age_band": "adult",
+        "render_speaker_id": "spk_012"
+      }
+    },
+    {
+      "dialogue_id": "corpus_v1_000007",
+      "source_line_number": 8,
+      "turn_count": 15,
+      "caller": {
+        "upstream_speaker_id": "C031",
+        "requested_gender": "male",
+        "requested_age_band": "older",
+        "render_speaker_id": "spk_010"
+      },
+      "counsellor": {
+        "upstream_speaker_id": "L010",
+        "requested_gender": "male",
+        "requested_age_band": "adult",
+        "render_speaker_id": "spk_007"
+      }
+    },
+    {
+      "dialogue_id": "corpus_v1_000012",
+      "source_line_number": 13,
+      "turn_count": 15,
+      "caller": {
+        "upstream_speaker_id": "C018",
+        "requested_gender": "female",
+        "requested_age_band": "adult",
+        "render_speaker_id": "spk_015"
+      },
+      "counsellor": {
+        "upstream_speaker_id": "L003",
+        "requested_gender": "female",
+        "requested_age_band": "young_adult",
+        "render_speaker_id": "spk_017"
+      }
+    },
+    {
+      "dialogue_id": "corpus_v1_000016",
+      "source_line_number": 17,
+      "turn_count": 15,
+      "caller": {
+        "upstream_speaker_id": "C007",
+        "requested_gender": "male",
+        "requested_age_band": "older",
+        "render_speaker_id": "spk_008"
+      },
+      "counsellor": {
+        "upstream_speaker_id": "L010",
+        "requested_gender": "male",
+        "requested_age_band": "adult",
+        "render_speaker_id": "spk_007"
+      }
+    },
+    {
+      "dialogue_id": "corpus_v1_000018",
+      "source_line_number": 19,
+      "turn_count": 15,
+      "caller": {
+        "upstream_speaker_id": "C045",
+        "requested_gender": "female",
+        "requested_age_band": "young_adult",
+        "render_speaker_id": "spk_001"
+      },
+      "counsellor": {
+        "upstream_speaker_id": "L010",
+        "requested_gender": "male",
+        "requested_age_band": "adult",
+        "render_speaker_id": "spk_007"
+      }
+    },
+    {
+      "dialogue_id": "corpus_v1_000129",
+      "source_line_number": 130,
+      "turn_count": 15,
+      "caller": {
+        "upstream_speaker_id": "C011",
+        "requested_gender": "neutral",
+        "requested_age_band": "older",
+        "render_speaker_id": "spk_003"
+      },
+      "counsellor": {
+        "upstream_speaker_id": "L011",
+        "requested_gender": "neutral",
+        "requested_age_band": "older",
+        "render_speaker_id": "spk_016"
+      }
+    }
+  ],
+  "coverage_summary": {
+    "render_voice_coverage": {
+      "spk_001": [
+        "corpus_v1_000018"
+      ],
+      "spk_003": [
+        "corpus_v1_000129"
+      ],
+      "spk_004": [
+        "corpus_v1_000002"
+      ],
+      "spk_006": [
+        "corpus_v1_000001",
+        "corpus_v1_000003"
+      ],
+      "spk_007": [
+        "corpus_v1_000000",
+        "corpus_v1_000007",
+        "corpus_v1_000016",
+        "corpus_v1_000018"
+      ],
+      "spk_008": [
+        "corpus_v1_000016"
+      ],
+      "spk_009": [
+        "corpus_v1_000000"
+      ],
+      "spk_010": [
+        "corpus_v1_000003",
+        "corpus_v1_000007"
+      ],
+      "spk_011": [
+        "corpus_v1_000005"
+      ],
+      "spk_012": [
+        "corpus_v1_000005"
+      ],
+      "spk_013": [
+        "corpus_v1_000002"
+      ],
+      "spk_014": [
+        "corpus_v1_000001"
+      ],
+      "spk_015": [
+        "corpus_v1_000012"
+      ],
+      "spk_016": [
+        "corpus_v1_000129"
+      ],
+      "spk_017": [
+        "corpus_v1_000012"
+      ]
+    },
+    "unique_render_voice_count": 15,
+    "caller_voice_count_covered": 9,
+    "counsellor_voice_count_covered": 6,
+    "requested_gender_counts": {
+      "female": 4,
+      "male": 10,
+      "neutral": 6
+    },
+    "requested_gender_counts_by_role": {
+      "caller": {
+        "female": 3,
+        "male": 4,
+        "neutral": 3
+      },
+      "counsellor": {
+        "female": 1,
+        "male": 6,
+        "neutral": 3
+      }
+    },
+    "source_gender_coverage_by_role": {
+      "caller": [
+        "F",
+        "M"
+      ],
+      "counsellor": [
+        "F",
+        "M"
+      ]
+    },
+    "supplemental_voice_coverage": {
+      "spk_013": [
+        "corpus_v1_000002"
+      ],
+      "spk_014": [
+        "corpus_v1_000001"
+      ],
+      "spk_015": [
+        "corpus_v1_000012"
+      ],
+      "spk_016": [
+        "corpus_v1_000129"
+      ],
+      "spk_017": [
+        "corpus_v1_000012"
+      ]
+    },
+    "requested_age_band_counts_descriptive": {
+      "adult": 8,
+      "older": 8,
+      "teen": 2,
+      "young_adult": 2
+    },
+    "age_note": "Requested age_band is descriptive coverage only; it does not establish rendered age fidelity."
+  }
+}

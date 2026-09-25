@@ -1,0 +1,10 @@
+{"dialogue_id": "corpus_v1_000000", "speaker_pool_version": "vctk_v0.2", "assignment_policy_version": "speaker_assignment_policy_v0.2", "role_assignments": {"caller": "spk_009", "counsellor": "spk_007"}}
+{"dialogue_id": "corpus_v1_000001", "speaker_pool_version": "vctk_v0.2", "assignment_policy_version": "speaker_assignment_policy_v0.2", "role_assignments": {"caller": "spk_014", "counsellor": "spk_006"}}
+{"dialogue_id": "corpus_v1_000002", "speaker_pool_version": "vctk_v0.2", "assignment_policy_version": "speaker_assignment_policy_v0.2", "role_assignments": {"caller": "spk_004", "counsellor": "spk_013"}}
+{"dialogue_id": "corpus_v1_000003", "speaker_pool_version": "vctk_v0.2", "assignment_policy_version": "speaker_assignment_policy_v0.2", "role_assignments": {"caller": "spk_010", "counsellor": "spk_006"}}
+{"dialogue_id": "corpus_v1_000005", "speaker_pool_version": "vctk_v0.2", "assignment_policy_version": "speaker_assignment_policy_v0.2", "role_assignments": {"caller": "spk_011", "counsellor": "spk_012"}}
+{"dialogue_id": "corpus_v1_000007", "speaker_pool_version": "vctk_v0.2", "assignment_policy_version": "speaker_assignment_policy_v0.2", "role_assignments": {"caller": "spk_010", "counsellor": "spk_007"}}
+{"dialogue_id": "corpus_v1_000012", "speaker_pool_version": "vctk_v0.2", "assignment_policy_version": "speaker_assignment_policy_v0.2", "role_assignments": {"caller": "spk_015", "counsellor": "spk_017"}}
+{"dialogue_id": "corpus_v1_000016", "speaker_pool_version": "vctk_v0.2", "assignment_policy_version": "speaker_assignment_policy_v0.2", "role_assignments": {"caller": "spk_008", "counsellor": "spk_007"}}
+{"dialogue_id": "corpus_v1_000018", "speaker_pool_version": "vctk_v0.2", "assignment_policy_version": "speaker_assignment_policy_v0.2", "role_assignments": {"caller": "spk_001", "counsellor": "spk_007"}}
+{"dialogue_id": "corpus_v1_000129", "speaker_pool_version": "vctk_v0.2", "assignment_policy_version": "speaker_assignment_policy_v0.2", "role_assignments": {"caller": "spk_003", "counsellor": "spk_016"}}
