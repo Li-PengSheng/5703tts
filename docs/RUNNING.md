@@ -170,11 +170,13 @@ uv run 5703tts \
 ```
 
 For a CosyVoice batch, use `config/config_cosyvoice.yaml` in both commands.
-Resume requires a successful prior manifest entry with the same semantic
-fingerprint, readable metadata/WAV artifacts, and matching live selected
-reference bytes. A changed source, selected backend/reference, shared audio
-setting, or relevant identity causes rerender. Manifest v2 is atomically
-written at batch completion, not after every dialogue.
+Legacy and CosyVoice resume require a successful prior manifest entry with the
+same semantic fingerprint, readable metadata/WAV artifacts, and matching live
+selected reference bytes. Assessed Higgs audio uses its dialogue quality
+sidecar and verifies turn hashes before preservation. A changed source,
+selected backend/reference, shared audio setting, or relevant identity causes
+rerender. Manifest v2 is atomically written at batch completion, not after
+every dialogue.
 
 ## Outputs
 
@@ -190,10 +192,23 @@ uv run python scripts/analyze_higgs_audio_qc.py \
   --json-out /tmp/higgs_pilot30_audio_qc.json
 ```
 
-This analyzer is diagnostic evidence collection only and does not gate production rendering.
-It compares fixed 250 ms window energy with the early
-body at several relative thresholds; inspect the report and listen before
-choosing any future production rule.
+The analyzer remains an offline diagnostic report. Production Higgs rendering
+also applies `higgs_audio_quality_v1`: a termination-sanity gate requiring a
+final 5 s energy drop of at least 10 dB **and** a trailing body-minus-10-dB
+run of at least 3.0 s. Exact decoded digital zero rejects, and unavailable
+metrics reject as indeterminate. This is not general perceptual QC.
+
+Each assessed Higgs dialogue has a `<dialogue_id>_quality.json` sidecar with
+the policy, disposition, and SHA-256 of every turn WAV. It governs those WAV
+bytes; `batch_result.json` governs the latest batch execution, and immutable
+attempt manifests are audit history. A plain run preserves a same-identity
+quality rejection before cleanup. Use `--resume` to preserve it or reassess
+existing audio offline after a quality-policy change. Artifact-integrity
+failure requires operator action; the pipeline does not trim, retry, or repair
+audio automatically. The quality sidecar is not a synthesis checkpoint.
+Render fingerprints do not cover every external SGLang launch flag, so
+operators must not rely on `--resume` after unrepresented render-affecting
+server changes.
 
 ## Troubleshooting
 

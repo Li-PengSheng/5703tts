@@ -1,9 +1,10 @@
-"""Authoritative manifest-v2 orchestration, secure cleanup, and resume.
+"""Manifest-v2 orchestration, quality-sidecar guards, cleanup, and resume.
 
-Manifest v2 is the batch state authority. Resume requires both a previously
-successful semantic fingerprint and live artifact integrity; file existence is
-never enough. A rerender cleans only pipeline-owned direct-child artifacts
-before invoking ``run_dialogue`` so old and new output cannot be mixed.
+Manifest v2 is the batch execution authority. Each Higgs dialogue quality
+sidecar is durable authority for the assessed WAV bytes. Resume requires
+matching render identity and live artifact integrity; file existence is never
+enough. A rerender cleans only pipeline-owned direct-child artifacts before
+invoking ``run_dialogue`` so old and new output cannot be mixed.
 
 The manifest is atomically written once at batch completion, not checkpointed
 after every dialogue. An interrupted batch can therefore leave artifacts that
@@ -24,6 +25,17 @@ from typing import Any
 
 from pydub import AudioSegment
 
+from .audio_quality import (
+    QualityEvidenceError,
+    assess_dialogue_turns,
+    load_quality_sidecar,
+    quality_sidecar_path,
+    verify_turn_hashes,
+    write_quality_sidecar_atomic,
+)
+from .audio_quality import (
+    policy_identity as quality_policy_identity,
+)
 from .batch_identity import (
     BATCH_MANIFEST_VERSION,
     BatchIdentityError,
@@ -43,6 +55,7 @@ _RESUMED = "resumed"
 _EXCLUDED = "excluded_known_issue"
 _INPUT_ERROR = "input_error"
 _RENDER_FAILED = "render_failed"
+_QUALITY_REJECTED = "quality_rejected"
 _RESUME_MANIFEST_HINT = "Repair or remove this file, or run without --resume to ignore previous batch state."
 _MANAGED_TURN_ARTIFACT = re.compile(
     r"turn_(?:00[1-9]|0[1-9][0-9]|[1-9][0-9]{2,})"
@@ -149,6 +162,7 @@ def _is_managed_dialogue_artifact(name: str, dialogue_id: str) -> bool:
         f"{dialogue_id}_clean.wav",
         f"{dialogue_id}_telephone.wav",
         f"{dialogue_id}_metadata.json",
+        f"{dialogue_id}_quality.json",
     }:
         return True
     return _MANAGED_TURN_ARTIFACT.fullmatch(name) is not None
@@ -383,6 +397,12 @@ def _entry_is_resumable(
     )
     if not candidate:
         return False
+    return _references_valid(sidecar_entry, engine, project_root)
+
+
+def _references_valid(
+    sidecar_entry: dict[str, Any], engine: str, project_root: Path
+) -> bool:
     roles = sidecar_entry.get("roles")
     if not isinstance(roles, dict):
         return False
@@ -398,6 +418,48 @@ def _entry_is_resumable(
     except (FinalReferenceError, OSError):
         return False
     return True
+
+
+def _assess_existing_audio(
+    out_dir: Path,
+    dialogue_id: str,
+    fingerprint: str,
+    *,
+    assessment: str,
+) -> dict[str, Any]:
+    metadata = _read_quality_metadata(out_dir, dialogue_id)
+    turns = metadata["turns"]
+    evidence = assess_dialogue_turns(
+        out_dir, dialogue_id, fingerprint, turns, assessment=assessment
+    )
+    write_quality_sidecar_atomic(
+        out_dir,
+        dialogue_id,
+        evidence,
+        [turn["execution"]["turn_audio"] for turn in turns],
+    )
+    return evidence
+
+
+def _quality_metadata_turn_names(out_dir: Path, dialogue_id: str) -> list[str]:
+    """Use the existing audio's metadata, including after a changed identity."""
+    metadata = _read_quality_metadata(out_dir, dialogue_id)
+    if metadata["dialogue_id"] != dialogue_id or not isinstance(
+        metadata["turns"], list
+    ):
+        raise QualityEvidenceError("invalid quality metadata")
+    return [turn["execution"]["turn_audio"] for turn in metadata["turns"]]
+
+
+def _read_quality_metadata(out_dir: Path, dialogue_id: str) -> dict[str, Any]:
+    path = out_dir / f"{dialogue_id}_metadata.json"
+    if path.is_symlink():
+        raise QualityEvidenceError("quality metadata path is a symlink")
+    return json.loads(
+        path.read_text(encoding="utf-8"),
+        object_pairs_hook=_strict_json_object,
+        parse_constant=_reject_json_constant,
+    )
 
 
 def _record_source(record: InputRecord | InputRecordFailure) -> dict[str, Any]:
@@ -418,6 +480,16 @@ def _batch_status(results: list[dict[str, Any]]) -> str:
     return "partial_failure" if failures else "success"
 
 
+def _quality_result_error(evidence: dict[str, Any]) -> dict[str, str] | None:
+    if evidence["outcome"] == "pass":
+        return None
+    codes = ", ".join(issue["code"] for issue in evidence["issues"])
+    return {
+        "type": "QualityRejected",
+        "message": f"Higgs audio quality {evidence['outcome']}: {codes}",
+    }
+
+
 async def run_batch(
     *,
     args: argparse.Namespace,
@@ -432,10 +504,9 @@ async def run_batch(
     """Orchestrate per-record decisions and write the final manifest-v2 state.
 
     Conceptual order is: validate final records; apply known-issue exclusions;
-    load the strict sidecar; calculate selected-backend fingerprints; load prior
-    state when requested; then choose input_error, excluded, resumed, rendered,
-    or render_failed for each source result. Controls are prepared only inside
-    ``run_dialogue`` for records actually rendered.
+    load speaker assignments; calculate render fingerprints; inspect durable
+    Higgs quality evidence before cleanup; then preserve, reassess, or render.
+    Controls are prepared only inside ``run_dialogue`` for actual renders.
     """
     engine = config.get("tts", {}).get("engine")
     if engine not in VALID_ENGINES:
@@ -525,6 +596,7 @@ async def run_batch(
     previous_results = _index_previous_results(previous_manifest)
     batch_backend_identity = backend_identity(config)
     batch_backend_hash = render_fingerprint(batch_backend_identity)
+    current_quality_policy = quality_policy_identity() if engine == "higgs" else None
 
     results: list[dict[str, Any]] = []
     for item in loaded:
@@ -586,9 +658,133 @@ async def run_batch(
         fingerprint = fingerprints[item.dialogue_id]
         expected_out_dir = output_paths[item.dialogue_id]
         previous = previous_results.get(item.dialogue_id)
-        # H. Each record receives one action/status. A valid resume performs no
-        # cleanup. Every other eligible record takes the rerender path.
-        if (
+        quality = None
+        quality_observation = None
+        decided = False
+
+        def integrity_failure(message: str) -> None:
+            nonlocal action, status, error, quality_observation, decided
+            action, status, decided = _QUALITY_REJECTED, "failed", True
+            error = {"type": "QualityEvidenceError", "message": message}
+            quality_observation = {
+                "outcome": "indeterminate",
+                "issues": [{"code": "artifact_integrity_failure", "message": message}],
+            }
+
+        if engine == "higgs":
+            try:
+                quality_path = quality_sidecar_path(expected_out_dir, item.dialogue_id)
+                try:
+                    quality_path.lstat()
+                except FileNotFoundError:
+                    expected_turn_names = []
+                else:
+                    expected_turn_names = _quality_metadata_turn_names(
+                        expected_out_dir, item.dialogue_id
+                    )
+                quality = load_quality_sidecar(
+                    expected_out_dir, item.dialogue_id, expected_turn_names
+                )
+            except (
+                QualityEvidenceError,
+                OSError,
+                ValueError,
+                KeyError,
+                TypeError,
+            ) as evidence_error:
+                integrity_failure(str(evidence_error))
+            if not decided and fingerprint is None:
+                action, status, decided = _RENDER_FAILED, "failed", True
+                error = {
+                    "type": "RenderIdentityUnavailable",
+                    "message": "Higgs render fingerprint is unavailable; artifacts were preserved",
+                }
+            if not decided and quality and quality["render_fingerprint"] == fingerprint:
+                hash_error = verify_turn_hashes(expected_out_dir, quality)
+                if hash_error:
+                    integrity_failure(hash_error)
+                elif not args.resume:
+                    if quality["outcome"] != "pass":
+                        quality = {**quality, "assessment": "preserved"}
+                        action, status, decided = _QUALITY_REJECTED, "failed", True
+                        error = {
+                            "type": "QualityRejected",
+                            "message": "Terminal quality-rejected artifacts exist; use --resume to preserve or reassess them",
+                        }
+                elif not (
+                    _resume_artifacts_valid(
+                        args.output,
+                        item,
+                        engine=engine,
+                        current_backend_identity=batch_backend_identity,
+                    )
+                    and _references_valid(
+                        sidecar_by_id[item.dialogue_id], engine, Path.cwd()
+                    )
+                ):
+                    integrity_failure(
+                        "Existing quality artifacts or references failed structural validation"
+                    )
+                elif quality["policy"]["sha256"] == current_quality_policy["sha256"]:
+                    quality = {**quality, "assessment": "preserved"}
+                    action = (
+                        _RESUMED if quality["outcome"] == "pass" else _QUALITY_REJECTED
+                    )
+                    status = "success" if quality["outcome"] == "pass" else "failed"
+                    error, decided = _quality_result_error(quality), True
+                else:
+                    try:
+                        quality = _assess_existing_audio(
+                            expected_out_dir,
+                            item.dialogue_id,
+                            fingerprint,
+                            assessment="reassessed",
+                        )
+                    except (OSError, ValueError, KeyError, TypeError) as reassess_error:
+                        integrity_failure(
+                            f"Offline quality reassessment failed: {reassess_error}"
+                        )
+                    else:
+                        action = (
+                            _RESUMED
+                            if quality["outcome"] == "pass"
+                            else _QUALITY_REJECTED
+                        )
+                        status = "success" if quality["outcome"] == "pass" else "failed"
+                        error, decided = _quality_result_error(quality), True
+            if (
+                not decided
+                and quality is None
+                and args.resume
+                and _entry_is_resumable(
+                    previous,
+                    input_record=item,
+                    fingerprint=fingerprint,
+                    output_root=args.output,
+                    sidecar_entry=sidecar_by_id[item.dialogue_id],
+                    engine=engine,
+                    current_backend_identity=batch_backend_identity,
+                    project_root=Path.cwd(),
+                )
+            ):
+                try:
+                    quality = _assess_existing_audio(
+                        expected_out_dir,
+                        item.dialogue_id,
+                        fingerprint,
+                        assessment="reassessed",
+                    )
+                except (OSError, ValueError, KeyError, TypeError) as migration_error:
+                    integrity_failure(
+                        f"Legacy quality migration failed: {migration_error}"
+                    )
+                else:
+                    action = (
+                        _RESUMED if quality["outcome"] == "pass" else _QUALITY_REJECTED
+                    )
+                    status = "success" if quality["outcome"] == "pass" else "failed"
+                    error, decided = _quality_result_error(quality), True
+        elif (
             fingerprint is not None
             and args.resume
             and _entry_is_resumable(
@@ -602,10 +798,10 @@ async def run_batch(
                 project_root=Path.cwd(),
             )
         ):
-            action, status, error = _RESUMED, "success", None
-        else:
-            # G. Rerender cleanup must complete before run_dialogue; otherwise
-            # rendering would risk a mixed old/new artifact set.
+            action, status, error, decided = _RESUMED, "success", None, True
+
+        if not decided:
+            # Only authorized rerenders reach managed cleanup.
             try:
                 _cleanup_managed_dialogue_artifacts(expected_out_dir, item.dialogue_id)
             except (OSError, RuntimeError) as cleanup_error:
@@ -624,8 +820,17 @@ async def run_batch(
                     config,
                     args.output,
                     project_root=Path.cwd(),
+                    render_fingerprint=fingerprint,
                 )
-                if pipeline_result.status == "success":
+                quality = pipeline_result.quality
+                if pipeline_result.error_type == "QualityRejected":
+                    action, status = _QUALITY_REJECTED, "failed"
+                    error = {
+                        "type": "QualityRejected",
+                        "message": pipeline_result.error
+                        or "Higgs audio quality rejected",
+                    }
+                elif pipeline_result.status == "success":
                     action, status, error = _RENDERED, "success", None
                 else:
                     action, status = _RENDER_FAILED, "failed"
@@ -643,6 +848,12 @@ async def run_batch(
                 "output_dir": str(expected_out_dir),
                 "error": error,
                 "exclusion": None,
+                **({"quality": quality} if quality is not None else {}),
+                **(
+                    {"quality_observation": quality_observation}
+                    if quality_observation is not None
+                    else {}
+                ),
             }
         )
 
@@ -653,6 +864,18 @@ async def run_batch(
     excluded = sum(item["action"] == _EXCLUDED for item in results)
     failed = sum(item["status"] == "failed" for item in results)
     input_failures = sum(item["action"] == _INPUT_ERROR for item in results)
+    quality_integrity_failed = sum(
+        item["action"] == _QUALITY_REJECTED
+        and any(
+            issue.get("code") == "artifact_integrity_failure"
+            for issue in item.get("quality_observation", {}).get("issues", [])
+        )
+        for item in results
+    )
+    quality_rejected = (
+        sum(item["action"] == _QUALITY_REJECTED for item in results)
+        - quality_integrity_failed
+    )
     mapping = batch_backend_identity["control_mapping"]
     # I. The single final write summarizes all per-record actions. This is not
     # currently a per-dialogue checkpoint journal.
@@ -685,6 +908,7 @@ async def run_batch(
                 "implementation_id": mapping["implementation_id"],
             },
             "exclusion_policy": policy_identity,
+            "quality_policy": current_quality_policy,
             "speaker_sidecar": {
                 "path": str(args.speaker_sidecar),
                 "assignment_sha256": sidecar.get("assignment_sha256"),
@@ -700,6 +924,8 @@ async def run_batch(
         "dialogues_rendered": rendered,
         "dialogues_resumed": resumed,
         "dialogues_excluded": excluded,
+        "dialogues_quality_rejected": quality_rejected,
+        "dialogues_quality_integrity_failed": quality_integrity_failed,
         "input_failures": input_failures,
         "dialogues_skipped": resumed,
         "summary": {
@@ -707,6 +933,8 @@ async def run_batch(
             "rendered": rendered,
             "resumed": resumed,
             "excluded": excluded,
+            "quality_rejected": quality_rejected,
+            "quality_integrity_failed": quality_integrity_failed,
             "failed": failed,
             "input_failures": input_failures,
         },

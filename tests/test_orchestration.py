@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import json
 import wave
 from copy import deepcopy
 from pathlib import Path
@@ -9,7 +10,7 @@ from typing import Any
 
 import pytest
 
-from tts5703 import pipeline, render_plan, tts_engine
+from tts5703 import audio_quality, pipeline, render_plan, tts_engine
 from tts5703.backends import higgs
 from tts5703.backends.capabilities import controlled_tts_v1_capabilities
 from tts5703.backends.higgs_worker import FROZEN_GENERATION_FIELDS
@@ -212,8 +213,11 @@ def _artifacts(tmp_path: Path) -> dict[str, Any]:
     }
 
 
+@pytest.mark.parametrize(
+    "quality_outcome", ["pass", "reject", "metric_error", "exact_zero"]
+)
 def test_final_pipeline_prepares_once_and_orders_preflight_before_output(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, quality_outcome: str
 ) -> None:
     record, sidecar = _inputs(tmp_path)
     output_root = tmp_path / "output"
@@ -246,7 +250,14 @@ def test_final_pipeline_prepares_once_and_orders_preflight_before_output(
         calls.append("synthesize")
         assert out_dir == dialogue_dir and out_dir.is_dir()
         path = out_dir / f"turn_{turn.ordinal:03d}.wav"
-        _write_wav(path)
+        if quality_outcome == "exact_zero":
+            with wave.open(str(path), "wb") as output:
+                output.setnchannels(1)
+                output.setsampwidth(2)
+                output.setframerate(8_000)
+                output.writeframes(b"\x00\x00" * 800)
+        else:
+            _write_wav(path)
         return path
 
     def assemble(*args: Any, **kwargs: Any):
@@ -264,6 +275,22 @@ def test_final_pipeline_prepares_once_and_orders_preflight_before_output(
     monkeypatch.setattr(higgs, "synthesize_prepared_turn", synthesize)
     monkeypatch.setattr(pipeline, "assemble_prepared_dialogue", assemble)
     monkeypatch.setattr(pipeline, "apply_telephone_effect", telephone)
+    if quality_outcome == "metric_error":
+        monkeypatch.setattr(
+            audio_quality,
+            "audio_metrics",
+            lambda _: (_ for _ in ()).throw(OSError("decoder unavailable")),
+        )
+    if quality_outcome == "reject":
+        original_assess = pipeline.assess_dialogue_turns
+
+        def forced_assessment(*args: Any, **kwargs: Any) -> dict[str, Any]:
+            evidence = original_assess(*args, **kwargs)
+            evidence["outcome"] = "reject"
+            evidence["issues"] = [{"code": "abnormal_tail"}]
+            return evidence
+
+        monkeypatch.setattr(pipeline, "assess_dialogue_turns", forced_assessment)
 
     result = asyncio.run(
         pipeline.run_dialogue(
@@ -272,10 +299,30 @@ def test_final_pipeline_prepares_once_and_orders_preflight_before_output(
             _config(),
             output_root,
             project_root=tmp_path,
+            render_fingerprint="test-render-fingerprint",
         )
     )
 
-    assert result.status == "success"
+    actual_outcome = (
+        "indeterminate"
+        if quality_outcome == "metric_error"
+        else "reject"
+        if quality_outcome == "exact_zero"
+        else quality_outcome
+    )
+    assert result.status == ("success" if actual_outcome == "pass" else "failed")
+    assert result.error_type == (
+        None if actual_outcome == "pass" else "QualityRejected"
+    )
+    quality_path = dialogue_dir / f"{record.dialogue_id}_quality.json"
+    assert quality_path.is_file()
+    saved_quality = json.loads(quality_path.read_text())
+    assert saved_quality["outcome"] == actual_outcome
+    if quality_outcome == "metric_error":
+        assert saved_quality["issues"][0]["code"] == "metrics_unavailable"
+    if quality_outcome == "exact_zero":
+        assert saved_quality["issues"][0]["code"] == "exact_digital_silence"
+    assert result.quality["render_fingerprint"] == "test-render-fingerprint"
     assert calls == [
         "prepare",
         "preflight",
@@ -287,6 +334,31 @@ def test_final_pipeline_prepares_once_and_orders_preflight_before_output(
     assert preflight_calls == 1
     assert mapper_calls == len(record.raw["turns"])
     assert result.qc is not None and result.qc.passed
+
+
+def test_higgs_identity_failure_prevents_synthesis(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    record, sidecar = _inputs(tmp_path)
+    output_root = tmp_path / "output"
+    monkeypatch.setattr(
+        pipeline,
+        "synthesize_prepared_turns",
+        lambda *_: pytest.fail("synthesis started without render identity"),
+    )
+    result = asyncio.run(
+        pipeline.run_dialogue(
+            record,
+            sidecar,
+            _config(),
+            output_root,
+            project_root=tmp_path,
+            render_fingerprint=None,
+        )
+    )
+    assert result.status == "failed"
+    assert result.error_type == "RenderIdentityUnavailable"
+    assert not output_root.exists()
 
 
 @pytest.mark.parametrize("failure", ["prepare", "preflight"])
@@ -318,6 +390,7 @@ def test_final_pipeline_pre_render_failures_leave_no_output(
             _config(),
             output_root,
             project_root=tmp_path,
+            render_fingerprint="test-render-fingerprint",
         )
     )
 

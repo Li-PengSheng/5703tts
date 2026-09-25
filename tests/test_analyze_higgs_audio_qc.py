@@ -64,6 +64,43 @@ def test_relative_tail_detects_residue_above_minus_40_db(tmp_path: Path) -> None
     assert result["relative_thresholds"]["18"]["low_fraction_last_10_sec"] == 1
 
 
+def test_partial_window_uses_actual_duration_in_tail_and_fraction(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "partial.wav"
+    wav(path, [(5, 10000), (0.1, 500)])
+    result = audio_metrics(path)
+    high_power = (10000 / 32768) ** 2
+    low_power = (500 / 32768) ** 2
+    assert result["duration_sec"] == pytest.approx(5.1)
+    assert result["whole_dbfs"] == pytest.approx(
+        10 * math.log10((5 * high_power + 0.1 * low_power) / 5.1)
+    )
+    assert result["tail_dbfs"]["5"] == pytest.approx(
+        10 * math.log10((4.9 * high_power + 0.1 * low_power) / 5)
+    )
+    assert result["relative_thresholds"]["18"][
+        "low_fraction_last_5_sec"
+    ] == pytest.approx(0.1 / 5)
+    assert result["relative_thresholds"]["18"]["trailing_low_sec"] == pytest.approx(0.1)
+
+
+def test_body_median_is_taken_in_linear_power(tmp_path: Path) -> None:
+    even = tmp_path / "even.wav"
+    wav(even, [(0.25, 0), (1.75, 10000)])
+    result = audio_metrics(even)
+    assert result["body_dbfs"] == pytest.approx(
+        10 * math.log10((10000 / 32768) ** 2 / 2)
+    )
+    assert result["relative_thresholds"]["6"]["threshold_dbfs"] is not None
+
+    majority_zero = tmp_path / "majority_zero.wav"
+    wav(majority_zero, [(0.5, 0), (2.5, 10000)])
+    result = audio_metrics(majority_zero)
+    assert result["body_dbfs"] == -math.inf
+    assert result["relative_thresholds"]["6"]["threshold_dbfs"] is None
+
+
 def test_short_speech_and_true_silence(tmp_path: Path) -> None:
     short = tmp_path / "short.wav"
     wav(short, [(0.4, 8000)], rate=11025)
@@ -88,7 +125,9 @@ def test_all_silence_and_empty_text_are_serializable(tmp_path: Path) -> None:
     rows, warnings = analyze(tmp_path)
     assert not warnings
     row = rows[0]
-    assert row["sec_per_word"] is None and row["sec_per_char"] is None
+    assert row["planned_chars"] == 0 and row["planned_words"] == 0
+    assert row["sec_per_planned_word"] is None and row["sec_per_planned_char"] is None
+    assert row["model_chars"] > 0 and row["model_words"] == 1
     assert row["whole_dbfs"] == -math.inf
     assert row["body_dbfs"] == -math.inf
     assert row["tail_5_drop_db"] is None
@@ -117,6 +156,34 @@ def test_missing_and_malformed_metadata_are_reported_in_order(
     first = capsys.readouterr().out
     report(rows, warnings)
     assert capsys.readouterr().out == first
+
+
+@pytest.mark.parametrize("identity", [None, "bad", ["bad"]])
+def test_bad_source_identity_warns_and_json_still_writes(
+    tmp_path: Path, monkeypatch, identity
+) -> None:
+    folder = tmp_path / "d"
+    wav(folder / "turn_001.wav", [(0.25, 5000)])
+    wav(folder / "turn_002.wav", [(0.25, 5000)])
+    invalid = turn(1)
+    invalid["source_identity"] = identity
+    metadata(folder, "d", [invalid, turn(2)])
+    output = tmp_path / "results.json"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [str(SCRIPT), "--output-root", str(tmp_path), "--json-out", str(output)],
+    )
+    analyzer.main()
+    result = json.loads(output.read_text(encoding="utf-8"))
+    assert [row["ordinal"] for row in result["turns"]] == [2]
+    assert any(
+        "turn ?: invalid source_identity" in warning for warning in result["warnings"]
+    )
+    assert any(
+        "turn_001.wav: WAV has no matching metadata turn" in warning
+        for warning in result["warnings"]
+    )
 
 
 def test_cli_writes_strict_json_without_overwriting_input(

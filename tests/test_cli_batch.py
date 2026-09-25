@@ -12,8 +12,14 @@ from typing import Any
 
 import pytest
 from pydub import AudioSegment
+from pydub.generators import Sine
 
 from tts5703 import batch, batch_identity, cli
+from tts5703.audio_quality import (
+    assess_dialogue_turns,
+    wav_sha256,
+    write_quality_sidecar_atomic,
+)
 from tts5703.pipeline import PipelineResult
 
 
@@ -172,7 +178,9 @@ def _write_success_artifacts(
     previous_end = 0.0
     for ordinal, source in enumerate(record.raw["turns"], start=1):
         turn_audio = f"turn_{ordinal:03d}.wav"
-        AudioSegment.silent(duration=200).export(out_dir / turn_audio, format="wav")
+        Sine(440).to_audio_segment(duration=200).export(
+            out_dir / turn_audio, format="wav"
+        )
         end_sec = previous_end + 0.2
         turns.append(
             {
@@ -221,6 +229,22 @@ def _change_metadata_value(path: Path, keys: tuple[str | int, ...], value: Any) 
     path.write_text(json.dumps(metadata), encoding="utf-8")
 
 
+def _seed_quality(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *, dialogue_id: str = "A"
+) -> tuple[Path, Path, dict[str, Any], Path]:
+    input_path = tmp_path / "quality.jsonl"
+    _write_jsonl(input_path, [_record(dialogue_id)])
+    sidecar = _sidecar((dialogue_id,))
+    _invoke(tmp_path, monkeypatch, input_path=input_path, sidecar=sidecar)
+    _, migrated, attempted = _invoke(
+        tmp_path, monkeypatch, input_path=input_path, sidecar=sidecar, resume=True
+    )
+    assert attempted == []
+    assert migrated["results"][0]["action"] == "resumed"
+    path = tmp_path / "output" / dialogue_id / f"{dialogue_id}_quality.json"
+    return input_path, path, sidecar, path.parent
+
+
 def _invoke(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -232,6 +256,7 @@ def _invoke(
     engine: str = "higgs",
     config: dict[str, Any] | None = None,
     failures: set[str] | None = None,
+    quality_outcomes: dict[str, str] | None = None,
 ) -> tuple[int, dict[str, Any], list[str]]:
     output = tmp_path / "output"
     config_path = tmp_path / "config.yaml"
@@ -272,6 +297,7 @@ def _invoke(
         output_root: Path,
         *,
         project_root: Path,
+        render_fingerprint: str | None,
     ) -> PipelineResult:
         dialogue_id = record.dialogue_id
         attempted.append(dialogue_id)
@@ -284,6 +310,33 @@ def _invoke(
                 error_type="SyntheticFailure",
             )
         out_dir = _write_success_artifacts(output_root, record, config)
+        if quality_outcomes and dialogue_id in quality_outcomes:
+            turns = json.loads((out_dir / f"{dialogue_id}_metadata.json").read_text())[
+                "turns"
+            ]
+            quality = assess_dialogue_turns(
+                out_dir,
+                dialogue_id,
+                render_fingerprint,
+                turns,
+                assessment="new_render",
+            )
+            quality["outcome"] = quality_outcomes[dialogue_id]
+            quality["issues"] = [{"code": "synthetic_quality_issue"}]
+            write_quality_sidecar_atomic(
+                out_dir,
+                dialogue_id,
+                quality,
+                [turn["execution"]["turn_audio"] for turn in turns],
+            )
+            return PipelineResult(
+                dialogue_id,
+                "failed",
+                "synthetic quality rejection",
+                out_dir=out_dir,
+                error_type="QualityRejected",
+                quality=quality,
+            )
         return PipelineResult(dialogue_id, "success", out_dir=out_dir)
 
     monkeypatch.setattr(cli, "configure_logging", lambda *_: None)
@@ -378,6 +431,8 @@ def test_jsonl_record_failures_continue_and_manifest_has_no_synthetic_ids(
         "excluded": 0,
         "failed": 3,
         "input_failures": 3,
+        "quality_rejected": 0,
+        "quality_integrity_failed": 0,
     }
     failures = [item for item in manifest["results"] if item["action"] == "input_error"]
     assert len(failures) == 3
@@ -1186,8 +1241,9 @@ def test_final_v2_manifest_still_resumes_final_records(
     assert {
         path.name: path.read_bytes()
         for path in out_dir.iterdir()
-        if path.is_file() and path != sentinel
+        if path.is_file() and path != sentinel and path.name != "A_quality.json"
     } == managed_before
+    assert (out_dir / "A_quality.json").is_file()
     assert sentinel.read_text(encoding="utf-8") == "preserve"
 
 
@@ -1347,8 +1403,16 @@ def test_live_selected_reference_mutation_prevents_resume(
         engine=engine,
         resume=True,
     )
-    assert attempted == ["A"]
-    assert mutated["results"][0]["action"] == "rendered"
+    if engine == "higgs":
+        assert attempted == []
+        assert mutated["results"][0]["action"] == "quality_rejected"
+        assert (
+            mutated["results"][0]["quality_observation"]["issues"][0]["code"]
+            == "artifact_integrity_failure"
+        )
+    else:
+        assert attempted == ["A"]
+        assert mutated["results"][0]["action"] == "rendered"
 
 
 @pytest.mark.parametrize(
@@ -1508,8 +1572,13 @@ def test_malformed_selected_reference_is_not_resumed(
         resume=True,
     )
 
-    assert attempted == ["A"]
-    assert manifest["results"][0]["action"] == "rendered"
+    if engine == "higgs":
+        assert attempted == []
+        assert manifest["results"][0]["action"] == "render_failed"
+        assert manifest["results"][0]["error"]["type"] == "RenderIdentityUnavailable"
+    else:
+        assert attempted == ["A"]
+        assert manifest["results"][0]["action"] == "rendered"
     assert manifest["results"][0]["render_fingerprint"] is None
 
 
@@ -1543,6 +1612,312 @@ def test_unselected_backend_config_change_does_not_invalidate_resume(
 
     assert attempted == []
     assert manifest["results"][0]["action"] == "resumed"
+
+
+def _set_quality(path: Path, outcome: str, *, policy_changed=False) -> None:
+    item = json.loads(path.read_text())
+    item["outcome"] = outcome
+    item["issues"] = [] if outcome == "pass" else [{"code": "synthetic_quality_issue"}]
+    if policy_changed:
+        item["policy"]["parameters"]["test_policy_revision"] = 2
+        canonical = json.dumps(
+            {"id": item["policy"]["id"], "parameters": item["policy"]["parameters"]},
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        ).encode()
+        item["policy"]["sha256"] = hashlib.sha256(canonical).hexdigest()
+    path.write_text(json.dumps(item))
+
+
+@pytest.mark.parametrize("outcome", ["reject", "indeterminate"])
+def test_terminal_quality_guard_survives_manifest_replacement_and_exclusion(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, outcome: str
+) -> None:
+    input_path, path, sidecar, out_dir = _seed_quality(tmp_path, monkeypatch)
+    _set_quality(path, outcome)
+    before = {p.name: p.read_bytes() for p in out_dir.iterdir() if p.is_file()}
+    _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=sidecar,
+        policy=_policy("A"),
+    )
+    monkeypatch.setattr(
+        batch,
+        "_cleanup_managed_dialogue_artifacts",
+        lambda *_: pytest.fail("terminal quality reached cleanup"),
+    )
+    code, manifest, attempted = _invoke(
+        tmp_path, monkeypatch, input_path=input_path, sidecar=sidecar
+    )
+    assert code == 1 and attempted == []
+    assert manifest["results"][0]["action"] == "quality_rejected"
+    assert manifest["results"][0]["status"] == "failed"
+    assert "--resume" in manifest["results"][0]["error"]["message"]
+    assert manifest["summary"]["quality_rejected"] == 1
+    assert manifest["summary"]["quality_integrity_failed"] == 0
+    assert manifest["dialogues_failed"] == 1
+    assert {p.name: p.read_bytes() for p in out_dir.iterdir() if p.is_file()} == before
+
+
+@pytest.mark.parametrize(
+    "mode", ["pass_hash", "reject_hash", "malformed", "symlink", "directory"]
+)
+def test_untrusted_quality_evidence_never_reaches_cleanup(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mode: str
+) -> None:
+    input_path, path, sidecar, out_dir = _seed_quality(tmp_path, monkeypatch)
+    if mode == "reject_hash":
+        _set_quality(path, "reject")
+    if mode.endswith("hash"):
+        (out_dir / "turn_001.wav").write_bytes(b"changed audio")
+    elif mode == "malformed":
+        path.write_text("{broken")
+    else:
+        path.unlink()
+        if mode == "symlink":
+            path.symlink_to(tmp_path / "missing-quality.json")
+        else:
+            path.mkdir()
+    monkeypatch.setattr(
+        batch,
+        "_cleanup_managed_dialogue_artifacts",
+        lambda *_: pytest.fail("untrusted quality reached cleanup"),
+    )
+    code, manifest, attempted = _invoke(
+        tmp_path, monkeypatch, input_path=input_path, sidecar=sidecar
+    )
+    assert code == 1 and attempted == []
+    assert manifest["results"][0]["action"] == "quality_rejected"
+    assert (
+        manifest["results"][0]["quality_observation"]["issues"][0]["code"]
+        == "artifact_integrity_failure"
+    )
+    assert manifest["summary"]["quality_rejected"] == 0
+    assert manifest["summary"]["quality_integrity_failed"] == 1
+    assert manifest["dialogues_quality_integrity_failed"] == 1
+    assert manifest["dialogues_failed"] == 1
+    assert path.is_symlink() if mode == "symlink" else path.exists()
+
+
+def test_pass_quality_plain_rerender_and_resume_preservation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    input_path, path, sidecar, _ = _seed_quality(tmp_path, monkeypatch)
+    before = path.read_bytes()
+    _, resumed, attempted = _invoke(
+        tmp_path, monkeypatch, input_path=input_path, sidecar=sidecar, resume=True
+    )
+    assert attempted == []
+    assert resumed["results"][0]["action"] == "resumed"
+    assert resumed["results"][0]["quality"]["assessment"] == "preserved"
+    assert path.read_bytes() == before
+    _, rendered, attempted = _invoke(
+        tmp_path, monkeypatch, input_path=input_path, sidecar=sidecar
+    )
+    assert attempted == ["A"]
+    assert rendered["results"][0]["action"] == "rendered"
+    assert not path.exists()  # fake renderer does not create a new sidecar
+
+
+def test_changed_policy_reassesses_existing_audio_without_gpu(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    input_path, path, sidecar, _ = _seed_quality(tmp_path, monkeypatch)
+    _set_quality(path, "reject", policy_changed=True)
+    monkeypatch.setattr(
+        batch,
+        "_cleanup_managed_dialogue_artifacts",
+        lambda *_: pytest.fail("reassessment reached cleanup"),
+    )
+    _, manifest, attempted = _invoke(
+        tmp_path, monkeypatch, input_path=input_path, sidecar=sidecar, resume=True
+    )
+    assert attempted == []
+    result = manifest["results"][0]
+    assert result["action"] == "resumed" and result["status"] == "success"
+    assert result["quality"]["assessment"] == "reassessed"
+    assert json.loads(path.read_text())["outcome"] == "pass"
+
+
+def test_changed_policy_can_reassess_to_rejection(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    input_path, path, sidecar, out_dir = _seed_quality(tmp_path, monkeypatch)
+    high = Sine(440).to_audio_segment(duration=4000)
+    low = Sine(440).to_audio_segment(duration=6000).apply_gain(-30)
+    (high + low).export(out_dir / "turn_001.wav", format="wav")
+    _change_metadata_value(
+        out_dir / "A_metadata.json", ("turns", 0, "timing", "end_sec"), 10.0
+    )
+    _set_quality(path, "reject", policy_changed=True)
+    item = json.loads(path.read_text())
+    item["turn_wav_sha256"]["turn_001.wav"] = wav_sha256(out_dir / "turn_001.wav")
+    path.write_text(json.dumps(item))
+    _, manifest, attempted = _invoke(
+        tmp_path, monkeypatch, input_path=input_path, sidecar=sidecar, resume=True
+    )
+    assert attempted == []
+    assert manifest["results"][0]["action"] == "quality_rejected"
+    assert manifest["results"][0]["quality"]["assessment"] == "reassessed"
+    assert manifest["results"][0]["quality"]["issues"][0]["code"] == "abnormal_tail"
+
+
+def test_changed_render_identity_replaces_terminal_quality(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    input_path, path, sidecar, _ = _seed_quality(tmp_path, monkeypatch)
+    _set_quality(path, "reject")
+    _write_jsonl(input_path, [_record_with_turn_count("A", 2)])
+    _, manifest, attempted = _invoke(
+        tmp_path, monkeypatch, input_path=input_path, sidecar=sidecar, resume=True
+    )
+    assert attempted == ["A"]
+    assert manifest["results"][0]["action"] == "rendered"
+    assert not path.exists()  # the fake renderer does not create a new sidecar
+
+
+def test_fingerprint_unavailable_does_not_start_fresh_higgs_render(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    input_path = tmp_path / "fresh.jsonl"
+    _write_jsonl(input_path, [_record("A")])
+    sidecar = _sidecar(("A",))
+    sidecar["dialogues"][0]["roles"]["caller"]["higgs_reference"] = {"malformed": True}
+    _, manifest, attempted = _invoke(
+        tmp_path, monkeypatch, input_path=input_path, sidecar=sidecar
+    )
+    assert attempted == []
+    assert manifest["results"][0]["action"] == "render_failed"
+    assert manifest["results"][0]["error"]["type"] == "RenderIdentityUnavailable"
+
+
+def test_same_identity_rejection_resume_preserves_sidecar(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    input_path, path, sidecar, _ = _seed_quality(tmp_path, monkeypatch)
+    _set_quality(path, "reject")
+    before = path.read_bytes()
+    monkeypatch.setattr(
+        batch,
+        "_cleanup_managed_dialogue_artifacts",
+        lambda *_: pytest.fail("preserved rejection reached cleanup"),
+    )
+    code, manifest, attempted = _invoke(
+        tmp_path, monkeypatch, input_path=input_path, sidecar=sidecar, resume=True
+    )
+    assert code == 1 and attempted == []
+    assert manifest["results"][0]["action"] == "quality_rejected"
+    assert manifest["results"][0]["quality"]["assessment"] == "preserved"
+    assert path.read_bytes() == before
+
+
+def test_fingerprint_unavailable_with_sidecar_preserves_artifacts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    input_path, path, sidecar, out_dir = _seed_quality(tmp_path, monkeypatch)
+    changed = deepcopy(sidecar)
+    changed["dialogues"][0]["roles"]["caller"]["higgs_reference"] = {"malformed": True}
+    before = path.read_bytes()
+    monkeypatch.setattr(
+        batch,
+        "_cleanup_managed_dialogue_artifacts",
+        lambda *_: pytest.fail("missing identity reached cleanup"),
+    )
+    _, manifest, attempted = _invoke(
+        tmp_path, monkeypatch, input_path=input_path, sidecar=changed
+    )
+    assert attempted == []
+    assert manifest["results"][0]["error"]["type"] == "RenderIdentityUnavailable"
+    assert path.read_bytes() == before
+    assert (out_dir / "turn_001.wav").exists()
+
+
+def test_mixed_quality_rejection_is_partial_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    input_path, path, _, _ = _seed_quality(tmp_path, monkeypatch)
+    _set_quality(path, "reject")
+    _write_jsonl(input_path, [_record("A"), _record("B")])
+    code, manifest, attempted = _invoke(
+        tmp_path, monkeypatch, input_path=input_path, sidecar=_sidecar(("A", "B"))
+    )
+    assert code == 1 and attempted == ["B"]
+    assert manifest["status"] == "partial_failure"
+    assert manifest["dialogues_quality_rejected"] == 1
+    assert manifest["dialogues_quality_integrity_failed"] == 0
+    assert manifest["dialogues_failed"] == 1
+    assert manifest["dialogues_succeeded"] == 1
+    assert manifest["dialogues_excluded"] == 0
+    assert [entry["action"] for entry in manifest["results"]] == [
+        "quality_rejected",
+        "rendered",
+    ]
+
+
+@pytest.mark.parametrize("outcome", ["reject", "indeterminate"])
+def test_fresh_pipeline_quality_failure_maps_before_render_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, outcome: str
+) -> None:
+    input_path = tmp_path / "new.jsonl"
+    _write_jsonl(input_path, [_record("A"), _record("B")])
+    code, manifest, attempted = _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=_sidecar(("A", "B")),
+        quality_outcomes={"A": outcome},
+    )
+    assert code == 1 and attempted == ["A", "B"]
+    assert manifest["status"] == "partial_failure"
+    assert manifest["summary"]["quality_rejected"] == 1
+    assert manifest["summary"]["quality_integrity_failed"] == 0
+    assert manifest["results"][0]["action"] == "quality_rejected"
+    assert manifest["results"][0]["status"] == "failed"
+    assert manifest["results"][0]["quality"]["outcome"] == outcome
+    assert manifest["results"][0]["error"]["type"] == "QualityRejected"
+    assert manifest["results"][1]["action"] == "rendered"
+
+
+def test_quality_and_integrity_counts_are_distinct_in_mixed_batch(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    input_path, _, _, out_dir = _seed_quality(tmp_path, monkeypatch)
+    (out_dir / "turn_001.wav").write_bytes(b"changed audio")
+    _write_jsonl(input_path, [_record("A"), _record("B"), _record("C")])
+    cleanup = batch._cleanup_managed_dialogue_artifacts
+
+    def guarded_cleanup(path: Path, dialogue_id: str) -> None:
+        assert dialogue_id != "A"
+        cleanup(path, dialogue_id)
+
+    monkeypatch.setattr(batch, "_cleanup_managed_dialogue_artifacts", guarded_cleanup)
+    code, manifest, attempted = _invoke(
+        tmp_path,
+        monkeypatch,
+        input_path=input_path,
+        sidecar=_sidecar(("A", "B", "C")),
+        quality_outcomes={"B": "indeterminate"},
+    )
+    assert code == 1 and attempted == ["B", "C"]
+    assert manifest["status"] == "partial_failure"
+    assert manifest["summary"]["quality_rejected"] == 1
+    assert manifest["summary"]["quality_integrity_failed"] == 1
+    assert manifest["dialogues_quality_rejected"] == 1
+    assert manifest["dialogues_quality_integrity_failed"] == 1
+    assert manifest["dialogues_failed"] == 2
+    assert manifest["dialogues_succeeded"] == 1
+    assert [entry["action"] for entry in manifest["results"]] == [
+        "quality_rejected",
+        "quality_rejected",
+        "rendered",
+    ]
+    assert manifest["results"][0]["quality_observation"]["issues"][0]["code"] == (
+        "artifact_integrity_failure"
+    )
 
 
 @pytest.mark.parametrize("engine", ["higgs", "cosyvoice"])

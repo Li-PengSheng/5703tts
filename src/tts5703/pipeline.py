@@ -2,7 +2,7 @@
 
 The batch owns record selection, resume, and stale cleanup. This module owns one
 attempt from validated ``InputRecord`` through prepared execution, clean and
-telephone audio, provenance metadata, and structural QC. Exceptions become a
+telephone audio, provenance metadata, structural QC, and Higgs quality evidence. Exceptions become a
 ``PipelineResult`` failure so one dialogue does not crash every other record.
 """
 
@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from .audio_quality import assess_dialogue_turns, write_quality_sidecar_atomic
 from .backends.info import describe_engine
 from .input.contract import validate_dialogue
 from .input.records import InputRecord
@@ -35,6 +36,7 @@ class PipelineResult:
     qc: QCResult | None = None
     out_dir: Path | None = None
     error_type: str | None = None
+    quality: dict[str, Any] | None = None
 
 
 async def run_dialogue(
@@ -44,13 +46,15 @@ async def run_dialogue(
     output_root: Path,
     *,
     project_root: Path,
+    render_fingerprint: str | None,
 ) -> PipelineResult:
     """Run the ordered production path for exactly one dialogue.
 
     Order is part of the boundary: validate; prepare; preflight every turn;
     create the output directory; synthesize speech-only turn WAVs; assemble and
     write clean audio; derive telephone audio; describe the backend; build and
-    write metadata; run structural QC; return ``PipelineResult``.
+    write metadata; run structural QC; assess Higgs audio; return
+    ``PipelineResult``.
 
     Output-directory creation follows preflight so an invalid late turn or
     reference cannot leave a newly-created dialogue directory before any
@@ -60,6 +64,16 @@ async def run_dialogue(
     dialogue_id = input_record.dialogue_id
     started = time.perf_counter()
     try:
+        is_higgs = config.get("tts", {}).get("engine") == "higgs"
+        if is_higgs and (
+            not isinstance(render_fingerprint, str) or not render_fingerprint.strip()
+        ):
+            return PipelineResult(
+                dialogue_id=dialogue_id,
+                status="failed",
+                error="Higgs render fingerprint is unavailable; synthesis was not started",
+                error_type="RenderIdentityUnavailable",
+            )
         validate_dialogue(input_record.raw)
         prepared = prepare_dialogue(
             input_record, sidecar, project_root=project_root, config=config
@@ -97,6 +111,21 @@ async def run_dialogue(
             telephone_path,
             metadata,
         )
+        quality = None
+        if qc.passed and is_higgs:
+            quality = assess_dialogue_turns(
+                out_dir,
+                dialogue_id,
+                render_fingerprint,
+                metadata["turns"],
+                assessment="new_render",
+            )
+            write_quality_sidecar_atomic(
+                out_dir,
+                dialogue_id,
+                quality,
+                [turn["execution"]["turn_audio"] for turn in metadata["turns"]],
+            )
         logger.info(
             "event=final_dialogue_pipeline_complete dialogue=%s passed=%s "
             "elapsed_sec=%.2f",
@@ -106,11 +135,26 @@ async def run_dialogue(
         )
         return PipelineResult(
             dialogue_id=dialogue_id,
-            status="success" if qc.passed else "failed",
-            error=None if qc.passed else f"QC failed: {qc.issues}",
+            status="success"
+            if qc.passed and (quality is None or quality["outcome"] == "pass")
+            else "failed",
+            error=(
+                f"QC failed: {qc.issues}"
+                if not qc.passed
+                else f"Higgs audio quality {quality['outcome']}: {quality['issues']}"
+                if quality and quality["outcome"] != "pass"
+                else None
+            ),
             qc=qc,
             out_dir=out_dir,
-            error_type=None if qc.passed else "QCFailure",
+            error_type=(
+                "QCFailure"
+                if not qc.passed
+                else "QualityRejected"
+                if quality and quality["outcome"] != "pass"
+                else None
+            ),
+            quality=quality,
         )
     except Exception as error:
         logger.exception(
