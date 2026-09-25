@@ -94,6 +94,7 @@ def _fixture(tmp_path: Path) -> dict[str, Path]:
                 "higgs_reference": {
                     "reference_wav": str(higgs_path.relative_to(tmp_path)),
                     "sha256": _sha(higgs_bytes),
+                    "approval_status": "production_approved",
                 },
             }
         )
@@ -172,6 +173,67 @@ def test_explicit_backend_emits_only_requested_references(
         assert role["render_speaker_id"].startswith("spk_")
 
 
+def test_production_approved_higgs_reference_materializes(tmp_path: Path) -> None:
+    paths = _fixture(tmp_path)
+
+    result = _run(paths, "higgs")
+
+    assert result["dialogues"][0]["roles"]["caller"]["higgs_reference"][
+        "sha256"
+    ] == _sha(b"HIGGS-spk_001")
+
+
+@pytest.mark.parametrize("backend", ["higgs", "both"])
+@pytest.mark.parametrize(
+    "approval_status",
+    [None, "review_only", "REVIEW_ONLY_CANDIDATES_NOT_PRODUCTION_APPROVED", "unknown"],
+)
+def test_higgs_reference_without_production_approval_fails(
+    tmp_path: Path, backend: str, approval_status: str | None
+) -> None:
+    paths = _fixture(tmp_path)
+    registry = json.loads(paths["registry"].read_text(encoding="utf-8"))
+    reference = registry["speakers"][0]["higgs_reference"]
+    if approval_status is None:
+        reference.pop("approval_status")
+    else:
+        reference["approval_status"] = approval_status
+    _write_json(paths["registry"], registry)
+
+    with pytest.raises(
+        materialize.SpeakerMaterializationError,
+        match=f"Higgs reference is not production approved: approval_status={approval_status!r}",
+    ):
+        _run(paths, backend)
+    assert not (tmp_path / f"sidecar-{backend}.json").exists()
+
+
+def test_review_only_registry_semantics_fail_higgs_materialization(
+    tmp_path: Path,
+) -> None:
+    paths = _fixture(tmp_path)
+    registry = json.loads(paths["registry"].read_text(encoding="utf-8"))
+    registry["higgs_review_status"] = "REVIEW_ONLY_CANDIDATES_NOT_PRODUCTION_APPROVED"
+    for speaker in registry["speakers"]:
+        speaker["higgs_reference"].pop("approval_status")
+    _write_json(paths["registry"], registry)
+
+    with pytest.raises(
+        materialize.SpeakerMaterializationError,
+        match="Higgs reference is not production approved: approval_status=None",
+    ):
+        _run(paths, "higgs")
+
+
+def test_cosyvoice_ignores_higgs_approval_status(tmp_path: Path) -> None:
+    paths = _fixture(tmp_path)
+    registry = json.loads(paths["registry"].read_text(encoding="utf-8"))
+    registry["speakers"][0]["higgs_reference"].pop("approval_status")
+    _write_json(paths["registry"], registry)
+
+    assert _run(paths, "cosyvoice")["backend_target"] == "cosyvoice"
+
+
 @pytest.mark.parametrize(
     ("backend", "removed_field"),
     [("higgs", "primary_reference"), ("cosyvoice", "higgs_reference")],
@@ -191,8 +253,10 @@ def test_unselected_reference_is_not_required(
 @pytest.mark.parametrize(
     ("backend", "removed_field", "message"),
     [
-        ("higgs", "higgs_reference", "approved higgs_reference"),
+        ("higgs", "higgs_reference", "no higgs_reference in the registry"),
         ("cosyvoice", "primary_reference", "primary_reference"),
+        ("both", "higgs_reference", "no higgs_reference in the registry"),
+        ("both", "primary_reference", "primary_reference"),
     ],
 )
 def test_selected_reference_is_required(
@@ -222,6 +286,17 @@ def test_selected_reference_sha_mismatch_fails(tmp_path: Path, backend: str) -> 
         materialize.SpeakerMaterializationError, match="SHA-256 mismatch"
     ):
         _run(paths, backend)
+
+
+def test_production_approved_higgs_reference_missing_wav_fails(tmp_path: Path) -> None:
+    paths = _fixture(tmp_path)
+    (tmp_path / "refs" / "spk_001-higgs.wav").unlink()
+
+    with pytest.raises(
+        materialize.SpeakerMaterializationError,
+        match="Approved Higgs reference WAV missing for spk_001",
+    ):
+        _run(paths, "higgs")
 
 
 def test_cosyvoice_preserves_and_formats_registry_prompt_text(tmp_path: Path) -> None:

@@ -7,7 +7,8 @@ to production render speakers and the explicitly requested ``higgs``,
 
 Higgs approval is independent of CosyVoice ``primary_reference``. A registry
 prompt may be a Higgs review candidate, but it is never emitted as an approved
-``higgs_reference`` unless that separate field exists and its live SHA matches.
+``higgs_reference`` unless that separate field explicitly says
+``approval_status=production_approved`` and its live SHA matches.
 """
 
 from __future__ import annotations
@@ -223,7 +224,13 @@ def _resolve_higgs_reference(
     reference = entry.get("higgs_reference")
     if not isinstance(reference, dict):
         raise SpeakerMaterializationError(
-            f"Speaker {speaker_id} has no approved higgs_reference"
+            f"Speaker {speaker_id} has no higgs_reference in the registry"
+        )
+    approval_status = reference.get("approval_status")
+    if approval_status != "production_approved":
+        raise SpeakerMaterializationError(
+            f"Speaker {speaker_id} Higgs reference is not production approved: "
+            f"approval_status={approval_status!r}"
         )
     wav_value = reference.get("reference_wav")
     if not isinstance(wav_value, str) or not wav_value.strip():
