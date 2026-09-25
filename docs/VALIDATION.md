@@ -1,7 +1,7 @@
 # Status and validation
 
-This is the single current status and evidence guide. Snapshot baseline:
-`8347253aff79aa542fcf19278cc1b80f0d2a816c` (2026-09-22).
+This is the current status and evidence guide at baseline
+`e155e5fdaf2a1573fcaead71e28c3c57483723b9` (2026-09-26).
 
 ## Evidence levels
 
@@ -11,7 +11,7 @@ This is the single current status and evidence guide. Snapshot baseline:
 | Offline tested | CPU/static tests and fixtures exercise the behavior | Broad repository suite covers contracts, planning, workers, orchestration, identity, cleanup, and setup checks |
 | Runtime verified | A real GPU environment executed the selected backend path | Higgs3 and CosyVoice3 real Google Cloud GPU execution reported achieved at project level |
 | Control/perceptual validated | Control fidelity, reference behavior, and listening evidence are reviewed | Not complete as a general claim for either backend; CosyVoice affect/arousal remains provisional |
-| Production-scale validated | Representative corpus, resource/recovery, and handoff rehearsal pass | Not complete |
+| Production-scale validated | Representative corpus, resource/recovery, and handoff rehearsal pass | Targeted 30-dialogue / 473-turn pilot and retry recovery validated; full 1000-dialogue production incomplete |
 
 Runtime execution is not production reference approval, acoustic control
 fidelity, perceptual quality, production-scale validation, or clinical
@@ -43,9 +43,13 @@ backend. There is no automatic fallback.
 
 Higgs3 has real Google Cloud GPU runtime execution, reference-conditioned
 request construction, worker/server ownership, the frozen Controlled-TTS-v1
-planner, and integrated assembly/metadata/QC paths. Formal gates remain:
-production Higgs reference approval, systematic control/perceptual review,
-representative batch/resource evidence, and production-scale rehearsal.
+planner, approved v0.2 references, frozen v0.2 assignments, and real-audio
+validated termination QC. Frozen production runtime: `bosonai/higgs-tts-3-4b`,
+SGLang-Omni 0.1.3 / SGLang 0.5.16 on NVIDIA L4;
+`max_total_tokens=71680`, `max_running_requests=1`, `cuda_graph_max_bs=1`,
+`max_new_tokens=1024`, `temperature=0.8`, `top_p=0.8`, `top_k=30`,
+`stream=false`, `speed=1.0`. General control/perceptual review and full-corpus
+production remain open.
 
 CosyVoice3 has real Google Cloud GPU runtime execution through its isolated
 worker, prompt contract, numeric speed mapping, provisional arousal/affect
@@ -60,9 +64,16 @@ User / Listener -> caller / counsellor -> C001 / L001 -> spk_*
 ```
 
 Source JSON remains unchanged by assignment/materialization. Higgs and
-CosyVoice references are different contracts. The current VCTK registry has no
-production-approved `higgs_reference` entries; runtime execution does not change
-that status. VCTK demographics are descriptive metadata, not population claims.
+CosyVoice references are different contracts. The frozen
+`data/speaker_pool/vctk_v0.2/` pool has 15 approved Higgs references (commit
+`4539983c8b8e7ecfe4eba4ff686c31083edeaba1`); the materialization gate
+requires `production_approved` (commit
+`acdb1acfdf6ada23ed036bd9306aaf1ed3f68824`). `spk_002` and `spk_005`
+remain historical rejected/reserved IDs. The frozen
+`data/speaker_assignment/v0.2/` assignment covers all 1000 dialogues with 9
+caller and 6 counsellor render voices (commit
+`43b5cc880e53e455e526dd82e05966d41dcbde9f`). Subsets select frozen rows.
+VCTK source age does not acoustically realize corpus `age_band`.
 
 ## CosyVoice3 evidence
 
@@ -82,18 +93,39 @@ not systematic listening or global acoustic validation.
 
 ## Higgs3 evidence
 
-Real Google Cloud GPU runtime execution has been achieved. The remaining
-validation gates are:
+The canonical `data/final/corpus_v1_1000.jsonl` has 1000 dialogues, 15,934
+turns, and SHA256
+`137d74faf441a8e040fe8534b1e17439df541b51f2a3ae2b7e2bc64390027fb0`.
+The latest representative pilot covered canonical IDs `corpus_v1_000000`
+through `corpus_v1_000029`: 30 dialogues, 473 turns, all 15 production voices.
+First pass accepted 28, quality-rejected 2, and had zero integrity failures
+in 3780.519 s. `corpus_v1_000013` and `corpus_v1_000024` each hit a 40.68 s
+`abnormal_tail`; both passed fresh controlled retry in 254.988 s. Effective
+pilot acceptance is 30/30, with no observed OOM, worker crash, or reference
+cache failure. The observed 2/30 first-pass rejection is only a small-pilot
+observation, not a population reject-rate estimate.
 
-- approve production Higgs references through the registry/sidecar workflow;
-- review reference-conditioned speaker identity and separation;
-- collect requested-versus-realized control and systematic perceptual evidence;
-- run representative multi-dialogue batch, resource, recovery, and shutdown
-  checks;
-- rehearse production-scale rendering and handoff on the final corpus.
+Higgs quality sidecars are durable authority for assessed WAV bytes;
+immutable/latest `batch_result` manifests are execution authority.
+`quality_rejected.jsonl` is an operational queue (commit
+`11d369835c729e024a3bd84d4103a77078091506`), and the controlled retry
+builder is implemented (commit `e0770bf0e93f41332f6f7817ba7a5ac7c1a99ec1`).
+`--resume` reuses or reassesses audio, never retries; a quality reject stays
+terminal under same-fingerprint resume. Integrity failures are distinct, and
+rejected evidence is preserved. Retry is operator-triggered fresh rendering
+into a separate namespace, with no silent broad rerender.
 
-Do not describe these gates as “Higgs runtime pending”: runtime has occurred;
-the pending work is formal validation beyond runtime execution.
+`scripts/build_production_acceptance_manifest.py` combines first-pass and
+controlled retry per-dialogue results as a derived delivery index. It does not
+render, retry, or replace batch manifests or quality sidecars.
+`--require-complete` is the all-corpus completion gate. For the real pilot,
+the corresponding index counts are 28 `accepted_first_pass`, 2
+`accepted_after_retry`, and 30 `accepted_total`. The full 1000-dialogue render
+has not completed. General perceptual/control fidelity is not globally
+validated. Historical `high + angry` Higgs control composition caused
+speaker/gender identity instability in targeted tests; the current
+`controlled_tts_v1` mapping has not been silently changed and still needs
+explicit model/acoustic-control sign-off.
 
 ## Validation checklist
 
@@ -126,12 +158,12 @@ identity and requires pins/evidence to be updated explicitly.
 - The full checkpoint/runtime environment is not cryptographically included in
   every render fingerprint.
 - Manifest v2 is written at batch completion, not as a per-dialogue journal.
-- The final production-scale corpus and downstream clinical validation are
-  outside this repository.
+- Full 1000-dialogue production and downstream clinical validation remain open.
 - There is no automatic backend fallback.
 
 ## Next acceptance gates
 
-The current gates are limited to formal Higgs reference approval, systematic
-control/perceptual validation, representative batch/resource/recovery evidence,
-and production-scale rehearsal. Runtime execution itself is no longer a gate.
+The remaining gates are explicit `high + angry` model/acoustic sign-off,
+systematic control/perceptual validation, and complete 1000-dialogue production
+with a complete final acceptance manifest. Targeted pilot validation does not
+establish those broader outcomes.

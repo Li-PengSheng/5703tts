@@ -61,25 +61,29 @@ perceptual validation.
 
 ## Prepare the speaker sidecar
 
-Assignments do not rewrite source JSON:
+Assignments do not rewrite source JSON. Production uses the frozen all-1000
+assignment at `data/speaker_assignment/v0.2/` and the 15 approved Higgs
+references at `data/speaker_pool/vctk_v0.2/`. Select canonical corpus rows and
+their matching frozen assignment rows before materializing a small batch;
+there is no production chunk builder yet. Do not recompute assignments for a
+subset. For a prepared subset:
 
 ```bash
-uv run python scripts/assign_dialogue_speakers.py \
-  --input data/final/dialogues.jsonl
-
 uv run python scripts/materialize_speaker_assignments.py \
-  --input data/final/dialogues.jsonl \
-  --assignments data/speaker_pool/vctk_v0.1/speaker_assignments.jsonl \
-  --registry data/speaker_pool/vctk_v0.1/speaker_registry.json \
-  --active-speakers data/speaker_pool/vctk_v0.1/active_speakers.json \
-  --manifest data/speaker_sidecar.json \
-  --backend cosyvoice
+  --input data/production/v0.2/chunk_000/input.jsonl \
+  --assignments data/production/v0.2/chunk_000/assignments.jsonl \
+  --registry data/speaker_pool/vctk_v0.2/speaker_registry.json \
+  --active-speakers data/speaker_pool/vctk_v0.2/active_speakers.json \
+  --manifest data/production/v0.2/chunk_000/speaker_sidecar.json \
+  --backend higgs
 ```
 
-Use `--backend higgs` only with a registry containing separately approved,
-hash-verified `higgs_reference` entries. `--backend both` emits both contracts.
-The current VCTK registry has no production-approved Higgs references;
-CosyVoice `primary_reference` is not Higgs approval.
+`--backend higgs` requires `production_approved` Higgs references with matching
+live hashes (gate commit `acdb1acfdf6ada23ed036bd9306aaf1ed3f68824`).
+`--backend both` emits both contracts. CosyVoice `primary_reference` is not
+Higgs approval. Pool v0.2 was frozen at
+`4539983c8b8e7ecfe4eba4ff686c31083edeaba1`; assignment v0.2 at
+`43b5cc880e53e455e526dd82e05966d41dcbde9f`.
 
 ## Select one backend
 
@@ -118,15 +122,16 @@ Custom absolute-path configurations are outside the reviewed bootstrap
 contract, and `setup_cloud_environment.sh --check` will not treat them as the
 standard local Higgs configuration.
 
-Run a one-dialogue smoke with a sidecar containing an approved Higgs reference:
+Run a one-dialogue smoke with a prepared one-dialogue input and matching
+approved sidecar (the paths below are operator-prepared examples):
 
 ```bash
 uv run 5703tts \
-  --input evidence/input/one_turn.json \
-  --speaker-sidecar evidence/input/higgs_sidecar.json \
+  --input data/production/v0.2/smoke/input.jsonl \
+  --speaker-sidecar data/production/v0.2/smoke/speaker_sidecar.json \
   --config config/config_higgs_cloud.yaml \
-  --output evidence/output/higgs-smoke \
-  --log-dir evidence/logs/higgs-smoke \
+  --output data/output/higgs-smoke \
+  --log-dir logs/higgs-smoke \
   --verbose
 ```
 
@@ -209,6 +214,45 @@ audio automatically. The quality sidecar is not a synthesis checkpoint.
 Render fingerprints do not cover every external SGLang launch flag, so
 operators must not rely on `--resume` after unrepresented render-affecting
 server changes.
+
+Each completed batch also publishes `quality_rejected.jsonl`, an operational
+queue for genuine quality rejects. It is not audit authority; batch manifests
+and Higgs quality sidecars remain the execution and assessed-WAV authorities.
+`--resume` reuses or reassesses existing audio; it never retries a rejected
+render. A retry is an explicit fresh render into a new output namespace:
+
+```bash
+uv run python scripts/build_quality_retry_batch.py \
+  --rejects data/output/production_v0.2/chunk_000/quality_rejected.jsonl \
+  --corpus data/final/corpus_v1_1000.jsonl \
+  --assignments data/speaker_assignment/v0.2/speaker_assignments.jsonl \
+  --output data/production/v0.2_retry/chunk_000_retry01 \
+  --attempt 1
+```
+
+Materialize that retry pack's sidecar with the v0.2 registry, then render its
+`input.jsonl` to `data/output/production_v0.2_retry/chunk_000_retry01/`
+without `--resume`. Preserve both attempts and their sidecars. The retry
+builder (`e0770bf0e93f41332f6f7817ba7a5ac7c1a99ec1`) and queue
+(`11d369835c729e024a3bd84d4103a77078091506`) do no automatic broad
+rerendering.
+
+After first pass and controlled retries, build a derived final acceptance and
+delivery index. It reads evidence only; it does not render or retry audio:
+
+```bash
+uv run python scripts/build_production_acceptance_manifest.py \
+  --corpus data/final/corpus_v1_1000.jsonl \
+  --first-pass chunk_000=data/output/production_v0.2/chunk_000/batch_result.json \
+  --retry chunk_000_retry01=data/output/production_v0.2_retry/chunk_000_retry01/batch_result.json \
+  --output data/production/final_acceptance.json
+```
+
+Repeat `--first-pass` and `--retry` for every supplied batch; retry order is
+the supplied order. Add `--require-complete` for the final all-corpus gate.
+This derived index does not replace batch results or quality sidecars. The
+current 30-dialogue pilot corresponds to 28 `accepted_first_pass`, 2
+`accepted_after_retry`, and 30 `accepted_total`; the full corpus is unfinished.
 
 ## Troubleshooting
 

@@ -2,6 +2,11 @@
 
 **Final status:** IMPLEMENTED + TARGETED REAL-AUDIO VALIDATED
 
+This is a historical validation snapshot. Its conclusion that a 30-dialogue
+rerun was unnecessary applied at that point; a later production pilot did run.
+See [current validation](../VALIDATION.md) and the
+[production handoff](../CloudProductionLog.md) for current overall status.
+
 The production validation commit was `ac4745e` (`fix Higgs worker executable permission`). The quality implementation was already present in the preceding production code state. This commit changed only `src/tts5703/backends/higgs_worker.py` from Git mode `100644` to `100755`. After pulling it on Google Cloud, `git ls-files` reported `100755`, the file was executable, `uv run ruff check .` reported `All checks passed`, and `uv run ruff format --check .` reported `74 files already formatted`. Cloud full pytest was not run; pytest is unavailable in the production environment.
 
 ## Frozen production runtime

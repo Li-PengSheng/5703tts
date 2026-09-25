@@ -12,10 +12,12 @@ InputRecord -> validation/exclusion -> speaker sidecar -> canonical/prepared pla
 
 ## Current boundary
 
-At baseline `8347253aff79aa542fcf19278cc1b80f0d2a816c` (2026-09-22), both
-Higgs3 and CosyVoice3 have achieved real Google Cloud GPU runtime execution.
-That does not establish production reference approval, control/perceptual
-fidelity, production-scale rendering, or clinical usefulness.
+At baseline `e155e5fdaf2a1573fcaead71e28c3c57483723b9` (2026-09-26),
+Higgs production runtime, its 15 approved v0.2 references, frozen all-1000
+speaker assignment, termination QC, and controlled retry workflow are validated.
+A 30-dialogue / 473-turn pilot reached 30/30 acceptance after two fresh retries.
+The full 1000-dialogue render and general control/perceptual sign-off remain open;
+the historical `high + angry` identity issue requires explicit acoustic sign-off.
 
 Higgs3 is the configured default backend. CosyVoice3 is explicitly selected as
 the secondary backend. Set `tts.engine` to choose one backend per run; there is
@@ -36,17 +38,10 @@ bash scripts/setup_cloud_environment.sh
 bash scripts/setup_cloud_environment.sh --check
 ```
 
-After bootstrap, a Higgs render uses the generated
-`config/config_higgs_cloud.yaml`:
-
-```bash
-uv run 5703tts \
-  --input data/final/dialogues.jsonl \
-  --speaker-sidecar data/speaker_sidecar.json \
-  --config config/config_higgs_cloud.yaml \
-  --output data/output \
-  --resume
-```
+After bootstrap, use the generated `config/config_higgs_cloud.yaml` and a
+prepared small input with its matching speaker sidecar. See
+[RUNNING.md](docs/RUNNING.md) for the render command. Pointing `--input` at
+`corpus_v1_1000.jsonl` launches the entire 1000-dialogue corpus.
 
 `config/config.yaml` is a repository template with placeholder Higgs paths.
 For an explicit CosyVoice run, use `config/config_cosyvoice.yaml`. See
@@ -58,7 +53,9 @@ resume, and troubleshooting.
 - [Pipeline](docs/PIPELINE.md) — architecture, contracts, controls, outputs, source map, and invariants.
 - [Running](docs/RUNNING.md) — offline checks, Cloud bootstrap, backend runs, batch, resume, and troubleshooting.
 - [Status and validation](docs/VALIDATION.md) — evidence levels, current runtime status, validation checklist, and remaining gates.
-- [VCTK speaker pool](data/speaker_pool/vctk_v0.1/README.md) — local speaker-pool and reference asset contract.
+- [Current production handoff](docs/CloudProductionLog.md) — frozen runtime, pilot, retry, and open acoustic sign-off.
+- [Higgs QC evidence](docs/evidence/HIGGS_AUDIO_QUALITY_VALIDATION.md) — targeted real-audio validation snapshot.
+- [VCTK v0.2 production speaker pool](data/speaker_pool/vctk_v0.2/README.md) — approved references and asset contract.
 
 Development checks:
 

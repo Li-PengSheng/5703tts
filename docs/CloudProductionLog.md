@@ -13,7 +13,7 @@
 
 ## 1. Why this document exists
 
-This document supersedes the earlier 2026-09-25 production log as the **current handoff record**. The earlier record remains useful historical evidence for OOM tuning, cap-hit experiments, and the `high + angry` speaker-identity investigation. fileciteturn168file0
+This document supersedes the earlier 2026-09-25 production log as the **current handoff record**. The earlier record remains useful historical evidence for OOM tuning, cap-hit experiments, and the `high + angry` speaker-identity investigation.
 
 Since then, the production pipeline has advanced materially:
 
@@ -601,7 +601,7 @@ max_new_tokens = 1024
 → 40.68 s
 ```
 
-The 1024 cap remains a **safety fuse**, not a semantic fix. fileciteturn168file0
+The 1024 cap remains a **safety fuse**, not a semantic fix.
 
 The latest production pilot again produced two rejected WAVs of exactly 40.68 s, strengthening the operational conclusion that this is a recurring model-generation termination mode rather than an isolated corrupted file.
 
@@ -644,7 +644,7 @@ Reverse order reduced but did not eliminate the problem. Anger-only was not glob
 9/9 preserved expected reference gender
 ```
 
-Important limitation: human-perceived gender consistency is only a coarse smoke check, not formal speaker verification. fileciteturn168file0
+Important limitation: human-perceived gender consistency is only a coarse smoke check, not formal speaker verification.
 
 Current handoff rule:
 
@@ -732,18 +732,19 @@ Before full production, explicitly confirm one of:
 3. the affected combination will be excluded/degraded with truthful metadata.
 ```
 
-## Open C — final acceptance aggregation
+## Final acceptance aggregation — implemented locally
 
-Retry outputs live in separate namespaces. Final delivery eventually needs per-dialogue state such as:
+`scripts/build_production_acceptance_manifest.py` is a standalone derived
+delivery index. It combines first-pass and controlled retry `batch_result.json`
+per-dialogue rows in explicit operator order, retaining canonical source SHA,
+attempt history, and source-file SHA. `--require-complete` fails until every
+canonical dialogue is finally accepted. It does not render, retry, alter audio,
+or replace batch manifests and quality sidecars as audit authority.
 
-```text
-accepted_first_pass
-accepted_after_retry_01
-accepted_after_retry_02
-failed_after_retry_limit / manual review
-```
-
-Do not overwrite first-pass failure evidence.
+For the 30-dialogue pilot, the corresponding final counts are 28
+`accepted_first_pass`, 2 `accepted_after_retry`, 30 `accepted_total`, and zero
+pending rejects. Full 1000-dialogue production is not complete. Preserve
+first-pass failure evidence and retry outputs in separate namespaces.
 
 ---
 
@@ -812,6 +813,8 @@ For each chunk:
 11. Retry again only under an explicit policy.
 12. Preserve first-pass and retry evidence.
 13. Record final accepted attempt per dialogue.
+14. Rebuild the derived acceptance manifest; use `--require-complete` only for
+    final all-corpus completion.
 ```
 
 Do not:
@@ -911,6 +914,7 @@ Ordinary isolated `abnormal_tail` rejects do not require aborting the whole chun
 | Retry-batch builder | Implemented / validated |
 | Broad automatic rerender | Not approved |
 | Controlled fresh retry | Approved operational pattern |
+| Final acceptance aggregator | Implemented as derived index; no render or retry |
 | First-pass reject evidence | Preserve |
 | Retry output | New namespace |
 | `high + angry` mapping | Historical identity risk; explicit model/acoustic-control sign-off required unless superseded |
@@ -946,10 +950,10 @@ e0770bf0e93f41332f6f7817ba7a5ac7c1a99ec1
 add quality retry batch builder
 ```
 
-Latest listed production-tooling commit at handoff time:
+Repository baseline for this documentation/aggregator update (uncommitted):
 
 ```text
-e0770bf0e93f41332f6f7817ba7a5ac7c1a99ec1
+e155e5fdaf2a1573fcaead71e28c3c57483723b9
 ```
 
 Always record actual HEAD again before generating production chunks.

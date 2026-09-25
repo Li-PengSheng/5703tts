@@ -1,11 +1,13 @@
-# Generated output: not version-controlled and recreated on every run
-!data/output/.gitkeep
+# Future generated output and logs; already tracked historical files stay tracked.
+/data/output/*
+!/data/output/.gitkeep
+/logs/*
+!/logs/.gitkeep
 /data/benchmark/runs/
-logs/*.log
 
-# Speaker-pool reference audio and smoke runs: reproducibly regenerated from the
-# local VCTK corpus by scripts/materialize_vctk_speaker_pool.py
+# Ignore generated speaker-pool WAVs except frozen tracked v0.2 production assets.
 /data/speaker_pool/*/references/*.wav
+!/data/speaker_pool/vctk_v0.2/references/*.wav
 /data/speaker_pool/*/smoke_runs/
 
 # Windows download metadata (can appear as real sidecar files outside NTFS)

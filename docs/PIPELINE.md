@@ -20,7 +20,9 @@ InputRecord
   -> assembly and timestamps
   -> clean WAV + telephone-labelled WAV
   -> metadata + structural QC
+  -> Higgs post-render quality assessment + durable quality sidecar
   -> manifest v2
+  -> quality-reject operational queue
   -> semantic resume and artifact-integrity checks
 ```
 
@@ -64,14 +66,15 @@ registry at runtime.
 Higgs uses `higgs_reference.reference_wav` plus its SHA-256. CosyVoice3 uses
 `cosyvoice_reference.prompt_wav`, `prompt_text`, and its SHA-256. The contracts
 are separate: a CosyVoice primary reference is not automatically an approved
-Higgs reference. The current VCTK registry has no formally approved production
-`higgs_reference` entries.
+Higgs reference. The frozen v0.2 pool has 15 production-approved Higgs
+references; materialization requires approval and matching live hashes. The
+frozen v0.2 assignment covers all 1000 canonical dialogues; subsets select its
+rows without recomputing speaker assignments.
 
 Internal names `approved_reference` and `approved_speaker_reference` mean that
 the prepared render path selected the reference and verified its declared path
-and SHA. They do not mean that the project has completed formal Higgs
-production-reference approval; that status belongs to the registry/sidecar
-workflow and project evidence.
+and SHA. Formal production approval is a separate registry/sidecar gate,
+completed for the frozen v0.2 Higgs pool.
 
 ## 4. Backend execution
 
@@ -134,6 +137,14 @@ model, or complete PSTN simulation. Structural QC checks identity, plan/control
 agreement, timing, execution status, and WAV readability; it is not perceptual
 QA.
 
+Higgs adds post-render termination assessment. Its quality sidecar is durable
+authority for the assessed turn-WAV bytes. The per-batch
+`quality_rejected.jsonl` is only an operational retry queue; immutable/latest
+batch manifests remain execution authority. Controlled retries render fresh
+into separate namespaces. The standalone acceptance aggregator combines their
+per-dialogue results into a derived delivery index without altering either
+authority.
+
 Dialogue metadata records requested controls, the prepared plan, references,
 execution, timing, provenance, and backend identity. The field
 `runtime_verification: "not_runtime_verified"` means that per-dialogue
@@ -150,6 +161,11 @@ bytes. The fingerprint includes source identity, shared render-affecting
 configuration, the selected backend identity, selected speaker/reference
 materialization, and exclusion decision. Input location/formatting and
 unselected backend state do not affect it.
+
+For Higgs, resume verifies live WAV hashes against quality evidence. A
+same-fingerprint quality reject stays terminal under `--resume`; integrity
+failure is distinct from ordinary quality rejection. Retry requires an
+explicit fresh render, and rejected evidence remains preserved.
 
 Rerender cleanup removes only pipeline-owned direct-child names and fails closed
 on managed directories or cleanup errors. Unmanaged files survive. Excluded
