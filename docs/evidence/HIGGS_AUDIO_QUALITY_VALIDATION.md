@@ -69,6 +69,22 @@ Offline/local implementation validation: focused audio-quality + batch `151 pass
 
 During the real GPU smoke run, KV cache token capacity was `71680`, decode CUDA graph captured `bs=1`, and generation throughput was around 31 token/s after warmup. There was no OOM, HTTP 500, worker crash, or retry storm. Non-blocking warnings were: nixl unavailable; no `generation_config.json`; torchao import warning; auto-selected prefill CUDA graph disabled/fallback due to free-memory safety threshold; codec CUDA graph misses for frame counts outside the captured range; and multiprocessing `resource_tracker` semaphore warning at shutdown. The dialogue completed successfully; these warnings are not classified as regressions.
 
+## Targeted L4 performance validation
+
+After commit `0357905` (`add Higgs production timing instrumentation`), a fresh render of `corpus_v1_000000` (15 turns) on Google Cloud NVIDIA L4 completed with `run_exit=0`, batch `status=success`, `rendered=1`, `failed=0`, `quality=pass`, and 19 total artifacts. Dialogue `total_sec=188.627`; batch `duration_seconds=188.635`.
+
+| Timed work | Observed seconds | Share of dialogue wall time |
+| --- | ---: | ---: |
+| Turn synthesis total | 186.779 | 99.02% |
+| Worker cold startup | 58.928 | 31.24% |
+| Sum of 15 inference `request_sec` values | 127.825 | 67.77% |
+
+Other dialogue stages: `preflight_sec=0.010`, `assemble_sec=0.046`, `clean_export_sec=0.004`, `telephone_sec=1.664`, `metadata_sec=0.008`, `qc_sec=0.013`, `quality_sec=0.081`. Per-turn `request_sec`: minimum `4.840`, median `8.181`, mean `8.522`, maximum `13.405` seconds. For warm turns 2–15, summed `request_sec=119.520` and `total_sec=119.542`; non-request overhead was ~`0.022` seconds total, or ~`1.6 ms` per turn.
+
+Approximately 99% of wall time was Higgs/SGLang startup and inference. No material pipeline-side bottleneck was found; assembly, WAV publication, metadata, structural QC, and quality QC were small beside inference. Worker startup is a one-time cold-start cost for a continuous batch because the worker/model is cached and reused across turns and dialogues while runtime identity is unchanged. The first turn's `total_sec` includes that nested startup duration: do not add startup time to first-turn total time. Material acceleration would require changes to the model/runtime execution strategy, such as concurrency, batching, or runtime/model changes, outside the frozen validated production scope. This single cold-dialogue run does not establish general throughput, concurrent-rendering, or full-corpus performance, or guarantee a speedup.
+
+**Performance conclusion:** Targeted L4 timing validation found no material pipeline-side performance bottleneck. For the tested cold single-dialogue render, 99.02% of wall time was spent in Higgs synthesis. Further material acceleration would require changes to the frozen model/runtime execution strategy rather than optimization of pipeline orchestration.
+
 ## Scope and production readiness
 
 This establishes targeted production correctness for the new Higgs audio termination QC and quality-state lifecycle. It does **not** establish general perceptual audio quality, validate concurrent rendering, validate every dialogue in the corpus under the new policy, or justify changing the frozen runtime. A full 30-dialogue rerun was not needed after targeted validation: the new logic was exercised on a known bad historical artifact, a fresh real-GPU passing artifact, resume behavior, terminal reject behavior, and deliberate artifact corruption.
