@@ -1,0 +1,73 @@
+{
+  "purpose": "temporary_production_speaker_smoke3",
+  "source_corpus": {
+    "path": "data/final/corpus_v1_1000.jsonl",
+    "sha256": "137d74faf441a8e040fe8534b1e17439df541b51f2a3ae2b7e2bc64390027fb0"
+  },
+  "frozen_assignments": {
+    "path": "data/speaker_assignment/v0.2/speaker_assignments.jsonl",
+    "sha256": "6befc53394f89817de1b0eb394b14d4be05490a1835e9661e19cef25ae459196"
+  },
+  "selection_rule": "Maximize distinct render voices, then include neutral, both female and male, and a supplemental v0.2 voice; tie-break by dialogue_id.",
+  "distinct_render_speaker_ids": [
+    "spk_004",
+    "spk_006",
+    "spk_007",
+    "spk_009",
+    "spk_013",
+    "spk_014"
+  ],
+  "dialogues": [
+    {
+      "dialogue_id": "corpus_v1_000000",
+      "source_line_number": 1,
+      "turn_count": 15,
+      "caller": {
+        "upstream_speaker_id": "C008",
+        "requested_gender": "neutral",
+        "requested_age_band": "teen",
+        "render_speaker_id": "spk_009"
+      },
+      "counsellor": {
+        "upstream_speaker_id": "L001",
+        "requested_gender": "male",
+        "requested_age_band": "adult",
+        "render_speaker_id": "spk_007"
+      }
+    },
+    {
+      "dialogue_id": "corpus_v1_000001",
+      "source_line_number": 2,
+      "turn_count": 15,
+      "caller": {
+        "upstream_speaker_id": "C003",
+        "requested_gender": "female",
+        "requested_age_band": "older",
+        "render_speaker_id": "spk_014"
+      },
+      "counsellor": {
+        "upstream_speaker_id": "L008",
+        "requested_gender": "neutral",
+        "requested_age_band": "older",
+        "render_speaker_id": "spk_006"
+      }
+    },
+    {
+      "dialogue_id": "corpus_v1_000002",
+      "source_line_number": 3,
+      "turn_count": 15,
+      "caller": {
+        "upstream_speaker_id": "C038",
+        "requested_gender": "neutral",
+        "requested_age_band": "adult",
+        "render_speaker_id": "spk_004"
+      },
+      "counsellor": {
+        "upstream_speaker_id": "L004",
+        "requested_gender": "male",
+        "requested_age_band": "adult",
+        "render_speaker_id": "spk_013"
+      }
+    }
+  ]
+}
