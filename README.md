@@ -62,7 +62,8 @@ resume, and troubleshooting.
 Development checks:
 
 ```bash
+uv sync --dev
+uv run pytest -q
 uv run ruff check .
-uv run --with pytest pytest -q
 git diff --check
 ```

@@ -3,14 +3,9 @@
 from __future__ import annotations
 
 import hashlib
-import inspect
 import json
 import re
-import subprocess
-import sys
-from collections.abc import Callable
 from copy import deepcopy
-from itertools import product
 from pathlib import Path
 from typing import Any
 
@@ -23,10 +18,6 @@ EXPECTED_CONTRACT_SHA256 = (
     "4e787a5363d01e5454a8031c59bb1d4bb454ee37d44ccf262d471c7ce30ba799"
 )
 PRODUCTION_CONTRACT = Path("src/tts5703/controlled_tts_v1.json")
-REFERENCE_ROOT = Path("comp5703-tts-experiments")
-REFERENCE_CONTRACT = (
-    REFERENCE_ROOT / "mappings/controlled_tts_v1/controlled_tts_v1.json"
-)
 GOLDEN_PATH = Path("tests/fixtures/controlled_tts_v1_golden.json")
 PAUSE_TOKEN = "<|prosody:pause|>"
 
@@ -70,22 +61,9 @@ def _plan_digest(plan: dict[str, Any]) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
-def _empty_best_effort() -> dict[str, Any]:
-    return {
-        "affect_fine": None,
-        "volume": None,
-        "flattened_affect": None,
-        "events": [],
-    }
-
-
-def test_production_contract_has_frozen_identity_and_optional_reference_parity() -> (
-    None
-):
+def test_production_contract_has_frozen_identity() -> None:
     production = PRODUCTION_CONTRACT.read_bytes()
     assert hashlib.sha256(production).hexdigest() == EXPECTED_CONTRACT_SHA256
-    if REFERENCE_CONTRACT.is_file():
-        assert production == REFERENCE_CONTRACT.read_bytes()
 
 
 def test_committed_complete_plan_goldens() -> None:
@@ -259,95 +237,3 @@ def test_model_input_is_exact_prefix_plus_planned_text() -> None:
         "".join(plan["higgs"]["prefix_tokens"]) + plan["higgs"]["text"]
     )
     assert plan["higgs"]["synthesis_call_count"] == 1
-
-
-def _reference_mapper() -> Callable[..., dict[str, Any]]:
-    if not REFERENCE_ROOT.is_dir():
-        pytest.skip("optional controlled-TTS reference repository is absent")
-    commit = subprocess.run(
-        ["git", "-C", str(REFERENCE_ROOT), "rev-parse", "HEAD"],
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout.strip()
-    if commit != EXPECTED_REFERENCE_COMMIT:
-        pytest.skip(f"optional reference repository is at {commit}")
-    sys.path.insert(0, str(REFERENCE_ROOT.resolve()))
-    try:
-        from mappings.controlled_tts_v1 import map_turn_to_higgs as reference
-    finally:
-        sys.path.pop(0)
-    reference_file = Path(inspect.getfile(reference)).resolve()
-    expected_package = (REFERENCE_ROOT / "mappings/controlled_tts_v1").resolve()
-    assert reference_file.is_relative_to(expected_package), (
-        f"reference adapter resolved outside expected package: {reference_file}"
-    )
-    return reference
-
-
-def test_complete_plan_parity_with_expected_reference_checkout() -> None:
-    reference = _reference_mapper()
-    matrix = [
-        _turn(
-            rate=rate,
-            arousal=arousal,
-            affect=affect,
-            pause_before=pause_before,
-            best_effort=_empty_best_effort(),
-        )
-        for rate, arousal, affect, pause_before in product(
-            ("slow", "normal", "fast"),
-            (1, 2, 3),
-            ("neutral", "sad", "anxious", "angry", "warm"),
-            ("none", "short", "long"),
-        )
-    ]
-    matrix.extend(
-        [
-            _turn(
-                text="First sentence. A major clause, because it matters.",
-                hesitations=hesitations,
-                pause_within=within,
-                best_effort=_empty_best_effort(),
-            )
-            for hesitations, within in product((0, 1, 2), (0, 1, 3))
-        ]
-    )
-    matrix.extend(
-        [
-            _turn(
-                text=text,
-                hesitations=2,
-                pause_within=2,
-                best_effort={
-                    "affect_fine": "hopeless",
-                    "volume": "soft",
-                    "flattened_affect": False,
-                    "events": ["synthetic-event"],
-                },
-                affect="sad",
-            )
-            for text in (
-                "Help",
-                "I met John, Smith yesterday",
-                "It would, not work today",
-                "For e.g. this continues. Then it stops.",
-            )
-        ]
-    )
-    context = {
-        "dialogue_id": "synthetic-dialogue",
-        "scenario": {
-            "speakers": {
-                "caller": {"speaker_id": "C000"},
-                "counsellor": {"speaker_id": "L000"},
-            }
-        },
-        "known_issue": {"id": "synthetic-known-issue"},
-    }
-    for turn in matrix:
-        assert map_turn_to_higgs(turn) == reference(turn)
-    listener = _turn(speaker="Listener", best_effort=_empty_best_effort())
-    assert map_turn_to_higgs(listener, dialogue_context=context) == reference(
-        listener, dialogue_context=context
-    )

@@ -2,22 +2,15 @@
 
 from __future__ import annotations
 
-import importlib.util
 import json
-import sys
 from pathlib import Path
 from typing import Any
 
 import pytest
 
-ROOT = Path(__file__).resolve().parents[1]
-SCRIPT_PATH = ROOT / "scripts" / "assign_dialogue_speakers.py"
-SPEC = importlib.util.spec_from_file_location("assign_dialogue_speakers", SCRIPT_PATH)
-assert SPEC is not None and SPEC.loader is not None
-assign = importlib.util.module_from_spec(SPEC)
-sys.modules[SPEC.name] = assign
-SPEC.loader.exec_module(assign)
+from scripts import assign_dialogue_speakers as assign
 
+ROOT = Path(__file__).resolve().parents[1]
 ACTIVE_PATH = ROOT / "data" / "speaker_pool" / "vctk_v0.1" / "active_speakers.json"
 REGISTRY_PATH = ROOT / "data" / "speaker_pool" / "vctk_v0.1" / "speaker_registry.json"
 EXPECTED_ACTIVE = (

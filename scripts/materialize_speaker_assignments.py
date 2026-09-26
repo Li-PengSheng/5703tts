@@ -15,11 +15,15 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import importlib.util
 import json
 import sys
 from pathlib import Path
 from typing import Any
+
+if __package__:
+    from . import assign_dialogue_speakers as assign
+else:
+    import assign_dialogue_speakers as assign
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SPEAKER_POOL_DIR = PROJECT_ROOT / "data" / "speaker_pool" / "vctk_v0.1"
@@ -33,20 +37,6 @@ COSYVOICE3_ZERO_SHOT_PROMPT_PREFIX = (
 
 class SpeakerMaterializationError(ValueError):
     """Raised when assignment records cannot be resolved into renderer inputs."""
-
-
-def _load_assign_module() -> Any:
-    path = Path(__file__).resolve().with_name("assign_dialogue_speakers.py")
-    spec = importlib.util.spec_from_file_location("assign_dialogue_speakers", path)
-    if spec is None or spec.loader is None:
-        raise SpeakerMaterializationError(f"Cannot load assignment helper: {path}")
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = module
-    spec.loader.exec_module(module)
-    return module
-
-
-assign = _load_assign_module()
 
 
 def _sha256_file(path: Path) -> str:

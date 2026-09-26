@@ -2,23 +2,14 @@
 
 from __future__ import annotations
 
-import importlib.util
 import json
-import sys
 from copy import deepcopy
 from dataclasses import replace
 from pathlib import Path
 
 import pytest
 
-ROOT = Path(__file__).resolve().parents[1]
-SPEC = importlib.util.spec_from_file_location(
-    "assign_production_speakers", ROOT / "scripts/assign_production_speakers.py"
-)
-assert SPEC is not None and SPEC.loader is not None
-production = importlib.util.module_from_spec(SPEC)
-sys.modules[SPEC.name] = production
-SPEC.loader.exec_module(production)
+from scripts import assign_production_speakers as production
 
 
 @pytest.fixture(scope="module")

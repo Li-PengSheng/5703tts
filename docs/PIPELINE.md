@@ -200,6 +200,6 @@ For source-level reading, follow `input/` -> `render_plan.py` -> `tts_engine.py`
 - Backend mapping changes require focused tests and corresponding evidence.
 - Offline tests establish software behavior, not GPU execution or acoustic quality.
 
-Run `uv run ruff check .`, `uv run --with pytest pytest -q`, and
+Run `uv run ruff check .`, `uv run pytest -q`, and
 `git diff --check` for repository changes. Keep metadata attestation semantics
 separate from project-level runtime evidence.

@@ -3,24 +3,15 @@
 from __future__ import annotations
 
 import hashlib
-import importlib.util
 import json
-import sys
 from pathlib import Path
 from typing import Any
 
 import pytest
 
-ROOT = Path(__file__).resolve().parents[1]
-SCRIPT_PATH = ROOT / "scripts" / "materialize_speaker_assignments.py"
-SPEC = importlib.util.spec_from_file_location(
-    "materialize_speaker_assignments", SCRIPT_PATH
-)
-assert SPEC is not None and SPEC.loader is not None
-materialize = importlib.util.module_from_spec(SPEC)
-sys.modules[SPEC.name] = materialize
-SPEC.loader.exec_module(materialize)
+from scripts import materialize_speaker_assignments as materialize
 
+ROOT = Path(__file__).resolve().parents[1]
 PREFIX = "You are a helpful assistant.<|endofprompt|>"
 
 

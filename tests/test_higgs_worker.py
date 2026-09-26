@@ -25,10 +25,6 @@ from tts5703.backends import higgs as higgs_backend
 from tts5703.backends import higgs_worker
 
 WORKER = Path("src/tts5703/backends/higgs_worker.py").resolve()
-FROZEN_HIGGS_MAPPING = Path(
-    "comp5703-tts-experiments/testing/week5_candidate_evaluation/"
-    "targeted_revision_v1/mappings/higgs.py"
-).resolve()
 
 
 def test_parent_resolves_relocated_worker() -> None:
@@ -550,19 +546,22 @@ def test_frozen_external_payload_is_exact(tmp_path: Path) -> None:
     assert "seed" not in higgs_worker._speech_payload(request)
 
 
-def test_generation_constants_match_frozen_experiment_source() -> None:
-    tree = ast.parse(FROZEN_HIGGS_MAPPING.read_text(encoding="utf-8"))
-    assignment = next(
-        node
-        for node in tree.body
-        if isinstance(node, ast.Assign)
-        and any(
-            isinstance(target, ast.Name) and target.id == "HTTP_LITERALS"
-            for target in node.targets
-        )
-    )
-
-    assert ast.literal_eval(assignment.value) == higgs_worker.FROZEN_GENERATION_FIELDS
+def test_generation_constants_match_current_production_contract() -> None:
+    assert (
+        higgs_worker.FROZEN_MAX_TOTAL_TOKENS,
+        higgs_worker.FROZEN_MAX_RUNNING_REQUESTS,
+        higgs_worker.FROZEN_CUDA_GRAPH_MAX_BS,
+    ) == (71680, 1, 1)
+    assert higgs_worker.FROZEN_GENERATION_FIELDS == {
+        "voice": "default",
+        "response_format": "wav",
+        "speed": 1.0,
+        "stream": False,
+        "max_new_tokens": 1024,
+        "temperature": 0.8,
+        "top_p": 0.8,
+        "top_k": 30,
+    }
 
 
 def test_http_errors_are_closed_for_health_and_speech(

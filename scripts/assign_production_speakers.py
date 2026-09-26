@@ -7,23 +7,18 @@ No TTS is performed. Rendering subsets must consume the frozen output map.
 from __future__ import annotations
 
 import hashlib
-import importlib.util
 import json
-import sys
 from collections import Counter
 from pathlib import Path
 from typing import Any
 
+if __package__:
+    from . import materialize_speaker_assignments as materializer
+else:
+    import materialize_speaker_assignments as materializer
+
 ROOT = Path(__file__).resolve().parents[1]
 
-_SPEC = importlib.util.spec_from_file_location(
-    "materialize_speaker_assignments",
-    ROOT / "scripts/materialize_speaker_assignments.py",
-)
-assert _SPEC is not None and _SPEC.loader is not None
-materializer = importlib.util.module_from_spec(_SPEC)
-sys.modules[_SPEC.name] = materializer
-_SPEC.loader.exec_module(materializer)
 input_helpers = materializer.assign
 
 INPUT = Path("data/final/corpus_v1_1000.jsonl")

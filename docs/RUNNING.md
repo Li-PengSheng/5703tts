@@ -49,10 +49,10 @@ run for evidence.
 ## Offline project checks
 
 ```bash
-uv sync
+uv sync --dev
 uv run 5703tts --help
+uv run pytest -q
 uv run ruff check .
-uv run --with pytest pytest -q
 git diff --check
 ```
 
@@ -96,6 +96,8 @@ live hashes (gate commit `acdb1acfdf6ada23ed036bd9306aaf1ed3f68824`).
 Higgs approval. Pool v0.2 was frozen at
 `4539983c8b8e7ecfe4eba4ff686c31083edeaba1`; assignment v0.2 at
 `43b5cc880e53e455e526dd82e05966d41dcbde9f`.
+Tracked pilot/review sidecars contain their original machine's `project_root`;
+generate a new sidecar for each prepared chunk on the machine that renders it.
 
 ## Select one backend
 
