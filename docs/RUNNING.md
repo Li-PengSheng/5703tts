@@ -59,14 +59,26 @@ git diff --check
 These checks do not download models or establish GPU, reference, acoustic, or
 perceptual validation.
 
-## Prepare the speaker sidecar
+## Prepare production chunks and a speaker sidecar
 
 Assignments do not rewrite source JSON. Production uses the frozen all-1000
 assignment at `data/speaker_assignment/v0.2/` and the 15 approved Higgs
-references at `data/speaker_pool/vctk_v0.2/`. Select canonical corpus rows and
-their matching frozen assignment rows before materializing a small batch;
-there is no production chunk builder yet. Do not recompute assignments for a
-subset. For a prepared subset:
+references at `data/speaker_pool/vctk_v0.2/`. Prepare 10 chunks of 100
+dialogues in canonical corpus row order:
+
+```bash
+uv run python scripts/build_production_chunks.py \
+  --corpus data/final/corpus_v1_1000.jsonl \
+  --assignments data/speaker_assignment/v0.2/speaker_assignments.jsonl \
+  --output data/production/v0.2 \
+  --chunk-size 100
+```
+
+The builder fails if the output directory exists. It selects exact frozen
+assignment rows for each input chunk; it never recomputes speaker identities.
+The output contains `production_manifest.json` and `chunk_000/` through
+`chunk_009/`, each with `input.jsonl`, `assignments.jsonl`, and
+`chunk_manifest.json`. After preparation, materialize one chunk's sidecar:
 
 ```bash
 uv run python scripts/materialize_speaker_assignments.py \

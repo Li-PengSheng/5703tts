@@ -12,12 +12,14 @@ InputRecord -> validation/exclusion -> speaker sidecar -> canonical/prepared pla
 
 ## Current boundary
 
-At baseline `e155e5fdaf2a1573fcaead71e28c3c57483723b9` (2026-09-26),
+At baseline `628abd58c7c59850b7aeb5e5b12fd6047010053d` (2026-09-26),
 Higgs production runtime, its 15 approved v0.2 references, frozen all-1000
 speaker assignment, termination QC, and controlled retry workflow are validated.
 A 30-dialogue / 473-turn pilot reached 30/30 acceptance after two fresh retries.
 The full 1000-dialogue render and general control/perceptual sign-off remain open;
 the historical `high + angry` identity issue requires explicit acoustic sign-off.
+Deterministic 100-dialogue production chunks are prepared offline as described in
+[RUNNING.md](docs/RUNNING.md).
 
 Higgs3 is the configured default backend. CosyVoice3 is explicitly selected as
 the secondary backend. Set `tts.engine` to choose one backend per run; there is
@@ -40,8 +42,8 @@ bash scripts/setup_cloud_environment.sh --check
 
 After bootstrap, use the generated `config/config_higgs_cloud.yaml` and a
 prepared small input with its matching speaker sidecar. See
-[RUNNING.md](docs/RUNNING.md) for the render command. Pointing `--input` at
-`corpus_v1_1000.jsonl` launches the entire 1000-dialogue corpus.
+[RUNNING.md](docs/RUNNING.md) for the render command. Render one prepared chunk
+at a time; do not point `--input` at the full 1000-dialogue corpus.
 
 `config/config.yaml` is a repository template with placeholder Higgs paths.
 For an explicit CosyVoice run, use `config/config_cosyvoice.yaml`. See

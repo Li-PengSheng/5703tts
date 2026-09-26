@@ -1,7 +1,7 @@
 # Status and validation
 
 This is the current status and evidence guide at baseline
-`e155e5fdaf2a1573fcaead71e28c3c57483723b9` (2026-09-26).
+`628abd58c7c59850b7aeb5e5b12fd6047010053d` (2026-09-26).
 
 ## Evidence levels
 
@@ -74,6 +74,12 @@ remain historical rejected/reserved IDs. The frozen
 caller and 6 counsellor render voices (commit
 `43b5cc880e53e455e526dd82e05966d41dcbde9f`). Subsets select frozen rows.
 VCTK source age does not acoustically realize corpus `age_band`.
+
+Deterministic production chunk preparation is implemented and offline validated:
+the builder selects canonical rows and matching frozen assignment rows into 10
+chunks of 100, with SHA256 manifests and fail-closed publication. The real
+frozen-data dry run produced 1000 dialogues and 15,934 turns. This is not GPU
+validation and full-corpus rendering has not started.
 
 ## CosyVoice3 evidence
 

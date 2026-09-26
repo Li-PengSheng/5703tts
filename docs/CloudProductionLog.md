@@ -7,7 +7,7 @@
 > **Primary repository:** `Li-PengSheng/5703tts`  
 > **Updated:** 2026-09-26  
 > **Purpose:** Current production handoff for joint execution by the rendering/pipeline owner and the model/acoustic-control teammate  
-> **Status:** Runtime, speaker pool, assignment, post-render QC, resume, retry queue, and retry-pack tooling are production-validated. A 30-dialogue / 473-turn pilot reached effective 30/30 acceptance after controlled retry. Full 1000-dialogue rendering has not yet started. The previously identified acoustic-control / speaker-identity issue remains a separate model-mapping concern unless explicitly closed by the model/acoustic-control workstream.
+> **Status:** Runtime, speaker pool, assignment, post-render QC, resume, retry queue, and retry-pack tooling are production-validated. Deterministic chunk preparation is implemented and offline validated. A 30-dialogue / 473-turn pilot reached effective 30/30 acceptance after controlled retry. Full 1000-dialogue rendering has not yet started. The previously identified acoustic-control / speaker-identity issue remains a separate model-mapping concern unless explicitly closed by the model/acoustic-control workstream.
 
 ---
 
@@ -794,27 +794,32 @@ Agree on:
 
 # 13. Production operating procedure
 
-For each chunk:
+Record the repository commit and source SHA-256 provenance. One-time preparation:
 
 ```text
-1. Record repo commit.
-2. Select canonical input rows.
-3. Select matching frozen v0.2 assignment rows.
-4. Materialize Higgs speaker sidecar.
-5. Record SHA-256 provenance.
-6. Render chunk once.
-7. Read batch_result.json.
-8. Read quality_rejected.jsonl.
-9. Do NOT rerender successful dialogues.
-10. For ordinary retryable quality rejects:
+1. Run `scripts/build_production_chunks.py` once for the whole canonical corpus
+   and frozen v0.2 assignment file (`--chunk-size 100`); it selects rows in
+   canonical order without recomputing speakers.
+2. Verify `production_manifest.json` and all 10 generated chunks.
+3. Do not rerun the builder against the same output directory.
+```
+
+Then, for each chunk:
+
+```text
+1. Materialize that chunk's Higgs speaker_sidecar.json.
+2. Render that chunk once.
+3. Inspect batch_result.json.
+4. Inspect quality_rejected.jsonl.
+5. For ordinary retryable quality rejects:
       build retry pack
       materialize retry sidecar
       fresh render into retry_01 namespace
-11. Retry again only under an explicit policy.
-12. Preserve first-pass and retry evidence.
-13. Record final accepted attempt per dialogue.
-14. Rebuild the derived acceptance manifest; use `--require-complete` only for
-    final all-corpus completion.
+   Retry again only under an explicit policy; do not rerender successful dialogues.
+6. Preserve first-pass and retry evidence.
+7. Record final accepted attempt per dialogue and rebuild the derived acceptance
+   manifest as appropriate; use `--require-complete` only for
+   final all-corpus completion.
 ```
 
 Do not:
@@ -838,6 +843,7 @@ Preparation:
 
 ```text
 data/production/v0.2/
+├── production_manifest.json
 ├── chunk_000/
 ├── chunk_001/
 ...
@@ -849,6 +855,7 @@ Each chunk:
 ```text
 input.jsonl
 assignments.jsonl
+chunk_manifest.json
 speaker_sidecar.json
 ```
 
@@ -950,10 +957,10 @@ e0770bf0e93f41332f6f7817ba7a5ac7c1a99ec1
 add quality retry batch builder
 ```
 
-Repository baseline for this documentation/aggregator update (uncommitted):
+Committed repository baseline before production chunk builder work:
 
 ```text
-e155e5fdaf2a1573fcaead71e28c3c57483723b9
+628abd58c7c59850b7aeb5e5b12fd6047010053d
 ```
 
 Always record actual HEAD again before generating production chunks.
